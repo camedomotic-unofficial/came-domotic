@@ -1,15 +1,17 @@
 """Test CAME Domotic Unofficial coordinator."""
+
 from unittest.mock import patch
 
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientAuthenticationError,
     CameDomoticUnofficialApiClientCommunicationError,
 )
 from custom_components.came_domotic_unofficial.const import DOMAIN
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.update_coordinator import UpdateFailed
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from .const import MOCK_CONFIG
 

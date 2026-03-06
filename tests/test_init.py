@@ -1,12 +1,14 @@
 """Test CAME Domotic Unofficial setup process."""
+
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import CONF_SCAN_INTERVAL
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.came_domotic_unofficial import async_remove_config_entry_device
 from custom_components.came_domotic_unofficial.const import DOMAIN
 from custom_components.came_domotic_unofficial.coordinator import (
     CameDomoticUnofficialDataUpdateCoordinator,
 )
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_SCAN_INTERVAL
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from .const import MOCK_CONFIG
 

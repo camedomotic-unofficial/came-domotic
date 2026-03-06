@@ -1,26 +1,24 @@
 """Tests for CAME Domotic Unofficial API client."""
+
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-from aiocamedomotic.errors import CameDomoticAuthError
-from aiocamedomotic.errors import CameDomoticError
-from aiocamedomotic.errors import CameDomoticServerError
-from aiocamedomotic.errors import CameDomoticServerNotFoundError
-from custom_components.came_domotic_unofficial.api import CameDomoticUnofficialApiClient
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientAuthenticationError,
-)
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientCommunicationError,
-)
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientError,
+from aiocamedomotic.errors import (
+    CameDomoticAuthError,
+    CameDomoticError,
+    CameDomoticServerError,
+    CameDomoticServerNotFoundError,
 )
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import pytest
+
+from custom_components.came_domotic_unofficial.api import (
+    CameDomoticUnofficialApiClient,
+    CameDomoticUnofficialApiClientAuthenticationError,
+    CameDomoticUnofficialApiClientCommunicationError,
+    CameDomoticUnofficialApiClientError,
+)
 
 _PATCH_ASYNC_CREATE = (
     "custom_components.came_domotic_unofficial.api.CameDomoticAPI.async_create"

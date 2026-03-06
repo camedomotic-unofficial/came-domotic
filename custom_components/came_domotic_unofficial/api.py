@@ -1,15 +1,18 @@
 """CAME Domotic Unofficial API Client."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-import aiohttp
 from aiocamedomotic import CameDomoticAPI
-from aiocamedomotic.errors import CameDomoticAuthError
-from aiocamedomotic.errors import CameDomoticError
-from aiocamedomotic.errors import CameDomoticServerError
-from aiocamedomotic.errors import CameDomoticServerNotFoundError
+from aiocamedomotic.errors import (
+    CameDomoticAuthError,
+    CameDomoticError,
+    CameDomoticServerError,
+    CameDomoticServerNotFoundError,
+)
+import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 

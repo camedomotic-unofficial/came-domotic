@@ -4,15 +4,13 @@ Custom integration to integrate CAME Domotic Unofficial with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/camedomotic-unofficial/came-domotic-unofficial
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
-from homeassistant.const import CONF_PASSWORD
-from homeassistant.const import CONF_USERNAME
-from homeassistant.const import Platform
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry

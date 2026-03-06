@@ -1,12 +1,11 @@
 """Global fixtures for CAME Domotic Unofficial integration."""
-from unittest.mock import MagicMock
-from unittest.mock import patch
+
+from unittest.mock import MagicMock, patch
 
 import pytest
+
 from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientAuthenticationError,
-)
-from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientCommunicationError,
 )
 

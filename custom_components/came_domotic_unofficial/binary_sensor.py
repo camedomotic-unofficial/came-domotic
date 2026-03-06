@@ -1,4 +1,5 @@
 """Binary sensor platform for CAME Domotic Unofficial."""
+
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
@@ -19,10 +20,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary_sensor platform."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities([CameDomoticUnofficialBinarySensor(coordinator, "binary_sensor")])
+    async_add_entities(
+        [CameDomoticUnofficialBinarySensor(coordinator, "binary_sensor")]
+    )
 
 
-class CameDomoticUnofficialBinarySensor(CameDomoticUnofficialEntity, BinarySensorEntity):
+class CameDomoticUnofficialBinarySensor(
+    CameDomoticUnofficialEntity, BinarySensorEntity
+):
     """CAME Domotic Unofficial binary_sensor class."""
 
     _attr_translation_key = "binary_sensor"

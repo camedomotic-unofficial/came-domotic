@@ -1,15 +1,15 @@
 """Test CAME Domotic Unofficial sensor platform."""
+
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from custom_components.came_domotic_unofficial.const import DOMAIN
-from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.components.sensor import SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.came_domotic_unofficial.const import DOMAIN
 
 from .const import MOCK_CONFIG
 

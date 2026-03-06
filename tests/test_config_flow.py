@@ -1,9 +1,20 @@
 """Test CAME Domotic Unofficial config flow."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
 
+from homeassistant import config_entries
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+)
+from homeassistant.data_entry_flow import FlowResultType
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientAuthenticationError,
     CameDomoticUnofficialApiClientCommunicationError,
@@ -13,20 +24,11 @@ from custom_components.came_domotic_unofficial.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-from homeassistant import config_entries
-from homeassistant.const import CONF_HOST
-from homeassistant.const import CONF_PASSWORD
-from homeassistant.const import CONF_SCAN_INTERVAL
-from homeassistant.const import CONF_USERNAME
-from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from .const import MOCK_CONFIG
-from .const import MOCK_KEYCODE
+from .const import MOCK_CONFIG, MOCK_KEYCODE
 
 _API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api."
-    "CameDomoticUnofficialApiClient"
+    "custom_components.came_domotic_unofficial.api." "CameDomoticUnofficialApiClient"
 )
 
 MOCK_USER_INPUT = {**MOCK_CONFIG, CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL}
@@ -93,9 +95,7 @@ async def test_config_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError(
-                "Bad creds"
-            ),
+            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -127,9 +127,7 @@ async def test_config_flow_unknown_error(hass):
 
 async def test_config_flow_duplicate_server_abort(hass, bypass_test_credentials):
     """Test that configuring the same server (same unique_id) is aborted."""
-    entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE
-    )
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
@@ -215,9 +213,7 @@ async def test_reconfigure_flow_success(hass, bypass_test_credentials):
 
 async def test_reconfigure_flow_cannot_connect(hass):
     """Test reconfigure flow with connection error shows cannot_connect."""
-    entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE
-    )
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 
@@ -235,9 +231,7 @@ async def test_reconfigure_flow_cannot_connect(hass):
 
 async def test_reconfigure_flow_invalid_auth(hass):
     """Test reconfigure flow with auth error shows invalid_auth."""
-    entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE
-    )
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 
@@ -245,9 +239,7 @@ async def test_reconfigure_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError(
-                "Bad creds"
-            ),
+            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -261,9 +253,7 @@ async def test_reconfigure_flow_invalid_auth(hass):
 
 async def test_reconfigure_flow_unknown_error(hass):
     """Test reconfigure flow with unexpected error shows unknown."""
-    entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE
-    )
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 

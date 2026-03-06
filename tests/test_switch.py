@@ -1,12 +1,12 @@
 """Test CAME Domotic Unofficial switch."""
+
 from __future__ import annotations
 
-from custom_components.came_domotic_unofficial.const import DOMAIN
-from homeassistant.components.switch import SERVICE_TURN_OFF
-from homeassistant.components.switch import SERVICE_TURN_ON
-from homeassistant.const import ATTR_ENTITY_ID
-from homeassistant.const import Platform
+from homeassistant.components.switch import SERVICE_TURN_OFF, SERVICE_TURN_ON
+from homeassistant.const import ATTR_ENTITY_ID, Platform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.came_domotic_unofficial.const import DOMAIN
 
 from .const import MOCK_CONFIG
 

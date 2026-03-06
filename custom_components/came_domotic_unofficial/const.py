@@ -1,4 +1,5 @@
 """Constants for CAME Domotic Unofficial."""
+
 from __future__ import annotations
 
 # Base component constants

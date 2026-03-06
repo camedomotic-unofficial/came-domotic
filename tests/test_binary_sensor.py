@@ -1,17 +1,18 @@
 """Test CAME Domotic Unofficial binary sensor."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
 
-from custom_components.came_domotic_unofficial.const import DOMAIN
 from homeassistant.const import Platform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.came_domotic_unofficial.const import DOMAIN
 
 from .const import MOCK_CONFIG
 
 _API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api."
-    "CameDomoticUnofficialApiClient"
+    "custom_components.came_domotic_unofficial.api." "CameDomoticUnofficialApiClient"
 )
 
 
@@ -42,9 +43,7 @@ async def test_binary_sensor_state_off(hass):
         patch(f"{_API_CLIENT}.async_get_data", return_value=mock_data),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
-        config_entry = MockConfigEntry(
-            domain=DOMAIN, data=MOCK_CONFIG, entry_id="test"
-        )
+        config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
         config_entry.add_to_hass(hass)
 
         await hass.config_entries.async_setup(config_entry.entry_id)

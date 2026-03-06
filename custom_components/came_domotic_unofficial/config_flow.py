@@ -1,29 +1,34 @@
 """Adds config flow for CAME Domotic Unofficial."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.config_entries import ConfigFlow
-from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.config_entries import OptionsFlow
-from homeassistant.const import CONF_HOST
-from homeassistant.const import CONF_PASSWORD
-from homeassistant.const import CONF_SCAN_INTERVAL
-from homeassistant.const import CONF_USERNAME
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+)
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
-from .api import CameDomoticUnofficialApiClient
-from .api import CameDomoticUnofficialApiClientAuthenticationError
-from .api import CameDomoticUnofficialApiClientCommunicationError
-from .api import CameDomoticUnofficialApiClientError
-from .const import DEFAULT_SCAN_INTERVAL
-from .const import DOMAIN
-from .const import MIN_SCAN_INTERVAL
+from .api import (
+    CameDomoticUnofficialApiClient,
+    CameDomoticUnofficialApiClientAuthenticationError,
+    CameDomoticUnofficialApiClientCommunicationError,
+    CameDomoticUnofficialApiClientError,
+)
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -102,11 +107,7 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(keycode)
                 self._abort_if_unique_id_configured()
-                data = {
-                    k: v
-                    for k, v in user_input.items()
-                    if k != CONF_SCAN_INTERVAL
-                }
+                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
                 options = {
                     CONF_SCAN_INTERVAL: user_input.get(
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
@@ -148,11 +149,7 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                data = {
-                    k: v
-                    for k, v in user_input.items()
-                    if k != CONF_SCAN_INTERVAL
-                }
+                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
                 options = {
                     CONF_SCAN_INTERVAL: user_input.get(
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
@@ -185,9 +182,7 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                             CONF_SCAN_INTERVAL,
                             DEFAULT_SCAN_INTERVAL,
                         ),
-                    ): vol.All(
-                        vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)
-                    ),
+                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
                 }
             ),
             errors=errors,
