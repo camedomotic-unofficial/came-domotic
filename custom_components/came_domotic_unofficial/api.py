@@ -93,8 +93,8 @@ class CameDomoticUnofficialApiClient:
             server_info = await self._api.async_get_server_info()
             return {
                 "keycode": server_info.keycode,
-                "software_version": server_info.software_version,
-                "server_type": server_info.server_type,
+                "software_version": server_info.swver,
+                "server_type": server_info.type,
                 "board": server_info.board,
             }
         except CameDomoticAuthError as err:

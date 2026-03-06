@@ -31,8 +31,8 @@ def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
     info.keycode = MOCK_KEYCODE
-    info.software_version = "1.2.3"
-    info.server_type = "ETI/Domo"
+    info.swver = "1.2.3"
+    info.type = "ETI/Domo"
     info.board = "board_v1"
     return info
 

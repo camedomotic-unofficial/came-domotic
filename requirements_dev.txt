@@ -1,1 +1,2 @@
 homeassistant
+aiocamedomotic==1.3.2
