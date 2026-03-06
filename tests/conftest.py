@@ -3,9 +3,10 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-
 from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientAuthenticationError,
+)
+from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientCommunicationError,
 )
 
@@ -14,9 +15,23 @@ from .const import MOCK_KEYCODE
 pytest_plugins = "pytest_homeassistant_custom_component"
 
 _API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api."
-    "CameDomoticUnofficialApiClient"
+    "custom_components.came_domotic_unofficial.api." "CameDomoticUnofficialApiClient"
 )
+
+
+def _mock_thermo_zone(act_id, name, temperature):
+    """Create a mock ThermoZone object."""
+    zone = MagicMock()
+    zone.act_id = act_id
+    zone.name = name
+    zone.temperature = temperature
+    return zone
+
+
+MOCK_THERMO_ZONES = [
+    _mock_thermo_zone(1, "Living Room", 20.0),
+    _mock_thermo_zone(52, "Bedroom", 19.5),
+]
 
 # Mock data matching what async_get_data() returns from the CAME server
 MOCK_API_DATA = {
@@ -24,6 +39,7 @@ MOCK_API_DATA = {
     "software_version": "1.2.3",
     "server_type": "ETI/Domo",
     "board": "board_v1",
+    "thermo_zones": MOCK_THERMO_ZONES,
 }
 
 

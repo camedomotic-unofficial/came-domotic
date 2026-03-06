@@ -85,17 +85,38 @@ class CameDomoticUnofficialApiClient:
                 "Error fetching server info",
             ) from err
 
+    async def async_get_thermo_zones(self) -> list:
+        """Fetch thermoregulation zones from the CAME Domotic server."""
+        if self._api is None:
+            raise CameDomoticUnofficialApiClientError("Not initialized")
+        try:
+            return await self._api.async_get_thermo_zones()
+        except CameDomoticAuthError as err:
+            raise CameDomoticUnofficialApiClientAuthenticationError(
+                "Invalid credentials",
+            ) from err
+        except CameDomoticServerError as err:
+            raise CameDomoticUnofficialApiClientCommunicationError(
+                "Server error while fetching thermo zones",
+            ) from err
+        except CameDomoticError as err:
+            raise CameDomoticUnofficialApiClientError(
+                "Error fetching thermo zones",
+            ) from err
+
     async def async_get_data(self) -> dict[str, Any]:
         """Fetch data from the CAME Domotic server."""
         if self._api is None:
             raise CameDomoticUnofficialApiClientError("Not initialized")
         try:
             server_info = await self._api.async_get_server_info()
+            thermo_zones = await self._api.async_get_thermo_zones()
             return {
                 "keycode": server_info.keycode,
                 "software_version": server_info.swver,
                 "server_type": server_info.type,
                 "board": server_info.board,
+                "thermo_zones": thermo_zones,
             }
         except CameDomoticAuthError as err:
             raise CameDomoticUnofficialApiClientAuthenticationError(

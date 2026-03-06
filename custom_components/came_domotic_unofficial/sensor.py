@@ -1,12 +1,15 @@
 """Sensor platform for CAME Domotic Unofficial."""
 from __future__ import annotations
 
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorStateClass
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CameDomoticUnofficialConfigEntry
-from .const import ICON
+from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
 from .entity import CameDomoticUnofficialEntity
 
 
@@ -17,16 +20,34 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensor platform."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities([CameDomoticUnofficialSensor(coordinator, "sensor")])
+    async_add_entities(
+        CameDomoticThermoZoneSensor(coordinator, zone.act_id, zone.name)
+        for zone in coordinator.data.get("thermo_zones", [])
+    )
 
 
-class CameDomoticUnofficialSensor(CameDomoticUnofficialEntity, SensorEntity):
-    """CAME Domotic Unofficial Sensor class."""
+class CameDomoticThermoZoneSensor(CameDomoticUnofficialEntity, SensorEntity):
+    """Sensor for a CAME Domotic thermoregulation zone temperature."""
 
-    _attr_translation_key = "sensor"
-    _attr_icon = ICON
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(
+        self,
+        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        act_id: int,
+        zone_name: str,
+    ) -> None:
+        """Initialize the thermo zone sensor."""
+        super().__init__(coordinator, entity_key=f"thermo_zone_{act_id}")
+        self._act_id = act_id
+        self._attr_name = zone_name
 
     @property
-    def native_value(self) -> str | None:
-        """Return the state of the sensor."""
-        return self.coordinator.data.get("software_version")
+    def native_value(self) -> float | None:
+        """Return the current temperature of the zone."""
+        for zone in self.coordinator.data.get("thermo_zones", []):
+            if zone.act_id == self._act_id:
+                return zone.temperature
+        return None

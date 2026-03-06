@@ -10,10 +10,14 @@ from aiocamedomotic.errors import CameDomoticAuthError
 from aiocamedomotic.errors import CameDomoticError
 from aiocamedomotic.errors import CameDomoticServerError
 from aiocamedomotic.errors import CameDomoticServerNotFoundError
+from custom_components.came_domotic_unofficial.api import CameDomoticUnofficialApiClient
 from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClient,
     CameDomoticUnofficialApiClientAuthenticationError,
+)
+from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientCommunicationError,
+)
+from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientError,
 )
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -145,17 +149,18 @@ async def test_async_get_data_success(hass):
     client = _make_client(hass)
     mock_api = AsyncMock()
     mock_api.async_get_server_info.return_value = _mock_server_info()
+    mock_zones = [MagicMock()]
+    mock_api.async_get_thermo_zones.return_value = mock_zones
 
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
     result = await client.async_get_data()
-    assert result == {
-        "keycode": "AA:BB:CC:DD:EE:FF",
-        "software_version": "1.2.3",
-        "server_type": "ETI/Domo",
-        "board": "board_v1",
-    }
+    assert result["keycode"] == "AA:BB:CC:DD:EE:FF"
+    assert result["software_version"] == "1.2.3"
+    assert result["server_type"] == "ETI/Domo"
+    assert result["board"] == "board_v1"
+    assert result["thermo_zones"] is mock_zones
 
 
 async def test_async_get_data_auth_error(hass):
@@ -195,6 +200,70 @@ async def test_async_get_data_generic_error(hass):
 
     with pytest.raises(CameDomoticUnofficialApiClientError):
         await client.async_get_data()
+
+
+# --- async_get_thermo_zones ---
+
+
+async def test_async_get_thermo_zones_success(hass):
+    """Test successful thermo zones retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_zones = [MagicMock(), MagicMock()]
+    mock_api.async_get_thermo_zones.return_value = mock_zones
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_thermo_zones()
+    assert result is mock_zones
+
+
+async def test_async_get_thermo_zones_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_thermo_zones.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_thermo_zones()
+
+
+async def test_async_get_thermo_zones_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_thermo_zones.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_thermo_zones()
+
+
+async def test_async_get_thermo_zones_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_thermo_zones.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_thermo_zones()
+
+
+async def test_async_get_thermo_zones_not_initialized(hass):
+    """Test async_get_thermo_zones raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_thermo_zones()
 
 
 # --- async_dispose ---

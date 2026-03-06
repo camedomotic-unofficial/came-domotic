@@ -16,10 +16,11 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
+
 from .api import CameDomoticUnofficialApiClient
 from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
 
-PLATFORMS: list[Platform] = []  # [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 type CameDomoticUnofficialConfigEntry = ConfigEntry[RuntimeData]
 
