@@ -6,5 +6,9 @@ venv
 .venv
 .DS_Store
 
+# Home Assistant runtime config (keep the example configuration)
+config/
+!config/configuration.yaml.example
+
 # Other integrations examples
 examples/
