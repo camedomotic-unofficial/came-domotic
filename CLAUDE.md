@@ -8,7 +8,7 @@ A Home Assistant custom integration for CAME Domotic devices. Distributed via HA
 
 - **Domain**: `came_domotic_unofficial`
 - **IoT class**: local polling — communicates with a local CAME Domotic server
-- **Single config entry**: only one instance allowed
+- **Multiple config entries**: supports multiple instances (e.g., different local devices)
 - **API layer**: `api.py` is a wrapper around the `aiocamedomotic` library (not direct HTTP calls). The current placeholder code will be replaced with `aiocamedomotic` calls.
 - **aiocamedomotic docs**: Fetch the up-to-date API reference from these remote URLs:
   - Overview: `https://raw.githubusercontent.com/camedomotic-unofficial/aiocamedomotic/refs/heads/master/llms.txt`
@@ -50,7 +50,7 @@ pip install -r requirements_test.txt
 pre-commit run --all-files
 ```
 
-Uses **black** (formatter), **flake8** (linter), **reorder-python-imports**, and **prettier** (JSON/YAML).
+Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (security), **codespell** (spelling), and **prettier** (JSON/YAML). Configured in `pyproject.toml` and `.pre-commit-config.yaml`.
 
 ## Architecture
 
@@ -80,8 +80,17 @@ Uses **black** (formatter), **flake8** (linter), **reorder-python-imports**, and
 - `asyncio_mode = auto` in `setup.cfg` — all async tests run automatically without `@pytest.mark.asyncio`
 - Config entries in tests are created via `MockConfigEntry` from the HA test helpers
 
+## Logging
+
+- Every module with meaningful logic has `_LOGGER = logging.getLogger(__name__)` (except `api.py` which uses `__package__` to log under the integration domain)
+- **DEBUG**: routine operations (connection attempts, data fetches, entity setup, coordinator init)
+- **INFO**: significant lifecycle events (setup complete, unload complete, config entry created/updated)
+- **WARNING**: recoverable issues (auth failures, missing zones, unload failures)
+- Never log credentials (passwords, usernames). Only log host addresses for connection context.
+- Avoid double-logging errors that are caught and re-raised — log before re-raising only when the context would otherwise be lost
+
 ## Code Style
 
-- **black** with 88-char line length
-- **isort** configured in `setup.cfg` with `force_sort_within_sections`, known first party: `custom_components.came_domotic_unofficial, tests`
+- **ruff** formatter with 88-char line length
+- **ruff** isort rules configured in `pyproject.toml` with `force_sort_within_sections`, known first party: `custom_components.came_domotic_unofficial, tests`
 - `from __future__ import annotations` in all Python files
