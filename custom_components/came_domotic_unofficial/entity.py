@@ -27,7 +27,7 @@ class CameDomoticUnofficialEntity(
         entry_id = coordinator.config_entry.entry_id
         self._attr_unique_id = f"{entry_id}_{entity_key}" if entity_key else entry_id
         self._attr_device_info = DeviceInfo(
-            name=coordinator.hass.config.location_name,
+            name=f"CAME Domotic ({coordinator.hass.config.location_name})",
             identifiers={(DOMAIN, coordinator.config_entry.entry_id)},
             hw_version=coordinator.data.get("board"),
             manufacturer=MANUFACTURER,

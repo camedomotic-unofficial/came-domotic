@@ -18,18 +18,38 @@ _API_CLIENT = (
 )
 
 
-def _mock_thermo_zone(act_id, name, temperature):
+def _mock_thermo_zone(
+    act_id,
+    name,
+    temperature,
+    set_point=21.0,
+    mode="AUTO",
+    season="winter",
+    status=1,
+    antifreeze=5.0,
+    floor_ind=0,
+    room_ind=0,
+):
     """Create a mock ThermoZone object."""
     zone = MagicMock()
     zone.act_id = act_id
     zone.name = name
     zone.temperature = temperature
+    zone.set_point = set_point
+    zone.mode.name = mode
+    zone.season.name = season
+    zone.status.name = "ON" if status else "OFF"
+    zone.antifreeze = antifreeze
+    zone.floor_ind = floor_ind
+    zone.room_ind = room_ind
     return zone
 
 
 MOCK_THERMO_ZONES = [
-    _mock_thermo_zone(1, "Living Room", 20.0),
-    _mock_thermo_zone(52, "Bedroom", 19.5),
+    _mock_thermo_zone(1, "Living Room", 20.0, set_point=21.0, floor_ind=0, room_ind=0),
+    _mock_thermo_zone(
+        52, "Bedroom", 19.5, set_point=20.0, mode="MANUAL", floor_ind=1, room_ind=1
+    ),
 ]
 
 # Mock data matching what async_get_data() returns from the CAME server

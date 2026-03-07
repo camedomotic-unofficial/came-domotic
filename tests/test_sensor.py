@@ -18,12 +18,30 @@ _API_CLIENT = (
 )
 
 
-def _mock_thermo_zone(act_id, name, temperature):
+def _mock_thermo_zone(
+    act_id,
+    name,
+    temperature,
+    set_point=21.0,
+    mode="AUTO",
+    season="winter",
+    status=1,
+    antifreeze=5.0,
+    floor_ind=0,
+    room_ind=0,
+):
     """Create a mock ThermoZone object."""
     zone = MagicMock()
     zone.act_id = act_id
     zone.name = name
     zone.temperature = temperature
+    zone.set_point = set_point
+    zone.mode.name = mode
+    zone.season.name = season
+    zone.status.name = "ON" if status else "OFF"
+    zone.antifreeze = antifreeze
+    zone.floor_ind = floor_ind
+    zone.room_ind = room_ind
     return zone
 
 
@@ -68,11 +86,11 @@ async def test_thermo_zone_sensor_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    living_room = hass.states.get("sensor.came_domotic_unofficial_living_room")
+    living_room = hass.states.get("sensor.came_domotic_test_home_living_room")
     assert living_room is not None
     assert living_room.state == "20.0"
 
-    bedroom = hass.states.get("sensor.came_domotic_unofficial_bedroom")
+    bedroom = hass.states.get("sensor.came_domotic_test_home_bedroom")
     assert bedroom is not None
     assert bedroom.state == "19.5"
 
@@ -85,7 +103,7 @@ async def test_thermo_zone_sensor_attributes(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.came_domotic_unofficial_living_room")
+    state = hass.states.get("sensor.came_domotic_test_home_living_room")
     assert state.attributes["device_class"] == SensorDeviceClass.TEMPERATURE
     assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
     assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
@@ -129,6 +147,25 @@ async def test_no_thermo_zones(hass):
     assert len(entries) == 0
 
 
+async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
+    """Test sensor exposes extra thermo zone attributes."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.came_domotic_test_home_living_room")
+    assert state is not None
+    assert state.attributes["set_point"] == 21.0
+    assert state.attributes["mode"] == "AUTO"
+    assert state.attributes["season"] == "winter"
+    assert state.attributes["status"] == "ON"
+    assert state.attributes["antifreeze"] == 5.0
+    assert state.attributes["floor_ind"] == 0
+    assert state.attributes["room_ind"] == 0
+
+
 async def test_thermo_zone_sensor_zone_not_found(hass):
     """Test sensor returns unknown when zone disappears from data."""
     initial_data = {
@@ -166,6 +203,6 @@ async def test_thermo_zone_sensor_zone_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.came_domotic_unofficial_living_room")
+    state = hass.states.get("sensor.came_domotic_test_home_living_room")
     assert state is not None
     assert state.state == "unknown"
