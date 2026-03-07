@@ -165,6 +165,100 @@ async def test_config_flow_generic_api_error(hass):
     assert result["errors"] == {"base": "cannot_connect"}
 
 
+# --- Reauth flow ---
+
+
+async def _init_reauth_flow(hass, entry):
+    """Start a reauth flow and return the form result."""
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    return result
+
+
+async def test_reauth_flow_success(hass, bypass_test_credentials):
+    """Test successful reauth flow updates credentials."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data=MOCK_CONFIG,
+        unique_id=MOCK_KEYCODE,
+    )
+    entry.add_to_hass(hass)
+
+    result = await _init_reauth_flow(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_USERNAME: "new_user", CONF_PASSWORD: "new_pass"},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_USERNAME] == "new_user"
+    assert entry.data[CONF_PASSWORD] == "new_pass"
+
+
+async def test_reauth_flow_invalid_auth(hass):
+    """Test reauth flow with auth error shows invalid_auth."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry.add_to_hass(hass)
+    result = await _init_reauth_flow(hass, entry)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "wrong"},
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+
+
+async def test_reauth_flow_cannot_connect(hass):
+    """Test reauth flow with connection error shows cannot_connect."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry.add_to_hass(hass)
+    result = await _init_reauth_flow(hass, entry)
+
+    with patch(
+        f"{_API_CLIENT}.async_connect",
+        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "pass"},
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_reauth_flow_unknown_error(hass):
+    """Test reauth flow with unexpected error shows unknown."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry.add_to_hass(hass)
+    result = await _init_reauth_flow(hass, entry)
+
+    with patch(
+        f"{_API_CLIENT}.async_connect",
+        side_effect=Exception("Unexpected"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "pass"},
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "unknown"}
+
+
 # --- Reconfigure flow ---
 
 

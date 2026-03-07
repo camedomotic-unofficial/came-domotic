@@ -12,6 +12,14 @@
           "scan_interval": "Scan Interval (seconds)"
         }
       },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "Please re-enter your credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
       "reconfigure": {
         "data": {
           "host": "Host",
@@ -28,6 +36,7 @@
     },
     "abort": {
       "already_configured": "This CAME server is already configured.",
+      "reauth_successful": "Re-authentication successful.",
       "reconfigure_successful": "Reconfiguration successful."
     }
   },
