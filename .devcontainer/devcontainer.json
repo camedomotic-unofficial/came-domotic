@@ -5,6 +5,9 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "appPort": ["9123:8123"],
   "postCreateCommand": "pip install --upgrade pip && pip install -e . 2>/dev/null; pip install homeassistant",
   "customizations": {
