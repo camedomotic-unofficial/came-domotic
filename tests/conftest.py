@@ -16,6 +16,10 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 _API_CLIENT = (
     "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
 )
+_COORDINATOR = (
+    "custom_components.came_domotic_unofficial.coordinator"
+    ".CameDomoticUnofficialDataUpdateCoordinator"
+)
 
 
 def _mock_thermo_zone(
@@ -29,8 +33,13 @@ def _mock_thermo_zone(
     antifreeze=5.0,
     floor_ind=0,
     room_ind=0,
+    leaf=True,
 ):
-    """Create a mock ThermoZone object."""
+    """Create a mock ThermoZone object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
     zone = MagicMock()
     zone.act_id = act_id
     zone.name = name
@@ -42,6 +51,20 @@ def _mock_thermo_zone(
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
     zone.room_ind = room_ind
+    zone.leaf = leaf
+    zone.raw_data = {
+        "act_id": act_id,
+        "name": name,
+        "temp_dec": int(temperature * 10),
+        "set_point": int(set_point * 10),
+        "mode": 2 if mode == "AUTO" else 1,
+        "season": 1 if season == "winter" else 2,
+        "status": status,
+        "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
+        "leaf": int(leaf),
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
     return zone
 
 
@@ -82,11 +105,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 @pytest.fixture(name="bypass_get_data")
 def bypass_get_data_fixture():
-    """Skip calls to get data from API, returning realistic mock data."""
+    """Skip calls to get data from API and suppress long-poll task."""
     with (
         patch(f"{_API_CLIENT}.async_connect"),
         patch(f"{_API_CLIENT}.async_get_data", return_value=MOCK_API_DATA),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 
@@ -103,6 +127,7 @@ def error_get_data_fixture():
             ),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 
@@ -119,6 +144,7 @@ def auth_error_get_data_fixture():
             ),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 

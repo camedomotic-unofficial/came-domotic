@@ -5,9 +5,9 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/camedomotic-unofficial/came-domotic-unofficial",
-  "iot_class": "local_polling",
+  "iot_class": "local_push",
   "issue_tracker": "https://github.com/camedomotic-unofficial/came-domotic-unofficial/issues",
-  "requirements": ["aiocamedomotic==1.3.3"],
+  "requirements": ["aiocamedomotic==1.4.1"],
   "single_config_entry": false,
   "version": "0.1.0"
 }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from aiocamedomotic import CameDomoticAPI
@@ -12,7 +13,7 @@ from aiocamedomotic.errors import (
     CameDomoticServerError,
     CameDomoticServerNotFoundError,
 )
-from aiocamedomotic.models import ServerInfo, ThermoZone
+from aiocamedomotic.models import ServerInfo, ThermoZone, UpdateList
 import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -78,17 +79,21 @@ class CameDomoticUnofficialApiClient:
         """Get server info (triggers lazy auth on first call)."""
         if self._api is None:
             raise CameDomoticUnofficialApiClientError("Not initialized")
+        _LOGGER.debug("Fetching server info from %s", self._host)
         try:
             return await self._api.async_get_server_info()
         except CameDomoticAuthError as err:
+            _LOGGER.debug("Authentication failed while fetching server info")
             raise CameDomoticUnofficialApiClientAuthenticationError(
                 "Invalid credentials",
             ) from err
         except CameDomoticServerError as err:
+            _LOGGER.debug("Server error while fetching server info: %s", err)
             raise CameDomoticUnofficialApiClientCommunicationError(
                 "Server error while fetching server info",
             ) from err
         except CameDomoticError as err:
+            _LOGGER.debug("Error fetching server info: %s", err)
             raise CameDomoticUnofficialApiClientError(
                 "Error fetching server info",
             ) from err
@@ -97,20 +102,26 @@ class CameDomoticUnofficialApiClient:
         """Fetch thermoregulation zones from the CAME Domotic server."""
         if self._api is None:
             raise CameDomoticUnofficialApiClientError("Not initialized")
+        _LOGGER.debug("Fetching thermo zones from %s", self._host)
         try:
-            return await self._api.async_get_thermo_zones()
+            zones = await self._api.async_get_thermo_zones()
         except CameDomoticAuthError as err:
+            _LOGGER.debug("Authentication failed while fetching thermo zones")
             raise CameDomoticUnofficialApiClientAuthenticationError(
                 "Invalid credentials",
             ) from err
         except CameDomoticServerError as err:
+            _LOGGER.debug("Server error while fetching thermo zones: %s", err)
             raise CameDomoticUnofficialApiClientCommunicationError(
                 "Server error while fetching thermo zones",
             ) from err
         except CameDomoticError as err:
+            _LOGGER.debug("Error fetching thermo zones: %s", err)
             raise CameDomoticUnofficialApiClientError(
                 "Error fetching thermo zones",
             ) from err
+        _LOGGER.debug("Fetched %d thermo zone(s)", len(zones))
+        return zones
 
     async def async_get_data(self) -> dict[str, Any]:
         """Fetch data from the CAME Domotic server."""
@@ -144,6 +155,44 @@ class CameDomoticUnofficialApiClient:
             raise CameDomoticUnofficialApiClientError(
                 "Error fetching data",
             ) from err
+
+    async def async_get_updates(self, timeout: int = 120) -> UpdateList:
+        """Long-poll the CAME server for device state changes.
+
+        Blocks until the server reports one or more state changes or the
+        timeout expires. On timeout the server raises CameDomoticServerError
+        which is translated to CommunicationError by this wrapper.
+
+        Args:
+            timeout: Maximum seconds to wait for updates from the server.
+
+        Returns:
+            An UpdateList containing all pending device updates.
+        """
+        if self._api is None:
+            raise CameDomoticUnofficialApiClientError("Not initialized")
+        _LOGGER.debug("Starting long-poll for updates (timeout=%ds)", timeout)
+        start = time.monotonic()
+        try:
+            result = await self._api.async_get_updates(timeout=timeout)
+        except CameDomoticAuthError as err:
+            _LOGGER.debug("Authentication failed during long poll")
+            raise CameDomoticUnofficialApiClientAuthenticationError(
+                "Invalid credentials",
+            ) from err
+        except CameDomoticServerError as err:
+            _LOGGER.debug("Server error during long poll: %s", err)
+            raise CameDomoticUnofficialApiClientCommunicationError(
+                "Server error during long poll",
+            ) from err
+        except CameDomoticError as err:
+            _LOGGER.debug("Error during long poll: %s", err)
+            raise CameDomoticUnofficialApiClientError(
+                "Error during long poll",
+            ) from err
+        elapsed = time.monotonic() - start
+        _LOGGER.debug("Long-poll returned updates after %.1fs", elapsed)
+        return result
 
     async def async_dispose(self) -> None:
         """Clean up the API connection."""

@@ -18,6 +18,12 @@ _API_CLIENT = (
 )
 
 
+_COORDINATOR = (
+    "custom_components.came_domotic_unofficial.coordinator"
+    ".CameDomoticUnofficialDataUpdateCoordinator"
+)
+
+
 def _mock_thermo_zone(
     act_id,
     name,
@@ -29,6 +35,7 @@ def _mock_thermo_zone(
     antifreeze=5.0,
     floor_ind=0,
     room_ind=0,
+    leaf=True,
 ):
     """Create a mock ThermoZone object."""
     zone = MagicMock()
@@ -42,6 +49,20 @@ def _mock_thermo_zone(
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
     zone.room_ind = room_ind
+    zone.leaf = leaf
+    zone.raw_data = {
+        "act_id": act_id,
+        "name": name,
+        "temp_dec": int(temperature * 10),
+        "set_point": int(set_point * 10),
+        "mode": 2 if mode == "AUTO" else 1,
+        "season": season,
+        "status": status,
+        "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
+        "leaf": int(leaf),
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
     return zone
 
 
@@ -54,6 +75,7 @@ async def _setup_entry(hass, mock_data):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(f"{_API_CLIENT}.async_get_data", return_value=mock_data),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -194,6 +216,7 @@ async def test_thermo_zone_sensor_zone_not_found(hass):
             side_effect=[initial_data, updated_data],
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()

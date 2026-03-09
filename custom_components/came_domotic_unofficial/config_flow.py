@@ -6,18 +6,14 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import (
-    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
 )
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
-from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
@@ -28,7 +24,7 @@ from .api import (
     CameDomoticUnofficialApiClientCommunicationError,
     CameDomoticUnofficialApiClientError,
 )
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,10 +33,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
-        vol.Optional(
-            CONF_SCAN_INTERVAL,
-            default=DEFAULT_SCAN_INTERVAL,
-        ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
     }
 )
 
@@ -78,12 +70,6 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Get the options flow for this handler."""
-        return CameDomoticUnofficialOptionsFlowHandler()
-
     async def async_step_user(
         self,
         user_input: dict[str, Any] | None = None,
@@ -111,24 +97,20 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(keycode)
                 self._abort_if_unique_id_configured()
-                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
-                options = {
-                    CONF_SCAN_INTERVAL: user_input.get(
-                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-                    ),
-                }
                 _LOGGER.info(
                     "Configuration entry created for %s", user_input[CONF_HOST]
                 )
                 return self.async_create_entry(
                     title=f"CAME Domotic ({user_input[CONF_HOST]})",
-                    data=data,
-                    options=options,
+                    data=user_input,
                 )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA,
+                user_input or {},
+            ),
             description_placeholders={
                 "documentation_url": "https://github.com/camedomotic-unofficial/came-domotic-unofficial"
             },
@@ -159,8 +141,15 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                     user_input[CONF_PASSWORD],
                 )
             except CannotConnect:
+                _LOGGER.warning(
+                    "Reauth: cannot connect to %s", reauth_entry.data[CONF_HOST]
+                )
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
+                _LOGGER.warning(
+                    "Reauth: invalid authentication for %s",
+                    reauth_entry.data[CONF_HOST],
+                )
                 errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception during reauth")
@@ -175,16 +164,20 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        suggested_values = user_input or {
+            CONF_USERNAME: reauth_entry.data[CONF_USERNAME],
+        }
+        reauth_schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USERNAME,
-                        default=reauth_entry.data[CONF_USERNAME],
-                    ): str,
-                    vol.Required(CONF_PASSWORD): str,
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                reauth_schema,
+                suggested_values,
             ),
             errors=errors,
         )
@@ -220,80 +213,34 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
-                options = {
-                    CONF_SCAN_INTERVAL: user_input.get(
-                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-                    ),
-                }
                 _LOGGER.info(
                     "Configuration entry updated for %s", user_input[CONF_HOST]
                 )
                 return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     unique_id=reconfigure_entry.unique_id,
-                    data={**reconfigure_entry.data, **data},
-                    options=options,
+                    data={**reconfigure_entry.data, **user_input},
                     reason="reconfigure_successful",
                 )
 
+        suggested_values = user_input or {
+            CONF_HOST: reconfigure_entry.data[CONF_HOST],
+            CONF_USERNAME: reconfigure_entry.data[CONF_USERNAME],
+        }
+        reconfigure_schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST): str,
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_HOST,
-                        default=reconfigure_entry.data[CONF_HOST],
-                    ): str,
-                    vol.Required(
-                        CONF_USERNAME,
-                        default=reconfigure_entry.data[CONF_USERNAME],
-                    ): str,
-                    vol.Required(CONF_PASSWORD): str,
-                    vol.Optional(
-                        CONF_SCAN_INTERVAL,
-                        default=reconfigure_entry.options.get(
-                            CONF_SCAN_INTERVAL,
-                            DEFAULT_SCAN_INTERVAL,
-                        ),
-                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                reconfigure_schema,
+                suggested_values,
             ),
             errors=errors,
-        )
-
-
-class CameDomoticUnofficialOptionsFlowHandler(OptionsFlow):
-    """Config flow options handler for came_domotic_unofficial."""
-
-    async def async_step_init(
-        self,
-        user_input: dict[str, Any] | None = None,
-    ) -> ConfigFlowResult:
-        """Manage the options."""
-        if user_input is not None:
-            _LOGGER.debug(
-                "Options updated: scan_interval=%ds",
-                user_input[CONF_SCAN_INTERVAL],
-            )
-            return self.async_create_entry(
-                title="",
-                data={CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]},
-            )
-
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_SCAN_INTERVAL,
-                        default=self.config_entry.options.get(
-                            CONF_SCAN_INTERVAL,
-                            DEFAULT_SCAN_INTERVAL,
-                        ),
-                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
-                }
-            ),
         )
 
 

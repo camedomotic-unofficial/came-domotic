@@ -8,7 +8,6 @@ from homeassistant import config_entries
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
 from homeassistant.data_entry_flow import FlowResultType
@@ -20,18 +19,13 @@ from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientCommunicationError,
     CameDomoticUnofficialApiClientError,
 )
-from custom_components.came_domotic_unofficial.const import (
-    DEFAULT_SCAN_INTERVAL,
-    DOMAIN,
-)
+from custom_components.came_domotic_unofficial.const import DOMAIN
 
 from .const import MOCK_CONFIG, MOCK_KEYCODE
 
 _API_CLIENT = (
     "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
 )
-
-MOCK_USER_INPUT = {**MOCK_CONFIG, CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL}
 
 
 @pytest.fixture(autouse=True)
@@ -57,13 +51,12 @@ async def test_successful_config_flow(hass, bypass_test_credentials):
     assert result["step_id"] == "user"
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_USER_INPUT
+        result["flow_id"], user_input=MOCK_CONFIG
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == f"CAME Domotic ({MOCK_CONFIG[CONF_HOST]})"
     assert result["data"] == MOCK_CONFIG
-    assert result["options"] == {CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL}
     assert result["result"]
 
 
@@ -78,7 +71,7 @@ async def test_config_flow_cannot_connect(hass):
         side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -100,7 +93,7 @@ async def test_config_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -118,7 +111,7 @@ async def test_config_flow_unknown_error(hass):
         side_effect=Exception("Unexpected"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -137,7 +130,7 @@ async def test_config_flow_duplicate_server_abort(hass, bypass_test_credentials)
     assert result["type"] is FlowResultType.FORM
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_USER_INPUT
+        result["flow_id"], user_input=MOCK_CONFIG
     )
 
     assert result["type"] is FlowResultType.ABORT
@@ -158,7 +151,7 @@ async def test_config_flow_generic_api_error(hass):
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -276,7 +269,7 @@ async def _init_reconfigure_flow(hass, entry):
 
 
 async def test_reconfigure_flow_success(hass, bypass_test_credentials):
-    """Test successful reconfigure flow updates credentials and options."""
+    """Test successful reconfigure flow updates credentials."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data=MOCK_CONFIG,
@@ -291,7 +284,6 @@ async def test_reconfigure_flow_success(hass, bypass_test_credentials):
         CONF_HOST: "192.168.1.200",
         CONF_USERNAME: "new_user",
         CONF_PASSWORD: "new_pass",
-        CONF_SCAN_INTERVAL: 60,
     }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=new_input
@@ -302,7 +294,6 @@ async def test_reconfigure_flow_success(hass, bypass_test_credentials):
     assert entry.data[CONF_HOST] == "192.168.1.200"
     assert entry.data[CONF_USERNAME] == "new_user"
     assert entry.data[CONF_PASSWORD] == "new_pass"
-    assert entry.options[CONF_SCAN_INTERVAL] == 60
 
 
 async def test_reconfigure_flow_cannot_connect(hass):
@@ -316,7 +307,7 @@ async def test_reconfigure_flow_cannot_connect(hass):
         side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -338,7 +329,7 @@ async def test_reconfigure_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
@@ -356,31 +347,8 @@ async def test_reconfigure_flow_unknown_error(hass):
         side_effect=Exception("Unexpected"),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], user_input=MOCK_USER_INPUT
+            result["flow_id"], user_input=MOCK_CONFIG
         )
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "unknown"}
-
-
-# --- Options flow ---
-
-
-async def test_options_flow(hass, bypass_get_data):
-    """Test options flow updates scan interval."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "init"
-
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={CONF_SCAN_INTERVAL: 60},
-    )
-
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options == {CONF_SCAN_INTERVAL: 60}

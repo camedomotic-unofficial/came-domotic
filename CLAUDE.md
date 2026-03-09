@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A Home Assistant custom integration for CAME Domotic devices. Distributed via HACS (Home Assistant Community Store). Built from the `integration_blueprint` / cookiecutter template.
 
 - **Domain**: `came_domotic_unofficial`
-- **IoT class**: local polling — communicates with a local CAME Domotic server
+- **IoT class**: `local_push` — communicates with a local CAME Domotic server via long polling
 - **Multiple config entries**: supports multiple instances (e.g., different local devices)
-- **API layer**: `api.py` is a wrapper around the `aiocamedomotic` library (not direct HTTP calls). The current placeholder code will be replaced with `aiocamedomotic` calls.
+- **API layer**: `api.py` is a wrapper around the `aiocamedomotic` library (not direct HTTP calls).
 - **aiocamedomotic docs**: Fetch the up-to-date API reference from these remote URLs:
   - Overview: `https://raw.githubusercontent.com/camedomotic-unofficial/aiocamedomotic/refs/heads/master/llms.txt`
   - Full reference: `https://raw.githubusercontent.com/camedomotic-unofficial/aiocamedomotic/refs/heads/master/llms-full.txt`
@@ -58,16 +58,26 @@ Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (securi
 
 1. User configures via UI (`config_flow.py` -> `CameDomoticUnofficialFlowHandler`)
 2. `__init__.py:async_setup_entry` creates the API client and coordinator, stores them in `entry.runtime_data`
-3. Coordinator polls the local CAME server via `aiocamedomotic` on a timer and distributes data to entities
+3. Coordinator performs an initial full fetch (`_async_update_data()`), then a background long-poll task (`_async_long_poll_loop()`) receives incremental updates from the server and pushes them to entities via `async_set_updated_data()`
 4. Platforms (`binary_sensor.py`, `sensor.py`, `switch.py`) register entities that read from `coordinator.data`
 
 ### Key modules (`custom_components/came_domotic_unofficial/`)
 
-- **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`
-- **coordinator.py** - `DataUpdateCoordinator` subclass. Translates API auth errors into `ConfigEntryAuthFailed` and other errors into `UpdateFailed`
+- **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`. Includes `async_get_updates()` for long-polling.
+- **coordinator.py** - Push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`.
 - **entity.py** - Base `CoordinatorEntity` subclass setting common attributes (attribution, device info, unique_id)
-- **config_flow.py** - Setup flow (user step + reconfigure) and options flow (configurable scan interval, min 10s, default 30s)
-- **const.py** - Domain name, defaults, icons
+- **config_flow.py** - Setup flow (user step, reconfigure, reauth)
+- **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`)
+
+### Adding a new device type platform
+
+Pattern for adding future platforms (e.g., lights, openings):
+
+1. Add `async_get_<device_type>()` method to `api.py` (same exception-translation pattern)
+2. Include it in `api.async_get_data()` for initial fetch
+3. Handle `DeviceType.<TYPE>` in `coordinator._merge_updates()` using `device.raw_data.update(update.raw_data)`
+4. Create platform file (e.g., `light.py`) with entities reading from `coordinator.data["<key>"]`
+5. Add platform to `PLATFORMS` list in `__init__.py`
 
 ### Type alias
 

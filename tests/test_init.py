@@ -3,7 +3,6 @@
 from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_SCAN_INTERVAL
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.came_domotic_unofficial import async_remove_config_entry_device
@@ -59,24 +58,6 @@ async def test_setup_entry_auth_error(hass, auth_error_on_get_data):
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
 
 
-async def test_options_update_triggers_reload(hass, bypass_get_data):
-    """Test that updating options triggers a reload."""
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    config_entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-    assert config_entry.state is ConfigEntryState.LOADED
-
-    # Update options triggers _async_update_listener -> reload
-    hass.config_entries.async_update_entry(
-        config_entry, options={CONF_SCAN_INTERVAL: 60}
-    )
-    await hass.async_block_till_done()
-
-    assert config_entry.state is ConfigEntryState.LOADED
-
-
 async def test_remove_config_entry_device(hass, bypass_get_data):
     """Test removing a device entry always returns True."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
@@ -107,3 +88,20 @@ async def test_unload_entry_failure(hass, bypass_get_data):
         await hass.async_block_till_done()
 
     assert result is False
+
+
+async def test_unload_stops_long_poll(hass, bypass_get_data):
+    """Test that unloading the entry stops the long-poll task."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(coordinator, "stop_long_poll") as mock_stop:
+        await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    mock_stop.assert_awaited_once()
