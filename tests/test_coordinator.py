@@ -17,7 +17,10 @@ from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientCommunicationError,
     CameDomoticUnofficialApiClientError,
 )
-from custom_components.came_domotic_unofficial.const import DOMAIN
+from custom_components.came_domotic_unofficial.const import (
+    DOMAIN,
+    SESSION_RECYCLE_THRESHOLD,
+)
 from custom_components.came_domotic_unofficial.coordinator import (
     CameDomoticUnofficialDataUpdateCoordinator,
 )
@@ -712,3 +715,266 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
     assert zone.antifreeze == 5.0  # preserved
     assert zone.name == "Living Room"  # preserved
     assert zone.floor_ind == 0  # preserved
+
+
+# --- Session recycling (cseq reset) ---
+
+
+async def test_session_recycle_after_threshold(hass, bypass_get_data):
+    """Test that session is recycled after reaching the long-poll threshold."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = SESSION_RECYCLE_THRESHOLD
+
+    mock_update_list = MagicMock()
+    mock_update_list.has_plant_update = False
+    mock_update_list.get_typed_by_device_type.return_value = []
+
+    call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return mock_update_list
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch.object(
+            coordinator.api, "async_dispose", new_callable=AsyncMock
+        ) as mock_dispose,
+        patch.object(
+            coordinator.api, "async_connect", new_callable=AsyncMock
+        ) as mock_connect,
+        patch.object(
+            coordinator,
+            "_async_update_data",
+            new_callable=AsyncMock,
+            return_value=coordinator.data,
+        ) as mock_update_data,
+        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    mock_dispose.assert_awaited_once()
+    mock_connect.assert_awaited_once()
+    mock_update_data.assert_awaited_once()
+    # Counter was reset to 0 by recycle, then incremented by the successful call
+    assert coordinator._long_poll_count == 1
+
+
+async def test_session_recycle_auth_error_triggers_reauth(hass, bypass_get_data):
+    """Test that auth error during session recycle triggers reauth and exits."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = SESSION_RECYCLE_THRESHOLD
+
+    with (
+        patch.object(coordinator.api, "async_dispose", new_callable=AsyncMock),
+        patch.object(
+            coordinator.api,
+            "async_connect",
+            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad auth"),
+        ),
+        patch.object(config_entry, "async_start_reauth") as mock_reauth,
+    ):
+        # Should return (not raise) when auth error occurs
+        await coordinator._async_long_poll_loop()
+
+    mock_reauth.assert_called_once_with(hass)
+
+
+async def test_session_recycle_comm_error_retries(hass, bypass_get_data):
+    """Test that comm error during session recycle retries after delay."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = SESSION_RECYCLE_THRESHOLD
+
+    connect_call_count = 0
+
+    async def _fake_connect():
+        nonlocal connect_call_count
+        connect_call_count += 1
+        if connect_call_count == 1:
+            raise CameDomoticUnofficialApiClientCommunicationError("Connection lost")
+        # Second call succeeds
+
+    mock_update_list = MagicMock()
+    mock_update_list.has_plant_update = False
+    mock_update_list.get_typed_by_device_type.return_value = []
+
+    updates_call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal updates_call_count
+        updates_call_count += 1
+        if updates_call_count == 1:
+            return mock_update_list
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(coordinator.api, "async_dispose", new_callable=AsyncMock),
+        patch.object(coordinator.api, "async_connect", side_effect=_fake_connect),
+        patch.object(
+            coordinator,
+            "_async_update_data",
+            new_callable=AsyncMock,
+            return_value=coordinator.data,
+        ),
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch(
+            "custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"
+        ) as mock_sleep,
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    # First recycle attempt failed, slept RECONNECT_DELAY, second succeeded
+    mock_sleep.assert_any_call(5)
+    assert connect_call_count == 2
+
+
+async def test_no_recycle_below_threshold(hass, bypass_get_data):
+    """Test that no recycling occurs when count is below threshold."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = SESSION_RECYCLE_THRESHOLD - 2
+
+    mock_update_list = MagicMock()
+    mock_update_list.has_plant_update = False
+    mock_update_list.get_typed_by_device_type.return_value = []
+
+    call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return mock_update_list
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch.object(
+            coordinator.api, "async_dispose", new_callable=AsyncMock
+        ) as mock_dispose,
+        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    mock_dispose.assert_not_called()
+    # Count incremented by 1 successful call, still below threshold
+    assert coordinator._long_poll_count == SESSION_RECYCLE_THRESHOLD - 1
+
+
+async def test_long_poll_count_only_increments_on_success(hass, bypass_get_data):
+    """Test that long-poll count only increments on successful calls."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    mock_update_list = MagicMock()
+    mock_update_list.has_plant_update = False
+    mock_update_list.get_typed_by_device_type.return_value = []
+
+    call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise CameDomoticUnofficialApiClientCommunicationError("Connection lost")
+        if call_count == 2:
+            return mock_update_list
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    # Only the successful call (call 2) incremented the counter
+    assert coordinator._long_poll_count == 1
+
+
+async def test_plant_update_does_not_reset_long_poll_count(hass, bypass_get_data):
+    """Test that a plant update does NOT reset the long-poll count.
+
+    Only session recycling resets the counter, because a plant update
+    does not clear the cseq on the remote server.
+    """
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = 500
+
+    mock_update_list = MagicMock()
+    mock_update_list.has_plant_update = True
+
+    call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return mock_update_list
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch.object(
+            coordinator,
+            "_async_update_data",
+            new_callable=AsyncMock,
+            return_value=coordinator.data,
+        ),
+        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    # Counter was incremented (not reset) — only recycle resets it
+    assert coordinator._long_poll_count == 501
