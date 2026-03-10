@@ -11,6 +11,7 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -348,6 +349,183 @@ async def test_reconfigure_flow_unknown_error(hass):
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], user_input=MOCK_CONFIG
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "unknown"}
+
+
+# --- DHCP discovery flow ---
+
+MOCK_DHCP_SERVICE_INFO = DhcpServiceInfo(
+    ip=MOCK_CONFIG[CONF_HOST],
+    hostname="came-server",
+    macaddress="001cb2ddeeff",
+)
+
+_IS_CAME_ENDPOINT = (
+    "custom_components.came_domotic_unofficial.config_flow.async_is_came_endpoint"
+)
+
+
+async def test_dhcp_discovery_new_device(hass, bypass_test_credentials):
+    """Test successful DHCP discovery of a new CAME device."""
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "dhcp_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_USERNAME: MOCK_CONFIG[CONF_USERNAME],
+            CONF_PASSWORD: MOCK_CONFIG[CONF_PASSWORD],
+        },
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == f"CAME Domotic ({MOCK_CONFIG[CONF_HOST]})"
+    assert result["data"] == MOCK_CONFIG
+    assert result["result"].unique_id == MOCK_KEYCODE
+
+
+async def test_dhcp_discovery_not_came_endpoint(hass):
+    """Test DHCP discovery aborts when host is not a CAME endpoint."""
+    with patch(_IS_CAME_ENDPOINT, return_value=False):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_came_device"
+
+
+async def test_dhcp_discovery_already_configured_by_host(hass):
+    """Test DHCP discovery aborts when host is already configured."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry.add_to_hass(hass)
+
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_dhcp_discovery_already_configured_by_keycode(
+    hass, bypass_test_credentials
+):
+    """Test DHCP discovery aborts when keycode matches existing entry."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**MOCK_CONFIG, CONF_HOST: "192.168.1.200"},
+        unique_id=MOCK_KEYCODE,
+    )
+    entry.add_to_hass(hass)
+
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "dhcp_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_USERNAME: MOCK_CONFIG[CONF_USERNAME],
+            CONF_PASSWORD: MOCK_CONFIG[CONF_PASSWORD],
+        },
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_dhcp_discovery_cannot_connect(hass):
+    """Test DHCP discovery with connection error shows cannot_connect."""
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.FORM
+
+    with patch(
+        f"{_API_CLIENT}.async_connect",
+        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "pass"},
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_dhcp_discovery_invalid_auth(hass):
+    """Test DHCP discovery with auth error shows invalid_auth."""
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.FORM
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "wrong"},
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+
+
+async def test_dhcp_discovery_unknown_error(hass):
+    """Test DHCP discovery with unexpected error shows unknown."""
+    with patch(_IS_CAME_ENDPOINT, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=MOCK_DHCP_SERVICE_INFO,
+        )
+
+    assert result["type"] is FlowResultType.FORM
+
+    with patch(
+        f"{_API_CLIENT}.async_connect",
+        side_effect=Exception("Unexpected"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_USERNAME: "user", CONF_PASSWORD: "pass"},
         )
 
     assert result["type"] is FlowResultType.FORM
