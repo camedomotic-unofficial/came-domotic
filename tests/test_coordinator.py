@@ -171,6 +171,7 @@ async def test_start_and_stop_long_poll(hass):
             return_value=list(MOCK_THERMO_ZONES),
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -205,6 +206,7 @@ async def test_start_long_poll_already_running(hass):
             return_value=list(MOCK_THERMO_ZONES),
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -259,6 +261,7 @@ async def test_long_poll_loop_incremental_update(hass):
             return_value=real_zones,
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -576,6 +579,7 @@ async def test_stop_long_poll_cancels_running_task(hass):
             return_value=list(MOCK_THERMO_ZONES),
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -616,6 +620,7 @@ async def test_merge_updates_known_zone(hass):
             return_value=real_zones,
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -659,6 +664,7 @@ async def test_merge_updates_unknown_zone_ignored(hass):
             return_value=real_zones,
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -697,6 +703,7 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
             return_value=real_zones,
         ),
         patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -750,6 +757,7 @@ async def test_merge_updates_known_scenario(hass):
             f"{_API_CLIENT}.async_get_scenarios",
             return_value=[mock_scenario],
         ),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -799,6 +807,7 @@ async def test_merge_updates_unknown_scenario_ignored(hass):
             f"{_API_CLIENT}.async_get_scenarios",
             return_value=[mock_scenario],
         ),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -1081,3 +1090,159 @@ async def test_plant_update_does_not_reset_long_poll_count(hass, bypass_get_data
 
     # Counter was incremented (not reset) — only recycle resets it
     assert coordinator._long_poll_count == 501
+
+
+# --- _merge_updates (openings) ---
+
+
+def _real_opening(
+    open_act_id,
+    close_act_id,
+    name,
+    status=0,
+    opening_type=0,
+    floor_ind=0,
+    room_ind=0,
+):
+    """Create a real Opening with the given values (for merge tests)."""
+    from aiocamedomotic.models import Opening
+
+    return Opening(
+        raw_data={
+            "open_act_id": open_act_id,
+            "close_act_id": close_act_id,
+            "name": name,
+            "status": status,
+            "type": opening_type,
+            "floor_ind": floor_ind,
+            "room_ind": room_ind,
+        },
+        auth=_MOCK_AUTH,
+    )
+
+
+def _real_openings():
+    """Return a list of real Opening objects for testing."""
+    return [
+        _real_opening(100, 101, "Living Room Shutter"),
+        _real_opening(200, 201, "Bedroom Shutter", floor_ind=1, room_ind=1),
+    ]
+
+
+async def test_merge_updates_known_opening(hass):
+    """Test merging an update for a known opening updates its raw_data."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_opens = _real_openings()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=real_opens),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Create a partial update for opening 100 (status changed to OPENING)
+    mock_update = MagicMock()
+    mock_update.open_act_id = 100
+    mock_update.name = "Living Room Shutter"
+    mock_update.raw_data = {"open_act_id": 100, "status": 1}
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    opening = coordinator.data.openings[100]
+    assert opening.status.value == 1  # OPENING
+    # Original name should be preserved
+    assert opening.name == "Living Room Shutter"
+
+
+async def test_merge_updates_unknown_opening_ignored(hass):
+    """Test that updates for unknown openings are silently ignored."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_opens = _real_openings()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=real_opens),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    mock_update = MagicMock()
+    mock_update.open_act_id = 999  # unknown opening
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    # All original openings should still be present
+    assert len(coordinator.data.openings) == 2
+
+
+async def test_merge_updates_preserves_opening_fields_not_in_update(hass):
+    """Test that partial updates only overwrite keys present in raw_data."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_opens = _real_openings()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=real_opens),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Update only contains status — everything else should be preserved
+    mock_update = MagicMock()
+    mock_update.open_act_id = 100
+    mock_update.name = "Living Room Shutter"
+    mock_update.raw_data = {"open_act_id": 100, "status": 2}  # CLOSING
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+    opening = coordinator.data.openings[100]
+
+    assert opening.status.value == 2  # CLOSING
+    assert opening.close_act_id == 101  # preserved
+    assert opening.name == "Living Room Shutter"  # preserved
+    assert opening.floor_ind == 0  # preserved

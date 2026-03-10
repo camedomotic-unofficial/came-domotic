@@ -440,3 +440,157 @@ async def test_async_dispose_no_api(hass):
     """Test dispose without prior connect does not raise."""
     client = _make_client(hass)
     await client.async_dispose()
+
+
+# --- async_get_openings ---
+
+
+async def test_async_get_openings_success(hass):
+    """Test successful openings retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_openings = [MagicMock(), MagicMock()]
+    mock_api.async_get_openings.return_value = mock_openings
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_openings()
+    assert result is mock_openings
+
+
+async def test_async_get_openings_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_openings.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_openings()
+
+
+async def test_async_get_openings_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_openings.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_openings()
+
+
+async def test_async_get_openings_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_openings.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_openings()
+
+
+async def test_async_get_openings_not_initialized(hass):
+    """Test async_get_openings raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_openings()
+
+
+# --- async_set_opening_status ---
+
+
+async def test_async_set_opening_status_success(hass):
+    """Test successful opening status change."""
+    from aiocamedomotic.models import OpeningStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_opening = MagicMock()
+    mock_opening.name = "Living Room Shutter"
+    mock_opening.open_act_id = 100
+    mock_opening.async_set_status = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
+    mock_opening.async_set_status.assert_awaited_once_with(OpeningStatus.OPENING)
+
+
+async def test_async_set_opening_status_auth_error(hass):
+    """Test CameDomoticAuthError during status change raises AuthenticationError."""
+    from aiocamedomotic.models import OpeningStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_opening = MagicMock()
+    mock_opening.name = "Living Room Shutter"
+    mock_opening.open_act_id = 100
+    mock_opening.async_set_status = AsyncMock(
+        side_effect=CameDomoticAuthError("bad creds")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
+
+
+async def test_async_set_opening_status_server_error(hass):
+    """Test CameDomoticServerError during status change raises CommunicationError."""
+    from aiocamedomotic.models import OpeningStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_opening = MagicMock()
+    mock_opening.name = "Living Room Shutter"
+    mock_opening.open_act_id = 100
+    mock_opening.async_set_status = AsyncMock(
+        side_effect=CameDomoticServerError("server err")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
+
+
+async def test_async_set_opening_status_generic_error(hass):
+    """Test CameDomoticError during status change raises ApiClientError."""
+    from aiocamedomotic.models import OpeningStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_opening = MagicMock()
+    mock_opening.name = "Living Room Shutter"
+    mock_opening.open_act_id = 100
+    mock_opening.async_set_status = AsyncMock(side_effect=CameDomoticError("generic"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
+
+
+async def test_async_set_opening_status_not_initialized(hass):
+    """Test async_set_opening_status raises ApiClientError when not connected."""
+    from aiocamedomotic.models import OpeningStatus
+
+    client = _make_client(hass)
+    mock_opening = MagicMock()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)

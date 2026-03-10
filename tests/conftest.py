@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+from aiocamedomotic.models import OpeningStatus, OpeningType
 import pytest
 
 from custom_components.came_domotic_unofficial.api import (
@@ -113,6 +114,46 @@ MOCK_SCENARIOS = [
 ]
 
 
+def _mock_opening(
+    open_act_id,
+    close_act_id,
+    name,
+    status=OpeningStatus.STOPPED,
+    opening_type=OpeningType.SHUTTER,
+    floor_ind=0,
+    room_ind=0,
+):
+    """Create a mock Opening object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
+    opening = MagicMock()
+    opening.open_act_id = open_act_id
+    opening.close_act_id = close_act_id
+    opening.name = name
+    opening.status = status
+    opening.type = opening_type
+    opening.floor_ind = floor_ind
+    opening.room_ind = room_ind
+    opening.raw_data = {
+        "open_act_id": open_act_id,
+        "close_act_id": close_act_id,
+        "name": name,
+        "status": status.value,
+        "type": opening_type.value,
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
+    return opening
+
+
+MOCK_OPENINGS = [
+    _mock_opening(100, 101, "Living Room Shutter"),
+    _mock_opening(200, 201, "Bedroom Shutter", floor_ind=1, room_ind=1),
+]
+
+
 def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
@@ -130,6 +171,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     server_info=MOCK_SERVER_INFO,
     thermo_zones={z.act_id: z for z in MOCK_THERMO_ZONES},
     scenarios={s.id: s for s in MOCK_SCENARIOS},
+    openings={o.open_act_id: o for o in MOCK_OPENINGS},
 )
 
 
@@ -155,6 +197,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_scenarios",
             return_value=list(MOCK_SCENARIOS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_openings",
+            return_value=list(MOCK_OPENINGS),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),

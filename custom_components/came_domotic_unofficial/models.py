@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from aiocamedomotic.models import Scenario, ServerInfo, ThermoZone
+from aiocamedomotic.models import Opening, Scenario, ServerInfo, ThermoZone
 
 
 @dataclass
@@ -19,3 +19,4 @@ class CameDomoticServerData:
     server_info: ServerInfo
     thermo_zones: dict[int, ThermoZone] = field(default_factory=dict)
     scenarios: dict[int, Scenario] = field(default_factory=dict)
+    openings: dict[int, Opening] = field(default_factory=dict)

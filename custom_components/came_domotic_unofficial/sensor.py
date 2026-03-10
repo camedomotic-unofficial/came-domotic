@@ -100,6 +100,4 @@ class CameDomoticThermoZoneSensor(CameDomoticUnofficialEntity, SensorEntity):
             "season": zone.season.name,
             "status": zone.status.name,
             "antifreeze": zone.antifreeze,
-            "floor_ind": zone.floor_ind,
-            "room_ind": zone.room_ind,
         }
