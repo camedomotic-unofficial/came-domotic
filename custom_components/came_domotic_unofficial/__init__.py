@@ -21,7 +21,12 @@ from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.COVER, Platform.SCENE, Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.COVER,
+    Platform.LIGHT,
+    Platform.SCENE,
+    Platform.SENSOR,
+]
 
 type CameDomoticUnofficialConfigEntry = ConfigEntry[RuntimeData]
 

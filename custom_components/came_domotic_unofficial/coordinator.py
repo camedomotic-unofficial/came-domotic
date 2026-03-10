@@ -86,6 +86,7 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             thermo_zones = await self.api.async_get_thermo_zones()
             scenarios = await self.api.async_get_scenarios()
             openings = await self.api.async_get_openings()
+            lights = await self.api.async_get_lights()
         except CameDomoticUnofficialApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -95,16 +96,18 @@ class CameDomoticUnofficialDataUpdateCoordinator(
 
         _LOGGER.debug(
             "Full data fetch complete: %d thermo zone(s), %d scenario(s), "
-            "%d opening(s)",
+            "%d opening(s), %d light(s)",
             len(thermo_zones),
             len(scenarios),
             len(openings),
+            len(lights),
         )
         return CameDomoticServerData(
             server_info=server_info,
             thermo_zones={z.act_id: z for z in thermo_zones},
             scenarios={s.id: s for s in scenarios},
             openings={o.open_act_id: o for o in openings},
+            lights={lt.act_id: lt for lt in lights},
         )
 
     def start_long_poll(self) -> None:
@@ -317,4 +320,25 @@ class CameDomoticUnofficialDataUpdateCoordinator(
                 _LOGGER.debug(
                     "Received update for unknown opening open_act_id=%d, ignoring",
                     update.open_act_id,
+                )
+
+        # Merge light updates
+        light_updates = update_list.get_typed_by_device_type(DeviceType.LIGHT)
+        _LOGGER.debug(
+            "Merging incremental updates: %d light update(s)",
+            len(light_updates) if light_updates else 0,
+        )
+        for update in light_updates:
+            light = self.data.lights.get(update.act_id)
+            if light is not None:
+                light.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to light '%s' (act_id=%d)",
+                    update.name,
+                    update.act_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown light act_id=%d, ignoring",
+                    update.act_id,
                 )

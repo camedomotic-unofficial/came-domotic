@@ -594,3 +594,181 @@ async def test_async_set_opening_status_not_initialized(hass):
 
     with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
         await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
+
+
+# --- async_get_lights ---
+
+
+async def test_async_get_lights_success(hass):
+    """Test successful lights retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_lights = [MagicMock(), MagicMock()]
+    mock_api.async_get_lights.return_value = mock_lights
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_lights()
+    assert result is mock_lights
+
+
+async def test_async_get_lights_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_lights.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_lights()
+
+
+async def test_async_get_lights_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_lights.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_lights()
+
+
+async def test_async_get_lights_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_lights.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_lights()
+
+
+async def test_async_get_lights_not_initialized(hass):
+    """Test async_get_lights raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_lights()
+
+
+# --- async_set_light_status ---
+
+
+async def test_async_set_light_status_success(hass):
+    """Test successful light status change with brightness and RGB."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_light = MagicMock()
+    mock_light.name = "Living Room Dimmer"
+    mock_light.act_id = 301
+    mock_light.async_set_status = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_set_light_status(
+        mock_light, LightStatus.ON, brightness=75, rgb=[255, 128, 0]
+    )
+    mock_light.async_set_status.assert_awaited_once_with(
+        LightStatus.ON, brightness=75, rgb=[255, 128, 0]
+    )
+
+
+async def test_async_set_light_status_no_optional_params(hass):
+    """Test light status change without optional brightness/RGB."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_light = MagicMock()
+    mock_light.name = "Hallway Light"
+    mock_light.act_id = 300
+    mock_light.async_set_status = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_set_light_status(mock_light, LightStatus.OFF)
+    mock_light.async_set_status.assert_awaited_once_with(
+        LightStatus.OFF, brightness=None, rgb=None
+    )
+
+
+async def test_async_set_light_status_auth_error(hass):
+    """Test CameDomoticAuthError during light status change raises AuthenticationError."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_light = MagicMock()
+    mock_light.name = "Hallway Light"
+    mock_light.act_id = 300
+    mock_light.async_set_status = AsyncMock(
+        side_effect=CameDomoticAuthError("bad creds")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_set_light_status(mock_light, LightStatus.ON)
+
+
+async def test_async_set_light_status_server_error(hass):
+    """Test CameDomoticServerError during light status change raises CommunicationError."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_light = MagicMock()
+    mock_light.name = "Hallway Light"
+    mock_light.act_id = 300
+    mock_light.async_set_status = AsyncMock(
+        side_effect=CameDomoticServerError("server err")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_set_light_status(mock_light, LightStatus.ON)
+
+
+async def test_async_set_light_status_generic_error(hass):
+    """Test CameDomoticError during light status change raises ApiClientError."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_light = MagicMock()
+    mock_light.name = "Hallway Light"
+    mock_light.act_id = 300
+    mock_light.async_set_status = AsyncMock(side_effect=CameDomoticError("generic"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_set_light_status(mock_light, LightStatus.ON)
+
+
+async def test_async_set_light_status_not_initialized(hass):
+    """Test async_set_light_status raises ApiClientError when not connected."""
+    from aiocamedomotic.models import LightStatus
+
+    client = _make_client(hass)
+    mock_light = MagicMock()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_set_light_status(mock_light, LightStatus.ON)

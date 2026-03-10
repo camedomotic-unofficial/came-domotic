@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from aiocamedomotic.models import OpeningStatus, OpeningType
+from aiocamedomotic.models import LightStatus, LightType, OpeningStatus, OpeningType
 import pytest
 
 from custom_components.came_domotic_unofficial.api import (
@@ -154,6 +154,62 @@ MOCK_OPENINGS = [
 ]
 
 
+def _mock_light(
+    act_id,
+    name,
+    status=LightStatus.OFF,
+    light_type=LightType.STEP_STEP,
+    perc=None,
+    rgb=None,
+    floor_ind=0,
+    room_ind=0,
+):
+    """Create a mock Light object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
+    light = MagicMock()
+    light.act_id = act_id
+    light.name = name
+    light.status = status
+    light.type = light_type
+    light.perc = perc
+    light.rgb = rgb
+    light.floor_ind = floor_ind
+    light.room_ind = room_ind
+    light.raw_data = {
+        "act_id": act_id,
+        "name": name,
+        "status": status.value,
+        "type": light_type.value,
+        "perc": perc if perc is not None else 0,
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
+    if rgb is not None:
+        light.raw_data["rgb"] = list(rgb)
+    return light
+
+
+MOCK_LIGHTS = [
+    _mock_light(300, "Hallway Light"),
+    _mock_light(
+        301,
+        "Living Room Dimmer",
+        light_type=LightType.DIMMER,
+        perc=75,
+    ),
+    _mock_light(
+        302,
+        "Bedroom RGB",
+        light_type=LightType.RGB,
+        perc=50,
+        rgb=[255, 128, 0],
+    ),
+]
+
+
 def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
@@ -172,6 +228,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     thermo_zones={z.act_id: z for z in MOCK_THERMO_ZONES},
     scenarios={s.id: s for s in MOCK_SCENARIOS},
     openings={o.open_act_id: o for o in MOCK_OPENINGS},
+    lights={lt.act_id: lt for lt in MOCK_LIGHTS},
 )
 
 
@@ -201,6 +258,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_openings",
             return_value=list(MOCK_OPENINGS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_lights",
+            return_value=list(MOCK_LIGHTS),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),

@@ -16,6 +16,8 @@ from aiocamedomotic.errors import (
     CameDomoticServerNotFoundError,
 )
 from aiocamedomotic.models import (
+    Light,
+    LightStatus,
     Opening,
     OpeningStatus,
     Scenario,
@@ -159,6 +161,42 @@ class CameDomoticUnofficialApiClient:
             status.name,
         )
         await opening.async_set_status(status)
+
+    @_translate_errors
+    async def async_get_lights(self) -> list[Light]:
+        """Fetch lights from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching lights from %s", self._host)
+        lights = await self._api.async_get_lights()
+        _LOGGER.debug("Fetched %d light(s)", len(lights))
+        return lights
+
+    @_translate_errors
+    async def async_set_light_status(
+        self,
+        light: Light,
+        status: LightStatus,
+        brightness: int | None = None,
+        rgb: list[int] | None = None,
+    ) -> None:
+        """Set the status of a light.
+
+        Args:
+            light: The Light object to control.
+            status: The desired LightStatus (ON, OFF).
+            brightness: Optional brightness percentage (0-100) for dimmers/RGB.
+            rgb: Optional [R, G, B] color values (0-255) for RGB lights.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting light '%s' (act_id=%d) to %s (brightness=%s, rgb=%s)",
+            light.name,
+            light.act_id,
+            status.name,
+            brightness,
+            rgb,
+        )
+        await light.async_set_status(status, brightness=brightness, rgb=rgb)
 
     @_translate_errors
     async def async_get_scenarios(self) -> list[Scenario]:
