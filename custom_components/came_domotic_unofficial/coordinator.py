@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_LONG_POLL_TIMEOUT,
     DOMAIN,
     RECONNECT_DELAY,
+    SESSION_RECYCLE_THRESHOLD,
     UPDATE_THROTTLE_DELAY,
 )
 from .models import CameDomoticServerData
@@ -69,6 +70,9 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             # No update_interval: this is a push-based coordinator.
         )
         self._long_poll_task: asyncio.Task[None] | None = None
+        # Tracks successful long-poll calls to trigger periodic session recycling.
+        # See _async_recycle_session() for why this is needed (cseq reset).
+        self._long_poll_count: int = 0
         _LOGGER.debug("Coordinator initialized (push-based, no polling interval)")
 
     async def _async_update_data(self) -> CameDomoticServerData:
@@ -125,6 +129,27 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             self._long_poll_task = None
             _LOGGER.debug("Long-poll background task stopped")
 
+    async def _async_recycle_session(self) -> None:
+        """Dispose and recreate the API session, then do a full data fetch.
+
+        The CAME Domotic server tracks a command sequence number (cseq) for
+        each API call within a session. Since Home Assistant runs continuously
+        for weeks or months, the cseq can grow very large. The server is
+        likely not designed for such long-running sessions, so high cseq
+        values may hit server-side limits. Recycling the session resets the
+        cseq to zero, preventing potential issues.
+        """
+        _LOGGER.info(
+            "Recycling API session after %d long-poll calls",
+            self._long_poll_count,
+        )
+        await self.api.async_dispose()
+        await self.api.async_connect()
+        new_data = await self._async_update_data()
+        self.async_set_updated_data(new_data)
+        self._long_poll_count = 0
+        _LOGGER.debug("Session recycled successfully")
+
     async def _async_long_poll_loop(self) -> None:
         """Run the long-polling loop in a background task.
 
@@ -143,6 +168,26 @@ class CameDomoticUnofficialDataUpdateCoordinator(
         """
         _LOGGER.debug("Long-poll loop started")
         while True:
+            # Check if session recycling is needed (cseq reset)
+            if self._long_poll_count >= SESSION_RECYCLE_THRESHOLD:
+                try:
+                    await self._async_recycle_session()
+                except CameDomoticUnofficialApiClientAuthenticationError:
+                    _LOGGER.warning(
+                        "Authentication failed during session recycle, "
+                        "triggering reauth"
+                    )
+                    self.config_entry.async_start_reauth(self.hass)
+                    return
+                except CameDomoticUnofficialApiClientError as err:
+                    _LOGGER.warning(
+                        "Error during session recycle: %s. Retrying in %ds",
+                        err,
+                        RECONNECT_DELAY,
+                    )
+                    await asyncio.sleep(RECONNECT_DELAY)
+                    continue
+
             try:
                 update_list = await self.api.async_get_updates(
                     timeout=DEFAULT_LONG_POLL_TIMEOUT
@@ -164,6 +209,8 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             except asyncio.CancelledError:
                 _LOGGER.debug("Long-poll loop cancelled")
                 raise
+
+            self._long_poll_count += 1
 
             # Handle plant configuration changes (requires full refresh)
             if update_list.has_plant_update:
