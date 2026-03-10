@@ -77,6 +77,42 @@ MOCK_THERMO_ZONES = [
 ]
 
 
+def _mock_scenario(
+    scenario_id,
+    name,
+    scenario_status="OFF",
+    user_defined=1,
+    icon_id=0,
+    status=0,
+):
+    """Create a mock Scenario object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
+    scenario = MagicMock()
+    scenario.id = scenario_id
+    scenario.name = name
+    scenario.scenario_status.name = scenario_status
+    scenario.user_defined = user_defined
+    scenario.icon_id = icon_id
+    scenario.status = status
+    scenario.raw_data = {
+        "id": scenario_id,
+        "name": name,
+        "status": status,
+        "icon_id": icon_id,
+        "user_defined": user_defined,
+    }
+    return scenario
+
+
+MOCK_SCENARIOS = [
+    _mock_scenario(10, "Good Morning"),
+    _mock_scenario(20, "Good Night", user_defined=0),
+]
+
+
 def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
@@ -93,6 +129,7 @@ MOCK_SERVER_INFO = _mock_server_info()
 MOCK_SERVER_DATA = CameDomoticServerData(
     server_info=MOCK_SERVER_INFO,
     thermo_zones={z.act_id: z for z in MOCK_THERMO_ZONES},
+    scenarios={s.id: s for s in MOCK_SCENARIOS},
 )
 
 
@@ -114,6 +151,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=list(MOCK_THERMO_ZONES),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_scenarios",
+            return_value=list(MOCK_SCENARIOS),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),

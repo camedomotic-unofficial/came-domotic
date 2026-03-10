@@ -211,6 +211,150 @@ async def test_async_get_thermo_zones_not_initialized(hass):
         await client.async_get_thermo_zones()
 
 
+# --- async_get_scenarios ---
+
+
+async def test_async_get_scenarios_success(hass):
+    """Test successful scenarios retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenarios = [MagicMock(), MagicMock()]
+    mock_api.async_get_scenarios.return_value = mock_scenarios
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_scenarios()
+    assert result is mock_scenarios
+
+
+async def test_async_get_scenarios_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_scenarios.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_scenarios()
+
+
+async def test_async_get_scenarios_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_scenarios.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_scenarios()
+
+
+async def test_async_get_scenarios_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_scenarios.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_scenarios()
+
+
+async def test_async_get_scenarios_not_initialized(hass):
+    """Test async_get_scenarios raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_scenarios()
+
+
+# --- async_activate_scenario ---
+
+
+async def test_async_activate_scenario_success(hass):
+    """Test successful scenario activation."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Good Morning"
+    mock_scenario.id = 10
+    mock_scenario.async_activate = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_activate_scenario(mock_scenario)
+    mock_scenario.async_activate.assert_awaited_once()
+
+
+async def test_async_activate_scenario_auth_error(hass):
+    """Test CameDomoticAuthError during activation raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Good Morning"
+    mock_scenario.id = 10
+    mock_scenario.async_activate = AsyncMock(
+        side_effect=CameDomoticAuthError("bad creds")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_activate_scenario(mock_scenario)
+
+
+async def test_async_activate_scenario_server_error(hass):
+    """Test CameDomoticServerError during activation raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Good Morning"
+    mock_scenario.id = 10
+    mock_scenario.async_activate = AsyncMock(
+        side_effect=CameDomoticServerError("server err")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_activate_scenario(mock_scenario)
+
+
+async def test_async_activate_scenario_generic_error(hass):
+    """Test CameDomoticError during activation raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Good Morning"
+    mock_scenario.id = 10
+    mock_scenario.async_activate = AsyncMock(side_effect=CameDomoticError("generic"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_activate_scenario(mock_scenario)
+
+
+async def test_async_activate_scenario_not_initialized(hass):
+    """Test async_activate_scenario raises ApiClientError when not connected."""
+    client = _make_client(hass)
+    mock_scenario = MagicMock()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_activate_scenario(mock_scenario)
+
+
 # --- async_get_updates ---
 
 

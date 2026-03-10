@@ -15,7 +15,7 @@ from aiocamedomotic.errors import (
     CameDomoticServerError,
     CameDomoticServerNotFoundError,
 )
-from aiocamedomotic.models import ServerInfo, ThermoZone, UpdateList
+from aiocamedomotic.models import Scenario, ServerInfo, ThermoZone, UpdateList
 import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -123,6 +123,26 @@ class CameDomoticUnofficialApiClient:
         zones = await self._api.async_get_thermo_zones()
         _LOGGER.debug("Fetched %d thermo zone(s)", len(zones))
         return zones
+
+    @_translate_errors
+    async def async_get_scenarios(self) -> list[Scenario]:
+        """Fetch scenarios from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching scenarios from %s", self._host)
+        scenarios = await self._api.async_get_scenarios()
+        _LOGGER.debug("Fetched %d scenario(s)", len(scenarios))
+        return scenarios
+
+    @_translate_errors
+    async def async_activate_scenario(self, scenario: Scenario) -> None:
+        """Activate a scenario on the CAME Domotic server.
+
+        Args:
+            scenario: The Scenario object to activate.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Activating scenario '%s' (id=%d)", scenario.name, scenario.id)
+        await scenario.async_activate()
 
     @_translate_errors
     async def async_get_updates(self, timeout: int = 120) -> UpdateList:

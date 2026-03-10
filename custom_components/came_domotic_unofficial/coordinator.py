@@ -84,6 +84,7 @@ class CameDomoticUnofficialDataUpdateCoordinator(
         try:
             server_info = await self.api.async_get_server_info()
             thermo_zones = await self.api.async_get_thermo_zones()
+            scenarios = await self.api.async_get_scenarios()
         except CameDomoticUnofficialApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -92,12 +93,14 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             raise UpdateFailed(exception) from exception
 
         _LOGGER.debug(
-            "Full data fetch complete: %d thermo zone(s)",
+            "Full data fetch complete: %d thermo zone(s), %d scenario(s)",
             len(thermo_zones),
+            len(scenarios),
         )
         return CameDomoticServerData(
             server_info=server_info,
             thermo_zones={z.act_id: z for z in thermo_zones},
+            scenarios={s.id: s for s in scenarios},
         )
 
     def start_long_poll(self) -> None:
@@ -240,8 +243,8 @@ class CameDomoticUnofficialDataUpdateCoordinator(
     def _merge_updates(self, update_list) -> None:
         """Merge incremental device updates into the current coordinator data.
 
-        For each ThermoZoneUpdate, finds the matching ThermoZone by act_id
-        and merges the update's raw_data into the zone's raw_data. Only keys
+        For each device update, finds the matching device by its identifier
+        and merges the update's raw_data into the device's raw_data. Only keys
         present in the update are overwritten; missing fields are preserved.
 
         Mutates self.data in-place.
@@ -268,4 +271,25 @@ class CameDomoticUnofficialDataUpdateCoordinator(
                 _LOGGER.debug(
                     "Received update for unknown thermo zone act_id=%d, ignoring",
                     update.act_id,
+                )
+
+        # Merge scenario updates
+        scenario_updates = update_list.get_typed_by_device_type(DeviceType.SCENARIO)
+        _LOGGER.debug(
+            "Merging incremental updates: %d scenario update(s)",
+            len(scenario_updates) if scenario_updates else 0,
+        )
+        for update in scenario_updates:
+            scenario = self.data.scenarios.get(update.id)
+            if scenario is not None:
+                scenario.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to scenario '%s' (id=%d)",
+                    update.name,
+                    update.id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown scenario id=%d, ignoring",
+                    update.id,
                 )

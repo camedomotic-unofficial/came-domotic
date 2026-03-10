@@ -170,6 +170,7 @@ async def test_start_and_stop_long_poll(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=list(MOCK_THERMO_ZONES),
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -203,6 +204,7 @@ async def test_start_long_poll_already_running(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=list(MOCK_THERMO_ZONES),
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -256,6 +258,7 @@ async def test_long_poll_loop_incremental_update(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=real_zones,
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -572,6 +575,7 @@ async def test_stop_long_poll_cancels_running_task(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=list(MOCK_THERMO_ZONES),
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
             CameDomoticUnofficialDataUpdateCoordinator,
@@ -611,6 +615,7 @@ async def test_merge_updates_known_zone(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=real_zones,
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -653,6 +658,7 @@ async def test_merge_updates_unknown_zone_ignored(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=real_zones,
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -690,6 +696,7 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=real_zones,
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
     ):
@@ -715,6 +722,102 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
     assert zone.antifreeze == 5.0  # preserved
     assert zone.name == "Living Room"  # preserved
     assert zone.floor_ind == 0  # preserved
+
+
+# --- _merge_updates (scenarios) ---
+
+
+async def test_merge_updates_known_scenario(hass):
+    """Test merging an update for a known scenario updates its raw_data."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    mock_scenario = MagicMock()
+    mock_scenario.id = 10
+    mock_scenario.name = "Good Morning"
+    mock_scenario.scenario_status.name = "OFF"
+    mock_scenario.user_defined = 1
+    mock_scenario.raw_data = {"id": 10, "name": "Good Morning", "status": 0}
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_scenarios",
+            return_value=[mock_scenario],
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Create a scenario update changing status
+    mock_update = MagicMock()
+    mock_update.id = 10
+    mock_update.name = "Good Morning"
+    mock_update.raw_data = {"id": 10, "status": 1}
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    scenario = coordinator.data.scenarios[10]
+    # Status should be updated
+    assert scenario.raw_data["status"] == 1
+    # Name should be preserved
+    assert scenario.raw_data["name"] == "Good Morning"
+
+
+async def test_merge_updates_unknown_scenario_ignored(hass):
+    """Test that updates for unknown scenarios are silently ignored."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    mock_scenario = MagicMock()
+    mock_scenario.id = 10
+    mock_scenario.name = "Good Morning"
+    mock_scenario.scenario_status.name = "OFF"
+    mock_scenario.user_defined = 1
+    mock_scenario.raw_data = {"id": 10, "name": "Good Morning", "status": 0}
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_scenarios",
+            return_value=[mock_scenario],
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    mock_update = MagicMock()
+    mock_update.id = 999  # unknown scenario
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    # Original scenario should still be present
+    assert len(coordinator.data.scenarios) == 1
+    assert 10 in coordinator.data.scenarios
 
 
 # --- Session recycling (cseq reset) ---

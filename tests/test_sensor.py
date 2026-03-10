@@ -100,6 +100,7 @@ async def _setup_entry(hass, mock_zones):
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=mock_zones,
         ),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),
     ):
