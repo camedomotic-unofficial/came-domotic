@@ -1,6 +1,6 @@
 {
+  "title": "CAME Domotic Unofficial",
   "config": {
-    "title": "CAME Domotic Unofficial",
     "flow_title": "CAME ETI/Domo at {host}",
     "step": {
       "user": {
