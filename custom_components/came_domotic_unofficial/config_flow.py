@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from aiocamedomotic import async_is_came_endpoint
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -16,6 +17,7 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import voluptuous as vol
 
 from .api import (
@@ -114,6 +116,85 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "documentation_url": "https://github.com/camedomotic-unofficial/came-domotic-unofficial"
             },
+            errors=errors,
+        )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle DHCP discovery of a CAME Domotic server."""
+        host = discovery_info.ip
+        _LOGGER.debug(
+            "DHCP discovery: potential CAME device at %s (MAC: %s)",
+            host,
+            discovery_info.macaddress,
+        )
+
+        # Verify this is actually a CAME endpoint (filters out other BPT devices)
+        session = async_get_clientsession(self.hass)
+        if not await async_is_came_endpoint(host, websession=session):
+            _LOGGER.debug("DHCP: host %s is not a CAME endpoint, ignoring", host)
+            return self.async_abort(reason="not_came_device")
+        _LOGGER.debug("DHCP: host %s confirmed as CAME endpoint", host)
+
+        # Check if any existing entry already uses this host
+        self._async_abort_entries_match({CONF_HOST: host})
+        _LOGGER.debug("DHCP: host %s is not yet configured, proceeding", host)
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"host": host}
+        return await self.async_step_dhcp_confirm()
+
+    async def async_step_dhcp_confirm(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> ConfigFlowResult:
+        """Confirm DHCP discovery and collect credentials."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                keycode = await _async_test_credentials(
+                    self.hass,
+                    self._discovered_host,
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception during DHCP setup")
+                errors["base"] = "unknown"
+            else:
+                await self.async_set_unique_id(keycode)
+                self._abort_if_unique_id_configured()
+                _LOGGER.info(
+                    "DHCP: configuration entry created for %s", self._discovered_host
+                )
+                return self.async_create_entry(
+                    title=f"CAME Domotic ({self._discovered_host})",
+                    data={
+                        CONF_HOST: self._discovered_host,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                )
+
+        dhcp_confirm_schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
+        return self.async_show_form(
+            step_id="dhcp_confirm",
+            data_schema=self.add_suggested_values_to_schema(
+                dhcp_confirm_schema,
+                user_input or {},
+            ),
+            description_placeholders={"host": self._discovered_host},
             errors=errors,
         )
 
