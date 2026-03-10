@@ -85,6 +85,7 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             server_info = await self.api.async_get_server_info()
             thermo_zones = await self.api.async_get_thermo_zones()
             scenarios = await self.api.async_get_scenarios()
+            openings = await self.api.async_get_openings()
         except CameDomoticUnofficialApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -93,14 +94,17 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             raise UpdateFailed(exception) from exception
 
         _LOGGER.debug(
-            "Full data fetch complete: %d thermo zone(s), %d scenario(s)",
+            "Full data fetch complete: %d thermo zone(s), %d scenario(s), "
+            "%d opening(s)",
             len(thermo_zones),
             len(scenarios),
+            len(openings),
         )
         return CameDomoticServerData(
             server_info=server_info,
             thermo_zones={z.act_id: z for z in thermo_zones},
             scenarios={s.id: s for s in scenarios},
+            openings={o.open_act_id: o for o in openings},
         )
 
     def start_long_poll(self) -> None:
@@ -292,4 +296,25 @@ class CameDomoticUnofficialDataUpdateCoordinator(
                 _LOGGER.debug(
                     "Received update for unknown scenario id=%d, ignoring",
                     update.id,
+                )
+
+        # Merge opening updates
+        opening_updates = update_list.get_typed_by_device_type(DeviceType.OPENING)
+        _LOGGER.debug(
+            "Merging incremental updates: %d opening update(s)",
+            len(opening_updates) if opening_updates else 0,
+        )
+        for update in opening_updates:
+            opening = self.data.openings.get(update.open_act_id)
+            if opening is not None:
+                opening.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to opening '%s' (open_act_id=%d)",
+                    update.name,
+                    update.open_act_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown opening open_act_id=%d, ignoring",
+                    update.open_act_id,
                 )

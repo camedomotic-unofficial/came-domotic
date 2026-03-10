@@ -15,7 +15,14 @@ from aiocamedomotic.errors import (
     CameDomoticServerError,
     CameDomoticServerNotFoundError,
 )
-from aiocamedomotic.models import Scenario, ServerInfo, ThermoZone, UpdateList
+from aiocamedomotic.models import (
+    Opening,
+    OpeningStatus,
+    Scenario,
+    ServerInfo,
+    ThermoZone,
+    UpdateList,
+)
 import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -123,6 +130,35 @@ class CameDomoticUnofficialApiClient:
         zones = await self._api.async_get_thermo_zones()
         _LOGGER.debug("Fetched %d thermo zone(s)", len(zones))
         return zones
+
+    @_translate_errors
+    async def async_get_openings(self) -> list[Opening]:
+        """Fetch openings from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching openings from %s", self._host)
+        openings = await self._api.async_get_openings()
+        _LOGGER.debug("Fetched %d opening(s)", len(openings))
+        return openings
+
+    @_translate_errors
+    async def async_set_opening_status(
+        self, opening: Opening, status: OpeningStatus
+    ) -> None:
+        """Set the status (motor direction) of an opening.
+
+        Args:
+            opening: The Opening object to control.
+            status: The desired OpeningStatus (STOPPED, OPENING, CLOSING,
+                    SLAT_OPEN, SLAT_CLOSE).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting opening '%s' (open_act_id=%d) to %s",
+            opening.name,
+            opening.open_act_id,
+            status.name,
+        )
+        await opening.async_set_status(status)
 
     @_translate_errors
     async def async_get_scenarios(self) -> list[Scenario]:
