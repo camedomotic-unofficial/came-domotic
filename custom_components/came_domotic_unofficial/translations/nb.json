@@ -8,16 +8,14 @@
         "data": {
           "host": "Vert",
           "username": "Brukernavn",
-          "password": "Passord",
-          "scan_interval": "Skanneintervall (sekunder)"
+          "password": "Passord"
         }
       },
       "reconfigure": {
         "data": {
           "host": "Vert",
           "username": "Brukernavn",
-          "password": "Passord",
-          "scan_interval": "Skanneintervall (sekunder)"
+          "password": "Passord"
         }
       }
     },
@@ -29,20 +27,6 @@
     "abort": {
       "already_configured": "Enheten er allerede konfigurert.",
       "reconfigure_successful": "Rekonfigurering vellykket."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "host": "Vert",
-          "username": "Brukernavn",
-          "password": "Passord",
-          "scan_interval": "Skanneintervall (sekunder)"
-        },
-        "description": "Konfigurer alternativer.",
-        "title": "CAME Domotic Unofficial Alternativer"
-      }
     }
   }
 }

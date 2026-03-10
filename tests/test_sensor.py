@@ -10,11 +10,18 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.came_domotic_unofficial.const import DOMAIN
+from custom_components.came_domotic_unofficial.models import CameDomoticServerData
 
+from .conftest import _mock_server_info
 from .const import MOCK_CONFIG
 
 _API_CLIENT = (
     "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
+)
+
+_COORDINATOR = (
+    "custom_components.came_domotic_unofficial.coordinator"
+    ".CameDomoticUnofficialDataUpdateCoordinator"
 )
 
 
@@ -29,6 +36,7 @@ def _mock_thermo_zone(
     antifreeze=5.0,
     floor_ind=0,
     room_ind=0,
+    leaf=True,
 ):
     """Create a mock ThermoZone object."""
     zone = MagicMock()
@@ -42,18 +50,58 @@ def _mock_thermo_zone(
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
     zone.room_ind = room_ind
+    zone.leaf = leaf
+    zone.raw_data = {
+        "act_id": act_id,
+        "name": name,
+        "temp_dec": int(temperature * 10),
+        "set_point": int(set_point * 10),
+        "mode": 2 if mode == "AUTO" else 1,
+        "season": season,
+        "status": status,
+        "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
+        "leaf": int(leaf),
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
     return zone
 
 
-async def _setup_entry(hass, mock_data):
-    """Set up a config entry with the given mock API data."""
+def _mock_zones_list():
+    """Return a list of mock thermo zones for API mocking."""
+    return [
+        _mock_thermo_zone(
+            1, "Living Room", 20.0, set_point=21.0, floor_ind=0, room_ind=0
+        ),
+        _mock_thermo_zone(
+            52,
+            "Bedroom",
+            19.5,
+            set_point=20.0,
+            mode="MANUAL",
+            floor_ind=1,
+            room_ind=1,
+        ),
+    ]
+
+
+async def _setup_entry(hass, mock_zones):
+    """Set up a config entry with the given mock thermo zones list."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
     with (
         patch(f"{_API_CLIENT}.async_connect"),
-        patch(f"{_API_CLIENT}.async_get_data", return_value=mock_data),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_thermo_zones",
+            return_value=mock_zones,
+        ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -123,20 +171,15 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     }
-    assert unique_ids == {"test_thermo_zone_1", "test_thermo_zone_52"}
+    assert unique_ids == {
+        "test_thermo_zone_1_temperature",
+        "test_thermo_zone_52_temperature",
+    }
 
 
 async def test_no_thermo_zones(hass):
     """Test no sensor entities created when there are no thermo zones."""
-    mock_data = {
-        "keycode": "AA:BB:CC:DD:EE:FF",
-        "software_version": "1.2.3",
-        "server_type": "ETI/Domo",
-        "board": "board_v1",
-        "serial_number": "0011FFEE",
-        "thermo_zones": [],
-    }
-    config_entry = await _setup_entry(hass, mock_data)
+    config_entry = await _setup_entry(hass, [])
 
     registry = er.async_get(hass)
     entries = [
@@ -168,38 +211,24 @@ async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
 
 async def test_thermo_zone_sensor_zone_not_found(hass):
     """Test sensor returns unknown when zone disappears from data."""
-    initial_data = {
-        "keycode": "AA:BB:CC:DD:EE:FF",
-        "software_version": "1.2.3",
-        "server_type": "ETI/Domo",
-        "board": "board_v1",
-        "serial_number": "0011FFEE",
-        "thermo_zones": [_mock_thermo_zone(1, "Living Room", 20.0)],
-    }
-    updated_data = {
-        "keycode": "AA:BB:CC:DD:EE:FF",
-        "software_version": "1.2.3",
-        "server_type": "ETI/Domo",
-        "board": "board_v1",
-        "serial_number": "0011FFEE",
-        "thermo_zones": [],
-    }
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    config_entry.add_to_hass(hass)
+    initial_zones = [_mock_thermo_zone(1, "Living Room", 20.0)]
+
+    config_entry = await _setup_entry(hass, initial_zones)
+
+    # Now simulate a refresh where zone 1 is gone
+    coordinator = config_entry.runtime_data.coordinator
+    empty_data = CameDomoticServerData(
+        server_info=_mock_server_info(),
+        thermo_zones={},
+    )
 
     with (
-        patch(f"{_API_CLIENT}.async_connect"),
-        patch(
-            f"{_API_CLIENT}.async_get_data",
-            side_effect=[initial_data, updated_data],
+        patch.object(
+            coordinator,
+            "_async_update_data",
+            return_value=empty_data,
         ),
-        patch(f"{_API_CLIENT}.async_dispose"),
     ):
-        await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
-
-        # Trigger a refresh with updated data (zone removed)
-        coordinator = config_entry.runtime_data.coordinator
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 

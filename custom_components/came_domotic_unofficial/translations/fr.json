@@ -8,16 +8,14 @@
         "data": {
           "host": "Hôte",
           "username": "Identifiant",
-          "password": "Mot de Passe",
-          "scan_interval": "Intervalle de scan (secondes)"
+          "password": "Mot de Passe"
         }
       },
       "reconfigure": {
         "data": {
           "host": "Hôte",
           "username": "Identifiant",
-          "password": "Mot de Passe",
-          "scan_interval": "Intervalle de scan (secondes)"
+          "password": "Mot de Passe"
         }
       }
     },
@@ -29,20 +27,6 @@
     "abort": {
       "already_configured": "L'appareil est déjà configuré.",
       "reconfigure_successful": "Reconfiguration réussie."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "host": "Hôte",
-          "username": "Identifiant",
-          "password": "Mot de Passe",
-          "scan_interval": "Intervalle de scan (secondes)"
-        },
-        "description": "Configurer les options.",
-        "title": "Options CAME Domotic Unofficial"
-      }
     }
   }
 }

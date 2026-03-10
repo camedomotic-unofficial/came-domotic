@@ -8,6 +8,7 @@ from custom_components.came_domotic_unofficial.api import (
     CameDomoticUnofficialApiClientAuthenticationError,
     CameDomoticUnofficialApiClientCommunicationError,
 )
+from custom_components.came_domotic_unofficial.models import CameDomoticServerData
 
 from .const import MOCK_KEYCODE
 
@@ -15,6 +16,10 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 
 _API_CLIENT = (
     "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
+)
+_COORDINATOR = (
+    "custom_components.came_domotic_unofficial.coordinator"
+    ".CameDomoticUnofficialDataUpdateCoordinator"
 )
 
 
@@ -29,8 +34,13 @@ def _mock_thermo_zone(
     antifreeze=5.0,
     floor_ind=0,
     room_ind=0,
+    leaf=True,
 ):
-    """Create a mock ThermoZone object."""
+    """Create a mock ThermoZone object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
     zone = MagicMock()
     zone.act_id = act_id
     zone.name = name
@@ -42,6 +52,20 @@ def _mock_thermo_zone(
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
     zone.room_ind = room_ind
+    zone.leaf = leaf
+    zone.raw_data = {
+        "act_id": act_id,
+        "name": name,
+        "temp_dec": int(temperature * 10),
+        "set_point": int(set_point * 10),
+        "mode": 2 if mode == "AUTO" else 1,
+        "season": 1 if season == "winter" else 2,
+        "status": status,
+        "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
+        "leaf": int(leaf),
+        "floor_ind": floor_ind,
+        "room_ind": room_ind,
+    }
     return zone
 
 
@@ -51,16 +75,6 @@ MOCK_THERMO_ZONES = [
         52, "Bedroom", 19.5, set_point=20.0, mode="MANUAL", floor_ind=1, room_ind=1
     ),
 ]
-
-# Mock data matching what async_get_data() returns from the CAME server
-MOCK_API_DATA = {
-    "keycode": MOCK_KEYCODE,
-    "software_version": "1.2.3",
-    "server_type": "ETI/Domo",
-    "board": "board_v1",
-    "serial_number": "0011FFEE",
-    "thermo_zones": MOCK_THERMO_ZONES,
-}
 
 
 def _mock_server_info():
@@ -74,6 +88,14 @@ def _mock_server_info():
     return info
 
 
+MOCK_SERVER_INFO = _mock_server_info()
+
+MOCK_SERVER_DATA = CameDomoticServerData(
+    server_info=MOCK_SERVER_INFO,
+    thermo_zones={z.act_id: z for z in MOCK_THERMO_ZONES},
+)
+
+
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for all tests via the plugin fixture."""
@@ -82,11 +104,19 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 @pytest.fixture(name="bypass_get_data")
 def bypass_get_data_fixture():
-    """Skip calls to get data from API, returning realistic mock data."""
+    """Skip calls to get data from API and suppress long-poll task."""
     with (
         patch(f"{_API_CLIENT}.async_connect"),
-        patch(f"{_API_CLIENT}.async_get_data", return_value=MOCK_API_DATA),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_thermo_zones",
+            return_value=list(MOCK_THERMO_ZONES),
+        ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 
@@ -97,12 +127,13 @@ def error_get_data_fixture():
     with (
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
-            f"{_API_CLIENT}.async_get_data",
+            f"{_API_CLIENT}.async_get_server_info",
             side_effect=CameDomoticUnofficialApiClientCommunicationError(
                 "Connection error"
             ),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 
@@ -113,12 +144,13 @@ def auth_error_get_data_fixture():
     with (
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
-            f"{_API_CLIENT}.async_get_data",
+            f"{_API_CLIENT}.async_get_server_info",
             side_effect=CameDomoticUnofficialApiClientAuthenticationError(
                 "Invalid credentials"
             ),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_COORDINATOR}.start_long_poll"),
     ):
         yield
 

@@ -5,21 +5,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from aiocamedomotic import async_is_came_endpoint
 from homeassistant.config_entries import (
-    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
 )
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
-from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import voluptuous as vol
 
 from .api import (
@@ -28,7 +26,7 @@ from .api import (
     CameDomoticUnofficialApiClientCommunicationError,
     CameDomoticUnofficialApiClientError,
 )
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,10 +35,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
-        vol.Optional(
-            CONF_SCAN_INTERVAL,
-            default=DEFAULT_SCAN_INTERVAL,
-        ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
     }
 )
 
@@ -78,12 +72,6 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Get the options flow for this handler."""
-        return CameDomoticUnofficialOptionsFlowHandler()
-
     async def async_step_user(
         self,
         user_input: dict[str, Any] | None = None,
@@ -111,27 +99,102 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(keycode)
                 self._abort_if_unique_id_configured()
-                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
-                options = {
-                    CONF_SCAN_INTERVAL: user_input.get(
-                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-                    ),
-                }
                 _LOGGER.info(
                     "Configuration entry created for %s", user_input[CONF_HOST]
                 )
                 return self.async_create_entry(
                     title=f"CAME Domotic ({user_input[CONF_HOST]})",
-                    data=data,
-                    options=options,
+                    data=user_input,
                 )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA,
+                user_input or {},
+            ),
             description_placeholders={
                 "documentation_url": "https://github.com/camedomotic-unofficial/came-domotic-unofficial"
             },
+            errors=errors,
+        )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle DHCP discovery of a CAME Domotic server."""
+        host = discovery_info.ip
+        _LOGGER.debug(
+            "DHCP discovery: potential CAME device at %s (MAC: %s)",
+            host,
+            discovery_info.macaddress,
+        )
+
+        # Verify this is actually a CAME endpoint (filters out other BPT devices)
+        session = async_get_clientsession(self.hass)
+        if not await async_is_came_endpoint(host, websession=session):
+            _LOGGER.debug("DHCP: host %s is not a CAME endpoint, ignoring", host)
+            return self.async_abort(reason="not_came_device")
+        _LOGGER.debug("DHCP: host %s confirmed as CAME endpoint", host)
+
+        # Check if any existing entry already uses this host
+        self._async_abort_entries_match({CONF_HOST: host})
+        _LOGGER.debug("DHCP: host %s is not yet configured, proceeding", host)
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"host": host}
+        return await self.async_step_dhcp_confirm()
+
+    async def async_step_dhcp_confirm(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> ConfigFlowResult:
+        """Confirm DHCP discovery and collect credentials."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                keycode = await _async_test_credentials(
+                    self.hass,
+                    self._discovered_host,
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception during DHCP setup")
+                errors["base"] = "unknown"
+            else:
+                await self.async_set_unique_id(keycode)
+                self._abort_if_unique_id_configured()
+                _LOGGER.info(
+                    "DHCP: configuration entry created for %s", self._discovered_host
+                )
+                return self.async_create_entry(
+                    title=f"CAME Domotic ({self._discovered_host})",
+                    data={
+                        CONF_HOST: self._discovered_host,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                )
+
+        dhcp_confirm_schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
+        return self.async_show_form(
+            step_id="dhcp_confirm",
+            data_schema=self.add_suggested_values_to_schema(
+                dhcp_confirm_schema,
+                user_input or {},
+            ),
+            description_placeholders={"host": self._discovered_host},
             errors=errors,
         )
 
@@ -159,8 +222,15 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                     user_input[CONF_PASSWORD],
                 )
             except CannotConnect:
+                _LOGGER.warning(
+                    "Reauth: cannot connect to %s", reauth_entry.data[CONF_HOST]
+                )
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
+                _LOGGER.warning(
+                    "Reauth: invalid authentication for %s",
+                    reauth_entry.data[CONF_HOST],
+                )
                 errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception during reauth")
@@ -175,16 +245,20 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        suggested_values = user_input or {
+            CONF_USERNAME: reauth_entry.data[CONF_USERNAME],
+        }
+        reauth_schema = vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USERNAME,
-                        default=reauth_entry.data[CONF_USERNAME],
-                    ): str,
-                    vol.Required(CONF_PASSWORD): str,
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                reauth_schema,
+                suggested_values,
             ),
             errors=errors,
         )
@@ -220,80 +294,34 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                data = {k: v for k, v in user_input.items() if k != CONF_SCAN_INTERVAL}
-                options = {
-                    CONF_SCAN_INTERVAL: user_input.get(
-                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-                    ),
-                }
                 _LOGGER.info(
                     "Configuration entry updated for %s", user_input[CONF_HOST]
                 )
                 return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     unique_id=reconfigure_entry.unique_id,
-                    data={**reconfigure_entry.data, **data},
-                    options=options,
+                    data={**reconfigure_entry.data, **user_input},
                     reason="reconfigure_successful",
                 )
 
+        suggested_values = user_input or {
+            CONF_HOST: reconfigure_entry.data[CONF_HOST],
+            CONF_USERNAME: reconfigure_entry.data[CONF_USERNAME],
+        }
+        reconfigure_schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST): str,
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+            }
+        )
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_HOST,
-                        default=reconfigure_entry.data[CONF_HOST],
-                    ): str,
-                    vol.Required(
-                        CONF_USERNAME,
-                        default=reconfigure_entry.data[CONF_USERNAME],
-                    ): str,
-                    vol.Required(CONF_PASSWORD): str,
-                    vol.Optional(
-                        CONF_SCAN_INTERVAL,
-                        default=reconfigure_entry.options.get(
-                            CONF_SCAN_INTERVAL,
-                            DEFAULT_SCAN_INTERVAL,
-                        ),
-                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                reconfigure_schema,
+                suggested_values,
             ),
             errors=errors,
-        )
-
-
-class CameDomoticUnofficialOptionsFlowHandler(OptionsFlow):
-    """Config flow options handler for came_domotic_unofficial."""
-
-    async def async_step_init(
-        self,
-        user_input: dict[str, Any] | None = None,
-    ) -> ConfigFlowResult:
-        """Manage the options."""
-        if user_input is not None:
-            _LOGGER.debug(
-                "Options updated: scan_interval=%ds",
-                user_input[CONF_SCAN_INTERVAL],
-            )
-            return self.async_create_entry(
-                title="",
-                data={CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]},
-            )
-
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_SCAN_INTERVAL,
-                        default=self.config_entry.options.get(
-                            CONF_SCAN_INTERVAL,
-                            DEFAULT_SCAN_INTERVAL,
-                        ),
-                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
-                }
-            ),
         )
 
 

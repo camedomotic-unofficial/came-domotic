@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import logging
 from typing import Any
 
+from aiocamedomotic.models import ThermoZone
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.const import UnitOfTemperature
@@ -21,6 +25,24 @@ from .entity import CameDomoticUnofficialEntity
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True, kw_only=True)
+class CameDomoticSensorDescription(SensorEntityDescription):
+    """Describes a CAME Domotic sensor entity."""
+
+    value_fn: Callable[[ThermoZone], float | str | None]
+
+
+THERMO_ZONE_SENSORS: tuple[CameDomoticSensorDescription, ...] = (
+    CameDomoticSensorDescription(
+        key="temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda zone: zone.temperature,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: CameDomoticUnofficialConfigEntry,
@@ -28,53 +50,48 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensor platform."""
     coordinator = entry.runtime_data.coordinator
-    zones = coordinator.data.get("thermo_zones", [])
+    zones = coordinator.data.thermo_zones
     _LOGGER.debug("Setting up %d thermo zone sensor(s)", len(zones))
     async_add_entities(
-        CameDomoticThermoZoneSensor(coordinator, zone.act_id, zone.name)
-        for zone in zones
+        CameDomoticThermoZoneSensor(coordinator, act_id, zone.name, description)
+        for act_id, zone in zones.items()
+        for description in THERMO_ZONE_SENSORS
     )
 
 
 class CameDomoticThermoZoneSensor(CameDomoticUnofficialEntity, SensorEntity):
-    """Sensor for a CAME Domotic thermoregulation zone temperature."""
+    """Sensor for a CAME Domotic thermoregulation zone."""
 
-    _attr_has_entity_name = False
-    _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    entity_description: CameDomoticSensorDescription
 
     def __init__(
         self,
         coordinator: CameDomoticUnofficialDataUpdateCoordinator,
         act_id: int,
         zone_name: str,
+        description: CameDomoticSensorDescription,
     ) -> None:
         """Initialize the thermo zone sensor."""
-        super().__init__(coordinator, entity_key=f"thermo_zone_{act_id}")
+        super().__init__(
+            coordinator, entity_key=f"thermo_zone_{act_id}_{description.key}"
+        )
+        self.entity_description = description
         self._act_id = act_id
+        self._attr_has_entity_name = False
         self._attr_name = zone_name
 
-    def _find_zone(self):
-        """Find the thermo zone matching this sensor's act_id."""
-        for zone in self.coordinator.data.get("thermo_zones", []):
-            if zone.act_id == self._act_id:
-                return zone
-        _LOGGER.warning(
-            "Thermo zone with act_id %d not found in coordinator data", self._act_id
-        )
-        return None
-
     @property
-    def native_value(self) -> float | None:
-        """Return the current temperature of the zone."""
-        zone = self._find_zone()
-        return zone.temperature if zone else None
+    def native_value(self) -> float | str | None:
+        """Return the current value of the sensor."""
+        zone = self.coordinator.data.thermo_zones.get(self._act_id)
+        if zone is None:
+            return None
+        return self.entity_description.value_fn(zone)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return additional thermo zone attributes."""
-        zone = self._find_zone()
+        zone = self.coordinator.data.thermo_zones.get(self._act_id)
         if zone is None:
             return None
         return {

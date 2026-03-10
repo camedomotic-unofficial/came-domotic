@@ -31,13 +31,18 @@ class RuntimeData:
     """Class to hold runtime data."""
 
     coordinator: CameDomoticUnofficialDataUpdateCoordinator
+    client: CameDomoticUnofficialApiClient
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: CameDomoticUnofficialConfigEntry,
 ) -> bool:
-    """Set up this integration using UI."""
+    """Set up this integration using UI.
+
+    Creates the API client, performs initial data fetch, and starts the
+    background long-polling task for real-time updates.
+    """
     host = entry.data[CONF_HOST]
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
@@ -57,23 +62,15 @@ async def async_setup_entry(
     await coordinator.async_config_entry_first_refresh()
     _LOGGER.debug("Initial data refresh completed")
 
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    # Start the long-polling background task for real-time updates
+    coordinator.start_long_poll()
 
-    entry.runtime_data = RuntimeData(coordinator)
+    entry.runtime_data = RuntimeData(coordinator=coordinator, client=client)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     _LOGGER.info("CAME Domotic integration setup complete for %s", host)
     return True
-
-
-async def _async_update_listener(
-    hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
-) -> None:
-    """Handle config options update."""
-    _LOGGER.debug("Configuration options updated, reloading")
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_remove_config_entry_device(
@@ -92,11 +89,19 @@ async def async_unload_entry(
     hass: HomeAssistant,
     entry: CameDomoticUnofficialConfigEntry,
 ) -> bool:
-    """Handle removal of an entry."""
+    """Handle removal of an entry.
+
+    Stops the long-polling task, unloads platforms, and disposes the
+    API connection.
+    """
     _LOGGER.debug("Unloading CAME Domotic integration")
+
+    # Stop long-poll task before unloading platforms
+    await entry.runtime_data.coordinator.stop_long_poll()
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        await entry.runtime_data.coordinator.api.async_dispose()
+        await entry.runtime_data.client.async_dispose()
         _LOGGER.info("CAME Domotic integration unloaded successfully")
     else:
         _LOGGER.warning("Failed to unload platforms, skipping API disposal")

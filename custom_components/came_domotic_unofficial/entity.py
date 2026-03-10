@@ -27,12 +27,13 @@ class CameDomoticUnofficialEntity(
         assert coordinator.config_entry is not None  # noqa: S101  # nosec B101
         entry_id = coordinator.config_entry.entry_id
         self._attr_unique_id = f"{entry_id}_{entity_key}" if entity_key else entry_id
+        server = coordinator.data.server_info
         self._attr_device_info = DeviceInfo(
             name=f"CAME Domotic ({coordinator.hass.config.location_name})",
             identifiers={(DOMAIN, entry_id)},
-            hw_version=coordinator.data.get("board"),
+            hw_version=server.board,
             manufacturer=MANUFACTURER,
-            model=f"Server type: {coordinator.data.get('server_type')} - Board: {coordinator.data.get('board')}",
-            serial_number=coordinator.data.get("serial_number"),
-            sw_version=coordinator.data.get("software_version"),
+            model=f"Server type: {server.type} - Board: {server.board}",
+            serial_number=server.serial,
+            sw_version=server.swver,
         )
