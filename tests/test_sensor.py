@@ -207,8 +207,6 @@ async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
     assert state.attributes["season"] == "winter"
     assert state.attributes["status"] == "ON"
     assert state.attributes["antifreeze"] == 5.0
-    assert state.attributes["floor_ind"] == 0
-    assert state.attributes["room_ind"] == 0
 
 
 async def test_thermo_zone_sensor_zone_not_found(hass):

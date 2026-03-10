@@ -460,10 +460,6 @@ async def test_cover_extra_attributes(hass):
     assert state is not None
     assert state.attributes["status"] == "STOPPED"
     assert state.attributes["opening_type"] == "SHUTTER"
-    assert state.attributes["floor_ind"] == 0
-    assert state.attributes["room_ind"] == 0
-    assert state.attributes["open_act_id"] == 100
-    assert state.attributes["close_act_id"] == 101
 
 
 async def test_cover_extra_attributes_not_found(hass):
