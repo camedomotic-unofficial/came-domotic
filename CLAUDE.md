@@ -66,7 +66,7 @@ Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (securi
 - **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`. Includes `async_get_updates()` for long-polling.
 - **coordinator.py** - Push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`.
 - **entity.py** - Base `CoordinatorEntity` subclass setting common attributes (attribution, device info, unique_id)
-- **config_flow.py** - Setup flow (user step, reconfigure, reauth)
+- **config_flow.py** - Setup flow (user step, DHCP discovery, reconfigure, reauth)
 - **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`)
 
 ### Adding a new device type platform
@@ -98,6 +98,17 @@ Pattern for adding future platforms (e.g., lights, openings):
 - **WARNING**: recoverable issues (auth failures, missing zones, unload failures)
 - Never log credentials (passwords, usernames). Only log host addresses for connection context.
 - Avoid double-logging errors that are caught and re-raised — log before re-raising only when the context would otherwise be lost
+
+## CI & Merge Workflow
+
+The `main` branch is protected by a GitHub ruleset. All four CI checks must pass before a PR can merge:
+
+- **Pre-commit** — ruff, mypy, bandit, codespell, prettier
+- **HACS** — HACS store validation
+- **Hassfest** — Home Assistant integration validation (manifest, translations, config flow)
+- **Run tests** — pytest with 100% coverage requirement
+
+These run on every PR and push to `main` (defined in `.github/workflows/tests.yaml`). Always run `pre-commit run --all-files` and `pytest` locally before pushing to catch issues early.
 
 ## Code Style
 
