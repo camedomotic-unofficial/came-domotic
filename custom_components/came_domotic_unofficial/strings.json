@@ -7,45 +7,45 @@
         "title": "CAME Domotic Unofficial",
         "description": "If you need help with the configuration have a look here: {documentation_url}",
         "data": {
-          "host": "Host",
-          "username": "Username",
-          "password": "Password"
+          "host": "[%key:common::config_flow::data::host%]",
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
         }
       },
       "dhcp_confirm": {
         "title": "CAME Domotic server discovered",
         "description": "A CAME Domotic server was found at **{host}**.\nPlease enter your credentials to complete the setup.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
         }
       },
       "reauth_confirm": {
         "title": "Re-authenticate",
         "description": "Please re-enter your credentials.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
         }
       },
       "reconfigure": {
         "data": {
-          "host": "Host",
-          "username": "Username",
-          "password": "Password"
+          "host": "[%key:common::config_flow::data::host%]",
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect.",
-      "invalid_auth": "Invalid authentication.",
-      "unknown": "Unexpected error."
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
-      "already_configured": "This CAME server is already configured.",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "not_came_device": "The discovered device is not a CAME Domotic server.",
-      "reauth_successful": "Re-authentication successful.",
-      "reconfigure_successful": "Reconfiguration successful."
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
     }
   },
   "services": {
@@ -58,11 +58,11 @@
           "description": "The CAME Domotic server to create the user on."
         },
         "username": {
-          "name": "Username",
+          "name": "[%key:common::config_flow::data::username%]",
           "description": "The username for the new user."
         },
         "password": {
-          "name": "Password",
+          "name": "[%key:common::config_flow::data::password%]",
           "description": "The password for the new user."
         },
         "group": {
@@ -80,7 +80,7 @@
           "description": "The CAME Domotic server to delete the user from."
         },
         "username": {
-          "name": "Username",
+          "name": "[%key:common::config_flow::data::username%]",
           "description": "The username of the user to delete."
         }
       }
@@ -94,7 +94,7 @@
           "description": "The CAME Domotic server."
         },
         "username": {
-          "name": "Username",
+          "name": "[%key:common::config_flow::data::username%]",
           "description": "The username whose password to change."
         },
         "current_password": {
