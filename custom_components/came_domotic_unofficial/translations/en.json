@@ -37,15 +37,15 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect.",
-      "invalid_auth": "Invalid authentication.",
-      "unknown": "Unexpected error."
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "Device is already configured.",
+      "already_configured": "Device is already configured",
       "not_came_device": "The discovered device is not a CAME Domotic server.",
-      "reauth_successful": "Re-authentication successful.",
-      "reconfigure_successful": "Reconfiguration successful."
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Reconfiguration was successful"
     }
   },
   "services": {
