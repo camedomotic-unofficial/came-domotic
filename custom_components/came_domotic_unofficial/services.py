@@ -32,14 +32,14 @@ _LOGGER = logging.getLogger(__name__)
 # Service names
 SERVICE_CREATE_USER = "create_user"
 SERVICE_DELETE_USER = "delete_user"
-SERVICE_CHANGE_PASSWORD = "change_password"  # noqa: S105
+SERVICE_CHANGE_PASSWORD = "change_password"  # noqa: S105  # nosec B105
 SERVICE_GET_TERMINAL_GROUPS = "get_terminal_groups"
 
 # Field attribute names
 ATTR_USERNAME = "username"
-ATTR_PASSWORD = "password"  # noqa: S105
-ATTR_CURRENT_PASSWORD = "current_password"  # noqa: S105
-ATTR_NEW_PASSWORD = "new_password"  # noqa: S105
+ATTR_PASSWORD = "password"  # noqa: S105  # nosec B105
+ATTR_CURRENT_PASSWORD = "current_password"  # noqa: S105  # nosec B105
+ATTR_NEW_PASSWORD = "new_password"  # noqa: S105  # nosec B105
 ATTR_GROUP = "group"
 
 # Voluptuous schemas

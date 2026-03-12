@@ -126,13 +126,13 @@
       "message": "Configuration entry is not loaded: {config_entry_id}"
     },
     "user_not_found": {
-      "message": "User '{username}' not found on the CAME server."
+      "message": "User {username} not found on the CAME server."
     },
     "cannot_delete_current_user": {
-      "message": "Cannot delete the currently authenticated user '{username}'."
+      "message": "Cannot delete the currently authenticated user {username}."
     },
     "group_not_found": {
-      "message": "Terminal group '{group}' not found on the CAME server. Use the 'get_terminal_groups' service to list available groups."
+      "message": "Terminal group {group} not found on the CAME server. Use the get_terminal_groups service to list available groups."
     },
     "service_comm_error": {
       "message": "Communication error with the CAME server: {error}"
