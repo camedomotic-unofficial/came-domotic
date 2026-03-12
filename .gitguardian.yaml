@@ -1,5 +1,3 @@
 paths-ignore:
   # Service action attribute constants — not actual passwords
   - "custom_components/came_domotic_unofficial/services.py"
-  # Test fixtures use dummy credentials
-  - "tests/"
