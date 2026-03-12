@@ -1,13 +1,13 @@
 {
   "_checkout": "2021.1.1",
-  "_output_dir": "/Users/fede/Documents/Sourcecode/came_domotic_unofficial",
+  "_output_dir": "/Users/fede/Documents/Sourcecode/came_domotic",
   "_repo_dir": "/Users/fede/.cookiecutters/cookiecutter-homeassistant-custom-component",
   "_template": "gh:oncleben31/cookiecutter-homeassistant-custom-component",
-  "class_name_prefix": "CameDomoticUnofficial",
-  "domain_name": "came_domotic_unofficial",
-  "friendly_name": "CAME Domotic Unofficial",
+  "class_name_prefix": "CameDomotic",
+  "domain_name": "came_domotic",
+  "friendly_name": "CAME Domotic",
   "github_user": "camedomotic-unofficial",
-  "project_name": "came-domotic-unofficial",
+  "project_name": "came-domotic",
   "test_suite": "yes",
   "version": "0.0.0"
 }

@@ -1,4 +1,4 @@
-"""CameDomoticUnofficialEntity class."""
+"""CameDomoticEntity class."""
 
 from __future__ import annotations
 
@@ -6,20 +6,18 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ATTRIBUTION, DOMAIN, MANUFACTURER
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
+from .coordinator import CameDomoticDataUpdateCoordinator
 
 
-class CameDomoticUnofficialEntity(
-    CoordinatorEntity[CameDomoticUnofficialDataUpdateCoordinator]
-):
-    """Base entity for CAME Domotic Unofficial."""
+class CameDomoticEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator]):
+    """Base entity for CAME Domotic."""
 
     _attr_attribution = ATTRIBUTION
     _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         entity_key: str = "",
     ) -> None:
         """Initialize."""

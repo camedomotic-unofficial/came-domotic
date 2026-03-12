@@ -1,4 +1,4 @@
-"""Tests for CAME Domotic Unofficial service actions."""
+"""Tests for CAME Domotic service actions."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
+from custom_components.came_domotic.api import (
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
 )
-from custom_components.came_domotic_unofficial.const import DOMAIN
-from custom_components.came_domotic_unofficial.services import (
+from custom_components.came_domotic.const import DOMAIN
+from custom_components.came_domotic.services import (
     ATTR_CURRENT_PASSWORD,
     ATTR_GROUP,
     ATTR_NEW_PASSWORD,
@@ -30,9 +30,7 @@ from custom_components.came_domotic_unofficial.services import (
 
 from .const import MOCK_CONFIG
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
 
 def _mock_user(name: str) -> MagicMock:
@@ -184,7 +182,7 @@ async def test_create_user_auth_error(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_add_user",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -208,7 +206,7 @@ async def test_create_user_comm_error(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_add_user",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -258,7 +256,7 @@ async def test_create_user_auth_error_on_get_groups(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_terminal_groups",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -283,7 +281,7 @@ async def test_create_user_comm_error_on_get_groups(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_terminal_groups",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -408,7 +406,7 @@ async def test_delete_user_auth_error_on_get_users(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_users",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -431,7 +429,7 @@ async def test_delete_user_comm_error_on_get_users(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_users",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -460,7 +458,7 @@ async def test_delete_user_auth_error_on_delete(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_delete_user",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -489,7 +487,7 @@ async def test_delete_user_comm_error_on_delete(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_delete_user",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -625,7 +623,7 @@ async def test_change_password_auth_error_on_get_users(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_users",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -650,7 +648,7 @@ async def test_change_password_comm_error_on_get_users(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_users",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -681,7 +679,7 @@ async def test_change_password_auth_error_on_change(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_change_user_password",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -712,7 +710,7 @@ async def test_change_password_comm_error_on_change(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_change_user_password",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -803,7 +801,7 @@ async def test_get_terminal_groups_auth_error(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_terminal_groups",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("bad creds"),
         ),
         pytest.raises(HomeAssistantError),
     ):
@@ -824,7 +822,7 @@ async def test_get_terminal_groups_comm_error(hass, bypass_get_data):
         patch.object(
             config_entry.runtime_data.client,
             "async_get_terminal_groups",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
         ),
         pytest.raises(HomeAssistantError),
     ):

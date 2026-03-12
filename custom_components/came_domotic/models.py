@@ -1,4 +1,4 @@
-"""Data models for CAME Domotic Unofficial."""
+"""Data models for CAME Domotic."""
 
 from __future__ import annotations
 

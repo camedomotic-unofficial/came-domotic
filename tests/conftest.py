@@ -1,4 +1,4 @@
-"""Global fixtures for CAME Domotic Unofficial integration."""
+"""Global fixtures for CAME Domotic integration."""
 
 from unittest.mock import MagicMock, patch
 
@@ -12,22 +12,19 @@ from aiocamedomotic.models import (
 )
 import pytest
 
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
+from custom_components.came_domotic.api import (
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
 )
-from custom_components.came_domotic_unofficial.models import CameDomoticServerData
+from custom_components.came_domotic.models import CameDomoticServerData
 
 from .const import MOCK_KEYCODE
 
 pytest_plugins = "pytest_homeassistant_custom_component"
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 _COORDINATOR = (
-    "custom_components.came_domotic_unofficial.coordinator"
-    ".CameDomoticUnofficialDataUpdateCoordinator"
+    "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
 
@@ -327,9 +324,7 @@ def error_get_data_fixture():
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError(
-                "Connection error"
-            ),
+            side_effect=CameDomoticApiClientCommunicationError("Connection error"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),
@@ -344,9 +339,7 @@ def auth_error_get_data_fixture():
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError(
-                "Invalid credentials"
-            ),
+            side_effect=CameDomoticApiClientAuthenticationError("Invalid credentials"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),

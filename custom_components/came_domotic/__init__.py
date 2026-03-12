@@ -1,8 +1,8 @@
 """
-Custom integration to integrate CAME Domotic Unofficial with Home Assistant.
+Custom integration to integrate CAME Domotic with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/camedomotic-unofficial/came-domotic-unofficial
+https://github.com/camedomotic-unofficial/came-domotic
 """
 
 from __future__ import annotations
@@ -18,9 +18,9 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
-from .api import CameDomoticUnofficialApiClient
+from .api import CameDomoticApiClient
 from .const import DOMAIN
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
+from .coordinator import CameDomoticDataUpdateCoordinator
 from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,26 +35,26 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
 ]
 
-type CameDomoticUnofficialConfigEntry = ConfigEntry[RuntimeData]
+type CameDomoticConfigEntry = ConfigEntry[RuntimeData]
 
 
 @dataclass
 class RuntimeData:
     """Class to hold runtime data."""
 
-    coordinator: CameDomoticUnofficialDataUpdateCoordinator
-    client: CameDomoticUnofficialApiClient
+    coordinator: CameDomoticDataUpdateCoordinator
+    client: CameDomoticApiClient
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the CAME Domotic Unofficial integration."""
+    """Set up the CAME Domotic integration."""
     await async_setup_services(hass)
     return True
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
 ) -> bool:
     """Set up this integration using UI.
 
@@ -68,11 +68,11 @@ async def async_setup_entry(
     _LOGGER.debug("Setting up CAME Domotic integration for host %s", host)
 
     session = async_get_clientsession(hass)
-    client = CameDomoticUnofficialApiClient(host, username, password, session)
+    client = CameDomoticApiClient(host, username, password, session)
     await client.async_connect()
     _LOGGER.debug("Connected to CAME server at %s", host)
 
-    coordinator = CameDomoticUnofficialDataUpdateCoordinator(
+    coordinator = CameDomoticDataUpdateCoordinator(
         hass,
         client=client,
         config_entry=entry,
@@ -105,7 +105,7 @@ async def async_remove_config_entry_device(
 
 async def async_unload_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
 ) -> bool:
     """Handle removal of an entry.
 

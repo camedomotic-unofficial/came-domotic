@@ -1,4 +1,4 @@
-"""Test CAME Domotic Unofficial binary sensor platform."""
+"""Test CAME Domotic binary sensor platform."""
 
 from __future__ import annotations
 
@@ -8,19 +8,16 @@ from aiocamedomotic.models import DigitalInputStatus
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic_unofficial.const import DOMAIN
-from custom_components.came_domotic_unofficial.models import CameDomoticServerData
+from custom_components.came_domotic.const import DOMAIN
+from custom_components.came_domotic.models import CameDomoticServerData
 
 from .conftest import _mock_digital_input, _mock_server_info
 from .const import MOCK_CONFIG
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
 _COORDINATOR = (
-    "custom_components.came_domotic_unofficial.coordinator"
-    ".CameDomoticUnofficialDataUpdateCoordinator"
+    "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
 

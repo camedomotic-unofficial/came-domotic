@@ -1,4 +1,4 @@
-"""Push-based DataUpdateCoordinator for CAME Domotic Unofficial.
+"""Push-based DataUpdateCoordinator for CAME Domotic.
 
 Uses a background long-polling task to receive incremental device state
 updates from the CAME server. The coordinator performs a full data fetch
@@ -19,9 +19,9 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
-    CameDomoticUnofficialApiClient,
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientError,
+    CameDomoticApiClient,
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientError,
 )
 from .const import (
     DEFAULT_LONG_POLL_TIMEOUT,
@@ -35,9 +35,7 @@ from .models import CameDomoticServerData
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
-class CameDomoticUnofficialDataUpdateCoordinator(
-    DataUpdateCoordinator[CameDomoticServerData]
-):
+class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerData]):
     """Coordinator that manages push-based data updates via long polling.
 
     On first refresh, performs a full data fetch from the CAME server.
@@ -51,7 +49,7 @@ class CameDomoticUnofficialDataUpdateCoordinator(
     def __init__(
         self,
         hass: HomeAssistant,
-        client: CameDomoticUnofficialApiClient,
+        client: CameDomoticApiClient,
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the push-based coordinator.
@@ -88,10 +86,10 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             openings = await self.api.async_get_openings()
             lights = await self.api.async_get_lights()
             digital_inputs = await self.api.async_get_digital_inputs()
-        except CameDomoticUnofficialApiClientAuthenticationError as exception:
+        except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
-        except CameDomoticUnofficialApiClientError as exception:
+        except CameDomoticApiClientError as exception:
             _LOGGER.warning("Error updating data: %s", exception)
             raise UpdateFailed(exception) from exception
 
@@ -185,14 +183,14 @@ class CameDomoticUnofficialDataUpdateCoordinator(
             if self._long_poll_count >= SESSION_RECYCLE_THRESHOLD:
                 try:
                     await self._async_recycle_session()
-                except CameDomoticUnofficialApiClientAuthenticationError:
+                except CameDomoticApiClientAuthenticationError:
                     _LOGGER.warning(
                         "Authentication failed during session recycle, "
                         "triggering reauth"
                     )
                     self.config_entry.async_start_reauth(self.hass)
                     return
-                except CameDomoticUnofficialApiClientError as err:
+                except CameDomoticApiClientError as err:
                     _LOGGER.warning(
                         "Error during session recycle: %s. Retrying in %ds",
                         err,
@@ -206,13 +204,13 @@ class CameDomoticUnofficialDataUpdateCoordinator(
                 update_list = await self.api.async_get_updates(
                     timeout=DEFAULT_LONG_POLL_TIMEOUT
                 )
-            except CameDomoticUnofficialApiClientAuthenticationError:
+            except CameDomoticApiClientAuthenticationError:
                 _LOGGER.warning(
                     "Authentication failed in long-poll loop, triggering reauth"
                 )
                 self.config_entry.async_start_reauth(self.hass)
                 return
-            except CameDomoticUnofficialApiClientError as err:
+            except CameDomoticApiClientError as err:
                 _LOGGER.debug(
                     "Error in long-poll loop: %s. Retrying in %ds",
                     err,

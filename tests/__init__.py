@@ -1,1 +1,1 @@
-"""Tests for CAME Domotic Unofficial integration."""
+"""Tests for CAME Domotic integration."""

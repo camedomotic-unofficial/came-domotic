@@ -1,4 +1,4 @@
-"""Sensor platform for CAME Domotic Unofficial."""
+"""Sensor platform for CAME Domotic."""
 
 from __future__ import annotations
 
@@ -18,9 +18,9 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CameDomoticUnofficialConfigEntry
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
-from .entity import CameDomoticUnofficialEntity
+from . import CameDomoticConfigEntry
+from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ THERMO_ZONE_SENSORS: tuple[CameDomoticSensorDescription, ...] = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up sensor platform."""
@@ -59,14 +59,14 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticThermoZoneSensor(CameDomoticUnofficialEntity, SensorEntity):
+class CameDomoticThermoZoneSensor(CameDomoticEntity, SensorEntity):
     """Sensor for a CAME Domotic thermoregulation zone."""
 
     entity_description: CameDomoticSensorDescription
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         act_id: int,
         zone_name: str,
         description: CameDomoticSensorDescription,

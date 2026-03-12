@@ -13,10 +13,10 @@ Github is used to host code, to track issues and feature requests, as well as ac
 
 Pull requests are the best way to propose changes to the codebase.
 
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `main`.
 2. If you've changed something, update the documentation.
-3. Make sure your code lints (using black).
-4. Test you contribution.
+3. Make sure your code lints (using `pre-commit`).
+4. Test your contribution.
 5. Issue that pull request!
 
 ## Any contributions you make will be under the MIT Software License
@@ -44,7 +44,7 @@ People _love_ thorough bug reports. I'm not even kidding.
 
 ## Use a Consistent Coding Style
 
-Use [black](https://github.com/ambv/black) and [prettier](https://prettier.io/)
+Use [ruff](https://docs.astral.sh/ruff/) and [prettier](https://prettier.io/)
 to make sure the code follows the style.
 
 Or use the `pre-commit` settings implemented in this repository
@@ -74,7 +74,7 @@ source venv/bin/activate
 # Install requirements
 pip install -r requirements_test.txt
 # Run tests and get a summary of successes/failures and code coverage
-pytest --durations=10 --cov-report term-missing --cov=custom_components.came_domotic_unofficial tests
+pytest --durations=10 --cov-report term-missing --cov=custom_components.came_domotic tests
 ```
 
 If any of the tests fail, make the necessary changes to the tests as part of

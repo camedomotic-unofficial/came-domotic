@@ -4,6 +4,6 @@ logger:
   default: info
   logs:
     aiocamedomotic: debug
-    custom_components.came_domotic_unofficial: debug
+    custom_components.came_domotic: debug
 # If you need to debug uncomment the line below (doc: https://www.home-assistant.io/integrations/debugpy/)
 # debugpy:

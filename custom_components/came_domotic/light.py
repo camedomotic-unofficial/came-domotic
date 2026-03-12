@@ -1,4 +1,4 @@
-"""Light platform for CAME Domotic Unofficial.
+"""Light platform for CAME Domotic.
 
 Exposes CAME Domotic lights as Home Assistant light entities.
 Supports three light types via the aiocamedomotic library:
@@ -22,9 +22,9 @@ from homeassistant.components.light import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CameDomoticUnofficialConfigEntry
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
-from .entity import CameDomoticUnofficialEntity
+from . import CameDomoticConfigEntry
+from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ _COLOR_MODE_MAP: dict[LightType, ColorMode] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up light platform."""
@@ -51,7 +51,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticLight(CameDomoticUnofficialEntity, LightEntity):
+class CameDomoticLight(CameDomoticEntity, LightEntity):
     """Light entity for a CAME Domotic light.
 
     Supports on/off, dimmable, and RGB lights depending on the
@@ -60,7 +60,7 @@ class CameDomoticLight(CameDomoticUnofficialEntity, LightEntity):
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         act_id: int,
         light_name: str,
         light_type: LightType,

@@ -1,4 +1,4 @@
-"""Service actions for the CAME Domotic Unofficial integration."""
+"""Service actions for the CAME Domotic integration."""
 
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
 from .api import (
-    CameDomoticUnofficialApiClient,
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
+    CameDomoticApiClient,
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
 )
 from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from . import CameDomoticUnofficialConfigEntry
+    from . import CameDomoticConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ SERVICE_GET_TERMINAL_GROUPS_SCHEMA = vol.Schema(
 
 def _get_entry_and_client(
     hass: HomeAssistant, call: ServiceCall
-) -> tuple[CameDomoticUnofficialConfigEntry, CameDomoticUnofficialApiClient]:
+) -> tuple[CameDomoticConfigEntry, CameDomoticApiClient]:
     """Validate config entry and return the entry and API client.
 
     Raises:
@@ -85,9 +85,7 @@ def _get_entry_and_client(
     """
     entry_id: str = call.data[ATTR_CONFIG_ENTRY_ID]
 
-    entry: CameDomoticUnofficialConfigEntry | None = (
-        hass.config_entries.async_get_entry(entry_id)
-    )
+    entry: CameDomoticConfigEntry | None = hass.config_entries.async_get_entry(entry_id)
     if entry is None or entry.domain != DOMAIN:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
@@ -119,13 +117,13 @@ async def async_handle_create_user(call: ServiceCall) -> None:
     if group != "*":
         try:
             groups = await client.async_get_terminal_groups()
-        except CameDomoticUnofficialApiClientAuthenticationError as err:
+        except CameDomoticApiClientAuthenticationError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="service_auth_error",
                 translation_placeholders={"error": str(err)},
             ) from err
-        except CameDomoticUnofficialApiClientCommunicationError as err:
+        except CameDomoticApiClientCommunicationError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="service_comm_error",
@@ -141,13 +139,13 @@ async def async_handle_create_user(call: ServiceCall) -> None:
 
     try:
         await client.async_add_user(username, password, group=group)
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",
@@ -169,13 +167,13 @@ async def async_handle_delete_user(call: ServiceCall) -> None:
     # Look up the User object by name
     try:
         users = await client.async_get_users()
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",
@@ -198,13 +196,13 @@ async def async_handle_delete_user(call: ServiceCall) -> None:
             translation_key="cannot_delete_current_user",
             translation_placeholders={"username": username},
         ) from err
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",
@@ -228,13 +226,13 @@ async def async_handle_change_password(call: ServiceCall) -> None:
     # Look up the User object by name
     try:
         users = await client.async_get_users()
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",
@@ -251,13 +249,13 @@ async def async_handle_change_password(call: ServiceCall) -> None:
 
     try:
         await client.async_change_user_password(user, current_password, new_password)
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",
@@ -285,13 +283,13 @@ async def async_handle_get_terminal_groups(call: ServiceCall) -> ServiceResponse
 
     try:
         groups = await client.async_get_terminal_groups()
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_auth_error",
             translation_placeholders={"error": str(err)},
         ) from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="service_comm_error",

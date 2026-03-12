@@ -1,4 +1,4 @@
-"""Adds config flow for CAME Domotic Unofficial."""
+"""Adds config flow for CAME Domotic."""
 
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import voluptuous as vol
 
 from .api import (
-    CameDomoticUnofficialApiClient,
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
-    CameDomoticUnofficialApiClientError,
+    CameDomoticApiClient,
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
+    CameDomoticApiClientError,
 )
 from .const import DOMAIN
 
@@ -51,24 +51,24 @@ async def _async_test_credentials(
     """
     _LOGGER.debug("Testing credentials for host %s", host)
     session = async_get_clientsession(hass)
-    client = CameDomoticUnofficialApiClient(host, username, password, session)
+    client = CameDomoticApiClient(host, username, password, session)
     try:
         await client.async_connect()
         server_info = await client.async_get_server_info()
         _LOGGER.debug("Credentials validated, server keycode: %s", server_info.keycode)
         return server_info.keycode
-    except CameDomoticUnofficialApiClientAuthenticationError as err:
+    except CameDomoticApiClientAuthenticationError as err:
         raise InvalidAuth from err
-    except CameDomoticUnofficialApiClientCommunicationError as err:
+    except CameDomoticApiClientCommunicationError as err:
         raise CannotConnect from err
-    except CameDomoticUnofficialApiClientError as err:
+    except CameDomoticApiClientError as err:
         raise CannotConnect from err
     finally:
         await client.async_dispose()
 
 
-class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
-    """Config flow for came_domotic_unofficial."""
+class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
+    """Config flow for came_domotic."""
 
     VERSION = 1
 
@@ -114,7 +114,7 @@ class CameDomoticUnofficialFlowHandler(ConfigFlow, domain=DOMAIN):
                 user_input or {},
             ),
             description_placeholders={
-                "documentation_url": "https://github.com/camedomotic-unofficial/came-domotic-unofficial"
+                "documentation_url": "https://github.com/camedomotic-unofficial/came-domotic"
             },
             errors=errors,
         )

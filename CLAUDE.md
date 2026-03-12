@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Home Assistant custom integration for CAME Domotic devices. Distributed via HACS (Home Assistant Community Store). Built from the `integration_blueprint` / cookiecutter template.
 
-- **Domain**: `came_domotic_unofficial`
+- **Domain**: `came_domotic`
 - **IoT class**: `local_push` — communicates with a local CAME Domotic server via long polling
 - **Multiple config entries**: supports multiple instances (e.g., different local devices)
 - **API layer**: `api.py` is a wrapper around the `aiocamedomotic` library (not direct HTTP calls).
@@ -33,7 +33,7 @@ pytest tests/test_api.py::test_function_name
 ### Run tests with coverage report (as configured in setup.cfg)
 
 ```bash
-pytest --durations=10 --cov-report term-missing --cov=custom_components.came_domotic_unofficial tests
+pytest --durations=10 --cov-report term-missing --cov=custom_components.came_domotic tests
 ```
 
 Coverage is configured to fail under 100% (`setup.cfg [coverage:report]`).
@@ -56,12 +56,12 @@ Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (securi
 
 ### Integration entry point flow
 
-1. User configures via UI (`config_flow.py` -> `CameDomoticUnofficialFlowHandler`)
+1. User configures via UI (`config_flow.py` -> `CameDomoticFlowHandler`)
 2. `__init__.py:async_setup_entry` creates the API client and coordinator, stores them in `entry.runtime_data`
 3. Coordinator performs an initial full fetch (`_async_update_data()`), then a background long-poll task (`_async_long_poll_loop()`) receives incremental updates from the server and pushes them to entities via `async_set_updated_data()`
 4. Platforms (`binary_sensor.py`, `sensor.py`, `switch.py`) register entities that read from `coordinator.data`
 
-### Key modules (`custom_components/came_domotic_unofficial/`)
+### Key modules (`custom_components/came_domotic/`)
 
 - **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`. Includes `async_get_updates()` for long-polling.
 - **coordinator.py** - Push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`.
@@ -81,7 +81,7 @@ Pattern for adding future platforms (e.g., lights, openings):
 
 ### Type alias
 
-`CameDomoticUnofficialConfigEntry = ConfigEntry[RuntimeData]` — used throughout for typed access to `entry.runtime_data.coordinator`.
+`CameDomoticConfigEntry = ConfigEntry[RuntimeData]` — used throughout for typed access to `entry.runtime_data.coordinator`.
 
 ### Testing patterns
 
@@ -113,5 +113,5 @@ These run on every PR and push to `main` (defined in `.github/workflows/tests.ya
 ## Code Style
 
 - **ruff** formatter with 88-char line length
-- **ruff** isort rules configured in `pyproject.toml` with `force_sort_within_sections`, known first party: `custom_components.came_domotic_unofficial, tests`
+- **ruff** isort rules configured in `pyproject.toml` with `force_sort_within_sections`, known first party: `custom_components.came_domotic, tests`
 - `from __future__ import annotations` in all Python files

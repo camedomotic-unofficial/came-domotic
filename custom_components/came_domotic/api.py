@@ -1,4 +1,4 @@
-"""CAME Domotic Unofficial API Client."""
+"""CAME Domotic API Client."""
 
 from __future__ import annotations
 
@@ -35,18 +35,18 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 _T = TypeVar("_T")
 
 
-class CameDomoticUnofficialApiClientError(Exception):
+class CameDomoticApiClientError(Exception):
     """Base exception for API client errors."""
 
 
-class CameDomoticUnofficialApiClientCommunicationError(
-    CameDomoticUnofficialApiClientError,
+class CameDomoticApiClientCommunicationError(
+    CameDomoticApiClientError,
 ):
     """Exception for communication errors."""
 
 
-class CameDomoticUnofficialApiClientAuthenticationError(
-    CameDomoticUnofficialApiClientError,
+class CameDomoticApiClientAuthenticationError(
+    CameDomoticApiClientError,
 ):
     """Exception for authentication errors."""
 
@@ -57,31 +57,29 @@ def _translate_errors(
     """Translate aiocamedomotic errors to integration errors."""
 
     @functools.wraps(func)
-    async def wrapper(
-        self: CameDomoticUnofficialApiClient, *args: Any, **kwargs: Any
-    ) -> _T:
+    async def wrapper(self: CameDomoticApiClient, *args: Any, **kwargs: Any) -> _T:
         if self._api is None:
-            raise CameDomoticUnofficialApiClientError("Not initialized")
+            raise CameDomoticApiClientError("Not initialized")
         try:
             return await func(self, *args, **kwargs)
         except CameDomoticAuthError as err:
-            raise CameDomoticUnofficialApiClientAuthenticationError(
+            raise CameDomoticApiClientAuthenticationError(
                 "Invalid credentials",
             ) from err
         except CameDomoticServerError as err:
-            raise CameDomoticUnofficialApiClientCommunicationError(
+            raise CameDomoticApiClientCommunicationError(
                 f"Server error: {err}",
             ) from err
         except CameDomoticError as err:
-            raise CameDomoticUnofficialApiClientError(
+            raise CameDomoticApiClientError(
                 f"Error: {err}",
             ) from err
 
     return wrapper
 
 
-class CameDomoticUnofficialApiClient:
-    """CAME Domotic Unofficial API Client wrapping aiocamedomotic."""
+class CameDomoticApiClient:
+    """CAME Domotic API Client wrapping aiocamedomotic."""
 
     def __init__(
         self,
@@ -110,12 +108,12 @@ class CameDomoticUnofficialApiClient:
             )
         except CameDomoticServerNotFoundError as err:
             _LOGGER.debug("Server not found at %s", self._host)
-            raise CameDomoticUnofficialApiClientCommunicationError(
+            raise CameDomoticApiClientCommunicationError(
                 f"Unable to reach server at {self._host}",
             ) from err
         except CameDomoticError as err:
             _LOGGER.debug("Error connecting to server at %s: %s", self._host, err)
-            raise CameDomoticUnofficialApiClientError(
+            raise CameDomoticApiClientError(
                 f"Error connecting to server at {self._host}",
             ) from err
         _LOGGER.debug("Successfully connected to CAME server at %s", self._host)

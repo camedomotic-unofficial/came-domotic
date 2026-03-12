@@ -1,10 +1,10 @@
 {
-  "title": "CAME Domotic Unofficial",
+  "title": "CAME Domotic",
   "config": {
     "flow_title": "CAME ETI/Domo at {host}",
     "step": {
       "user": {
-        "title": "CAME Domotic Unofficial",
+        "title": "CAME Domotic",
         "description": "If you need help with the configuration have a look here: {documentation_url}",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",

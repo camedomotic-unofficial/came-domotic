@@ -1,4 +1,4 @@
-"""Test CAME Domotic Unofficial light platform."""
+"""Test CAME Domotic light platform."""
 
 from __future__ import annotations
 
@@ -9,19 +9,16 @@ from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_RGB_COLOR, Colo
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic_unofficial.const import DOMAIN
-from custom_components.came_domotic_unofficial.models import CameDomoticServerData
+from custom_components.came_domotic.const import DOMAIN
+from custom_components.came_domotic.models import CameDomoticServerData
 
 from .conftest import _mock_light, _mock_server_info
 from .const import MOCK_CONFIG
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
 _COORDINATOR = (
-    "custom_components.came_domotic_unofficial.coordinator"
-    ".CameDomoticUnofficialDataUpdateCoordinator"
+    "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
 

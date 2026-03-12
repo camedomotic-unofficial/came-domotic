@@ -4,13 +4,13 @@
     {
       "label": "Run Home Assistant on port 9123",
       "type": "shell",
-      "command": "hass --config /workspaces/came_domotic_unofficial/config -v",
+      "command": "hass --config /workspaces/came_domotic/config -v",
       "problemMatcher": []
     },
     {
       "label": "Run Home Assistant configuration against /config",
       "type": "shell",
-      "command": "hass --config /workspaces/came_domotic_unofficial/config --script check_config",
+      "command": "hass --config /workspaces/came_domotic/config --script check_config",
       "problemMatcher": []
     },
     {

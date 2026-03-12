@@ -22,7 +22,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
-known-first-party = ["custom_components.came_domotic_unofficial", "tests"]
+known-first-party = ["custom_components.came_domotic", "tests"]
 combine-as-imports = true
 
 [tool.codespell]

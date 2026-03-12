@@ -1,4 +1,4 @@
-"""Binary sensor platform for CAME Domotic Unofficial.
+"""Binary sensor platform for CAME Domotic.
 
 Exposes CAME Domotic digital inputs as Home Assistant binary sensor entities.
 Digital inputs are read-only devices that report ACTIVE/IDLE state.
@@ -15,16 +15,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import CameDomoticUnofficialConfigEntry
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
-from .entity import CameDomoticUnofficialEntity
+from . import CameDomoticConfigEntry
+from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up binary sensor platform."""
@@ -37,7 +37,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticDigitalInput(CameDomoticUnofficialEntity, BinarySensorEntity):
+class CameDomoticDigitalInput(CameDomoticEntity, BinarySensorEntity):
     """Binary sensor entity for a CAME Domotic digital input.
 
     Read-only device that reports ACTIVE (on) or IDLE (off) state.
@@ -45,7 +45,7 @@ class CameDomoticDigitalInput(CameDomoticUnofficialEntity, BinarySensorEntity):
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         act_id: int,
         input_name: str,
     ) -> None:

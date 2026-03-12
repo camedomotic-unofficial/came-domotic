@@ -1,10 +1,10 @@
-"""Constants for CAME Domotic Unofficial."""
+"""Constants for CAME Domotic."""
 
 from __future__ import annotations
 
 # Base component constants
-NAME = "CAME Domotic Unofficial"
-DOMAIN = "came_domotic_unofficial"
+NAME = "CAME Domotic"
+DOMAIN = "came_domotic"
 
 ATTRIBUTION = "Data provided by CAME Domotic"
 MANUFACTURER = "CAME"

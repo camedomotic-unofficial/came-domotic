@@ -1,4 +1,4 @@
-"""Tests for CAME Domotic Unofficial API client."""
+"""Tests for CAME Domotic API client."""
 
 from __future__ import annotations
 
@@ -13,22 +13,20 @@ from aiocamedomotic.errors import (
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
 
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClient,
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
-    CameDomoticUnofficialApiClientError,
+from custom_components.came_domotic.api import (
+    CameDomoticApiClient,
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
+    CameDomoticApiClientError,
 )
 
-_PATCH_ASYNC_CREATE = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticAPI.async_create"
-)
+_PATCH_ASYNC_CREATE = "custom_components.came_domotic.api.CameDomoticAPI.async_create"
 
 
 def _make_client(hass):
     """Create an API client for testing."""
     session = async_get_clientsession(hass)
-    return CameDomoticUnofficialApiClient("192.168.1.1", "user", "pass", session)
+    return CameDomoticApiClient("192.168.1.1", "user", "pass", session)
 
 
 def _mock_server_info():
@@ -64,7 +62,7 @@ async def test_async_connect_server_not_found(hass):
             _PATCH_ASYNC_CREATE,
             side_effect=CameDomoticServerNotFoundError("not found"),
         ),
-        pytest.raises(CameDomoticUnofficialApiClientCommunicationError),
+        pytest.raises(CameDomoticApiClientCommunicationError),
     ):
         await client.async_connect()
 
@@ -78,7 +76,7 @@ async def test_async_connect_generic_error(hass):
             _PATCH_ASYNC_CREATE,
             side_effect=CameDomoticError("generic"),
         ),
-        pytest.raises(CameDomoticUnofficialApiClientError),
+        pytest.raises(CameDomoticApiClientError),
     ):
         await client.async_connect()
 
@@ -109,7 +107,7 @@ async def test_async_get_server_info_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_server_info()
 
 
@@ -122,7 +120,7 @@ async def test_async_get_server_info_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_server_info()
 
 
@@ -135,7 +133,7 @@ async def test_async_get_server_info_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_server_info()
 
 
@@ -143,7 +141,7 @@ async def test_async_get_server_info_not_initialized(hass):
     """Test async_get_server_info raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_server_info()
 
 
@@ -173,7 +171,7 @@ async def test_async_get_thermo_zones_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_thermo_zones()
 
 
@@ -186,7 +184,7 @@ async def test_async_get_thermo_zones_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_thermo_zones()
 
 
@@ -199,7 +197,7 @@ async def test_async_get_thermo_zones_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_thermo_zones()
 
 
@@ -207,7 +205,7 @@ async def test_async_get_thermo_zones_not_initialized(hass):
     """Test async_get_thermo_zones raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_thermo_zones()
 
 
@@ -237,7 +235,7 @@ async def test_async_get_scenarios_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_scenarios()
 
 
@@ -250,7 +248,7 @@ async def test_async_get_scenarios_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_scenarios()
 
 
@@ -263,7 +261,7 @@ async def test_async_get_scenarios_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_scenarios()
 
 
@@ -271,7 +269,7 @@ async def test_async_get_scenarios_not_initialized(hass):
     """Test async_get_scenarios raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_scenarios()
 
 
@@ -308,7 +306,7 @@ async def test_async_activate_scenario_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_activate_scenario(mock_scenario)
 
 
@@ -326,7 +324,7 @@ async def test_async_activate_scenario_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_activate_scenario(mock_scenario)
 
 
@@ -342,7 +340,7 @@ async def test_async_activate_scenario_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_activate_scenario(mock_scenario)
 
 
@@ -351,7 +349,7 @@ async def test_async_activate_scenario_not_initialized(hass):
     client = _make_client(hass)
     mock_scenario = MagicMock()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_activate_scenario(mock_scenario)
 
 
@@ -382,7 +380,7 @@ async def test_async_get_updates_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_updates()
 
 
@@ -395,7 +393,7 @@ async def test_async_get_updates_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_updates()
 
 
@@ -408,7 +406,7 @@ async def test_async_get_updates_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_updates()
 
 
@@ -416,7 +414,7 @@ async def test_async_get_updates_not_initialized(hass):
     """Test async_get_updates raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_updates()
 
 
@@ -468,7 +466,7 @@ async def test_async_get_openings_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_openings()
 
 
@@ -481,7 +479,7 @@ async def test_async_get_openings_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_openings()
 
 
@@ -494,7 +492,7 @@ async def test_async_get_openings_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_openings()
 
 
@@ -502,7 +500,7 @@ async def test_async_get_openings_not_initialized(hass):
     """Test async_get_openings raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_openings()
 
 
@@ -543,7 +541,7 @@ async def test_async_set_opening_status_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
 
 
@@ -563,7 +561,7 @@ async def test_async_set_opening_status_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
 
 
@@ -581,7 +579,7 @@ async def test_async_set_opening_status_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
 
 
@@ -592,7 +590,7 @@ async def test_async_set_opening_status_not_initialized(hass):
     client = _make_client(hass)
     mock_opening = MagicMock()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_set_opening_status(mock_opening, OpeningStatus.OPENING)
 
 
@@ -622,7 +620,7 @@ async def test_async_get_lights_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_lights()
 
 
@@ -635,7 +633,7 @@ async def test_async_get_lights_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_lights()
 
 
@@ -648,7 +646,7 @@ async def test_async_get_lights_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_lights()
 
 
@@ -656,7 +654,7 @@ async def test_async_get_lights_not_initialized(hass):
     """Test async_get_lights raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_lights()
 
 
@@ -721,7 +719,7 @@ async def test_async_set_light_status_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_set_light_status(mock_light, LightStatus.ON)
 
 
@@ -741,7 +739,7 @@ async def test_async_set_light_status_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_set_light_status(mock_light, LightStatus.ON)
 
 
@@ -759,7 +757,7 @@ async def test_async_set_light_status_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_set_light_status(mock_light, LightStatus.ON)
 
 
@@ -770,7 +768,7 @@ async def test_async_set_light_status_not_initialized(hass):
     client = _make_client(hass)
     mock_light = MagicMock()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_set_light_status(mock_light, LightStatus.ON)
 
 
@@ -800,7 +798,7 @@ async def test_async_get_digital_inputs_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_digital_inputs()
 
 
@@ -813,7 +811,7 @@ async def test_async_get_digital_inputs_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_digital_inputs()
 
 
@@ -826,7 +824,7 @@ async def test_async_get_digital_inputs_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_digital_inputs()
 
 
@@ -834,7 +832,7 @@ async def test_async_get_digital_inputs_not_initialized(hass):
     """Test async_get_digital_inputs raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_digital_inputs()
 
 
@@ -864,7 +862,7 @@ async def test_async_get_users_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_users()
 
 
@@ -877,7 +875,7 @@ async def test_async_get_users_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_users()
 
 
@@ -890,7 +888,7 @@ async def test_async_get_users_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_users()
 
 
@@ -898,7 +896,7 @@ async def test_async_get_users_not_initialized(hass):
     """Test async_get_users raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_users()
 
 
@@ -946,7 +944,7 @@ async def test_async_add_user_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_add_user("newuser", "newpass")
 
 
@@ -959,7 +957,7 @@ async def test_async_add_user_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_add_user("newuser", "newpass")
 
 
@@ -972,7 +970,7 @@ async def test_async_add_user_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_add_user("newuser", "newpass")
 
 
@@ -980,7 +978,7 @@ async def test_async_add_user_not_initialized(hass):
     """Test async_add_user raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_add_user("newuser", "newpass")
 
 
@@ -1013,7 +1011,7 @@ async def test_async_delete_user_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_delete_user(mock_user)
 
 
@@ -1028,7 +1026,7 @@ async def test_async_delete_user_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_delete_user(mock_user)
 
 
@@ -1043,7 +1041,7 @@ async def test_async_delete_user_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_delete_user(mock_user)
 
 
@@ -1069,7 +1067,7 @@ async def test_async_delete_user_not_initialized(hass):
     client = _make_client(hass)
     mock_user = MagicMock()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_delete_user(mock_user)
 
 
@@ -1104,7 +1102,7 @@ async def test_async_change_user_password_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_change_user_password(mock_user, "oldpass", "newpass")
 
 
@@ -1121,7 +1119,7 @@ async def test_async_change_user_password_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_change_user_password(mock_user, "oldpass", "newpass")
 
 
@@ -1136,7 +1134,7 @@ async def test_async_change_user_password_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_change_user_password(mock_user, "oldpass", "newpass")
 
 
@@ -1145,7 +1143,7 @@ async def test_async_change_user_password_not_initialized(hass):
     client = _make_client(hass)
     mock_user = MagicMock()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_change_user_password(mock_user, "oldpass", "newpass")
 
 
@@ -1175,7 +1173,7 @@ async def test_async_get_terminal_groups_auth_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
         await client.async_get_terminal_groups()
 
 
@@ -1190,7 +1188,7 @@ async def test_async_get_terminal_groups_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+    with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_terminal_groups()
 
 
@@ -1203,7 +1201,7 @@ async def test_async_get_terminal_groups_generic_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
-    with pytest.raises(CameDomoticUnofficialApiClientError):
+    with pytest.raises(CameDomoticApiClientError):
         await client.async_get_terminal_groups()
 
 
@@ -1211,5 +1209,5 @@ async def test_async_get_terminal_groups_not_initialized(hass):
     """Test async_get_terminal_groups raises ApiClientError when not connected."""
     client = _make_client(hass)
 
-    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_terminal_groups()

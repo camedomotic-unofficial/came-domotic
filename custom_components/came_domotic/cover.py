@@ -1,4 +1,4 @@
-"""Cover platform for CAME Domotic Unofficial.
+"""Cover platform for CAME Domotic.
 
 Exposes CAME Domotic openings (e.g. shutters) as Home Assistant cover
 entities. Each opening supports open/close/stop motor control and
@@ -19,9 +19,9 @@ from homeassistant.components.cover import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CameDomoticUnofficialConfigEntry
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
-from .entity import CameDomoticUnofficialEntity
+from . import CameDomoticConfigEntry
+from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ _DEVICE_CLASS_MAP: dict[OpeningType, CoverDeviceClass] = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up cover platform."""
@@ -46,7 +46,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticCover(CameDomoticUnofficialEntity, CoverEntity):
+class CameDomoticCover(CameDomoticEntity, CoverEntity):
     """Cover entity for a CAME Domotic opening (e.g. shutter).
 
     Supports open/close/stop motor control and slat (tilt) open/close.
@@ -65,7 +65,7 @@ class CameDomoticCover(CameDomoticUnofficialEntity, CoverEntity):
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         open_act_id: int,
         opening_name: str,
         opening_type: OpeningType,

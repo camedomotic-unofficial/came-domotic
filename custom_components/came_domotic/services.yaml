@@ -4,7 +4,7 @@ create_user:
       required: true
       selector:
         config_entry:
-          integration: came_domotic_unofficial
+          integration: came_domotic
     username:
       required: true
       example: "newuser"
@@ -28,7 +28,7 @@ delete_user:
       required: true
       selector:
         config_entry:
-          integration: came_domotic_unofficial
+          integration: came_domotic
     username:
       required: true
       example: "olduser"
@@ -41,7 +41,7 @@ change_password:
       required: true
       selector:
         config_entry:
-          integration: came_domotic_unofficial
+          integration: came_domotic
     username:
       required: true
       example: "myuser"
@@ -62,4 +62,4 @@ get_terminal_groups:
       required: true
       selector:
         config_entry:
-          integration: came_domotic_unofficial
+          integration: came_domotic

@@ -1,4 +1,4 @@
-"""Test CAME Domotic Unofficial coordinator."""
+"""Test CAME Domotic coordinator."""
 
 from __future__ import annotations
 
@@ -12,25 +12,23 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
-    CameDomoticUnofficialApiClientError,
+from custom_components.came_domotic.api import (
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
+    CameDomoticApiClientError,
 )
-from custom_components.came_domotic_unofficial.const import (
+from custom_components.came_domotic.const import (
     DOMAIN,
     SESSION_RECYCLE_THRESHOLD,
 )
-from custom_components.came_domotic_unofficial.coordinator import (
-    CameDomoticUnofficialDataUpdateCoordinator,
+from custom_components.came_domotic.coordinator import (
+    CameDomoticDataUpdateCoordinator,
 )
 
 from .conftest import MOCK_THERMO_ZONES, _mock_server_info
 from .const import MOCK_CONFIG
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
 _MOCK_AUTH = create_autospec(Auth, instance=True)
 
@@ -133,7 +131,7 @@ async def test_coordinator_auth_error_raises_config_entry_auth_failed(
         patch.object(
             coordinator.api,
             "async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad auth"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad auth"),
         ),
         pytest.raises(ConfigEntryAuthFailed),
     ):
@@ -156,7 +154,7 @@ async def test_coordinator_communication_error_raises_update_failed(
         patch.object(
             coordinator.api,
             "async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+            side_effect=CameDomoticApiClientCommunicationError("Timeout"),
         ),
         pytest.raises(UpdateFailed),
     ):
@@ -187,7 +185,7 @@ async def test_start_and_stop_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
-            CameDomoticUnofficialDataUpdateCoordinator,
+            CameDomoticDataUpdateCoordinator,
             "_async_long_poll_loop",
             new_callable=AsyncMock,
         ),
@@ -224,7 +222,7 @@ async def test_start_long_poll_already_running(hass):
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
-            CameDomoticUnofficialDataUpdateCoordinator,
+            CameDomoticDataUpdateCoordinator,
             "_async_long_poll_loop",
             new_callable=AsyncMock,
         ),
@@ -280,7 +278,7 @@ async def test_long_poll_loop_incremental_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -311,7 +309,7 @@ async def test_long_poll_loop_incremental_update(hass):
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -351,7 +349,7 @@ async def test_long_poll_loop_plant_update_triggers_full_refresh(hass, bypass_ge
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
         patch.object(coordinator, "_async_update_data", mock_update_data),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -373,7 +371,7 @@ async def test_long_poll_loop_auth_error_triggers_reauth(hass, bypass_get_data):
         patch.object(
             coordinator.api,
             "async_get_updates",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad auth"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad auth"),
         ),
         patch.object(config_entry, "async_start_reauth") as mock_reauth,
     ):
@@ -399,16 +397,14 @@ async def test_long_poll_loop_comm_error_retries(hass, bypass_get_data):
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CameDomoticUnofficialApiClientCommunicationError("Connection lost")
+            raise CameDomoticApiClientCommunicationError("Connection lost")
         raise asyncio.CancelledError
 
     with (
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch(
-            "custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"
-        ) as mock_sleep,
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep") as mock_sleep,
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -434,16 +430,14 @@ async def test_long_poll_loop_generic_error_retries(hass, bypass_get_data):
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CameDomoticUnofficialApiClientError("Generic error")
+            raise CameDomoticApiClientError("Generic error")
         raise asyncio.CancelledError
 
     with (
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch(
-            "custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"
-        ) as mock_sleep,
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep") as mock_sleep,
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -479,9 +473,7 @@ async def test_long_poll_loop_throttle_between_updates(hass, bypass_get_data):
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch(
-            "custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"
-        ) as mock_sleep,
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep") as mock_sleep,
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -521,7 +513,7 @@ async def test_long_poll_loop_plant_update_auth_failure(hass, bypass_get_data):
             "_async_update_data",
             side_effect=ConfigEntryAuthFailed("Bad auth"),
         ),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
     ):
         # Should return (exit loop) on auth failure, not raise
         await coordinator._async_long_poll_loop()
@@ -561,7 +553,7 @@ async def test_long_poll_loop_plant_update_refresh_failure(hass, bypass_get_data
             "_async_update_data",
             side_effect=UpdateFailed("Comm error"),
         ),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -601,7 +593,7 @@ async def test_stop_long_poll_cancels_running_task(hass):
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch.object(
-            CameDomoticUnofficialDataUpdateCoordinator,
+            CameDomoticDataUpdateCoordinator,
             "_async_long_poll_loop",
             side_effect=_blocking_loop,
         ),
@@ -643,7 +635,7 @@ async def test_merge_updates_known_zone(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -689,7 +681,7 @@ async def test_merge_updates_unknown_zone_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -730,7 +722,7 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -786,7 +778,7 @@ async def test_merge_updates_known_scenario(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -838,7 +830,7 @@ async def test_merge_updates_unknown_scenario_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -901,7 +893,7 @@ async def test_session_recycle_after_threshold(hass, bypass_get_data):
             new_callable=AsyncMock,
             return_value=coordinator.data,
         ) as mock_update_data,
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -929,7 +921,7 @@ async def test_session_recycle_auth_error_triggers_reauth(hass, bypass_get_data)
         patch.object(
             coordinator.api,
             "async_connect",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad auth"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad auth"),
         ),
         patch.object(config_entry, "async_start_reauth") as mock_reauth,
     ):
@@ -956,7 +948,7 @@ async def test_session_recycle_comm_error_retries(hass, bypass_get_data):
         nonlocal connect_call_count
         connect_call_count += 1
         if connect_call_count == 1:
-            raise CameDomoticUnofficialApiClientCommunicationError("Connection lost")
+            raise CameDomoticApiClientCommunicationError("Connection lost")
         # Second call succeeds
 
     mock_update_list = MagicMock()
@@ -984,9 +976,7 @@ async def test_session_recycle_comm_error_retries(hass, bypass_get_data):
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch(
-            "custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"
-        ) as mock_sleep,
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep") as mock_sleep,
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -1027,7 +1017,7 @@ async def test_no_recycle_below_threshold(hass, bypass_get_data):
         patch.object(
             coordinator.api, "async_dispose", new_callable=AsyncMock
         ) as mock_dispose,
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -1057,7 +1047,7 @@ async def test_long_poll_count_only_increments_on_success(hass, bypass_get_data)
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise CameDomoticUnofficialApiClientCommunicationError("Connection lost")
+            raise CameDomoticApiClientCommunicationError("Connection lost")
         if call_count == 2:
             return mock_update_list
         raise asyncio.CancelledError
@@ -1066,7 +1056,7 @@ async def test_long_poll_count_only_increments_on_success(hass, bypass_get_data)
         patch.object(
             coordinator.api, "async_get_updates", side_effect=_fake_get_updates
         ),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -1112,7 +1102,7 @@ async def test_plant_update_does_not_reset_long_poll_count(hass, bypass_get_data
             new_callable=AsyncMock,
             return_value=coordinator.data,
         ),
-        patch("custom_components.came_domotic_unofficial.coordinator.asyncio.sleep"),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep"),
         pytest.raises(asyncio.CancelledError),
     ):
         await coordinator._async_long_poll_loop()
@@ -1177,7 +1167,7 @@ async def test_merge_updates_known_opening(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1220,7 +1210,7 @@ async def test_merge_updates_unknown_opening_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1258,7 +1248,7 @@ async def test_merge_updates_preserves_opening_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1337,7 +1327,7 @@ async def test_merge_updates_known_light(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1380,7 +1370,7 @@ async def test_merge_updates_unknown_light_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1418,7 +1408,7 @@ async def test_merge_updates_preserves_light_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1495,7 +1485,7 @@ async def test_merge_updates_known_digital_input(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1537,7 +1527,7 @@ async def test_merge_updates_unknown_digital_input_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
@@ -1575,7 +1565,7 @@ async def test_merge_updates_preserves_digital_input_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_dispose"),
-        patch.object(CameDomoticUnofficialDataUpdateCoordinator, "start_long_poll"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()

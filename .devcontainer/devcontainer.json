@@ -1,6 +1,6 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
-  "name": "CAME Domotic Unofficial integration development",
+  "name": "CAME Domotic integration development",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."

@@ -1,4 +1,4 @@
-"""Constants for CAME Domotic Unofficial tests."""
+"""Constants for CAME Domotic tests."""
 
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 

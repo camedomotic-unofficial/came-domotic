@@ -1,4 +1,4 @@
-"""Scene platform for CAME Domotic Unofficial."""
+"""Scene platform for CAME Domotic."""
 
 from __future__ import annotations
 
@@ -9,16 +9,16 @@ from homeassistant.components.scene import Scene
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import CameDomoticUnofficialConfigEntry
-from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
-from .entity import CameDomoticUnofficialEntity
+from . import CameDomoticConfigEntry
+from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: CameDomoticUnofficialConfigEntry,
+    entry: CameDomoticConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up scene platform."""
@@ -31,12 +31,12 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticScene(CameDomoticUnofficialEntity, Scene):
+class CameDomoticScene(CameDomoticEntity, Scene):
     """Scene entity for a CAME Domotic scenario."""
 
     def __init__(
         self,
-        coordinator: CameDomoticUnofficialDataUpdateCoordinator,
+        coordinator: CameDomoticDataUpdateCoordinator,
         scenario_id: int,
         scenario_name: str,
     ) -> None:

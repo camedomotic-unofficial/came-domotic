@@ -1,4 +1,4 @@
-"""Test CAME Domotic Unofficial config flow."""
+"""Test CAME Domotic config flow."""
 
 from __future__ import annotations
 
@@ -15,25 +15,23 @@ from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic_unofficial.api import (
-    CameDomoticUnofficialApiClientAuthenticationError,
-    CameDomoticUnofficialApiClientCommunicationError,
-    CameDomoticUnofficialApiClientError,
+from custom_components.came_domotic.api import (
+    CameDomoticApiClientAuthenticationError,
+    CameDomoticApiClientCommunicationError,
+    CameDomoticApiClientError,
 )
-from custom_components.came_domotic_unofficial.const import DOMAIN
+from custom_components.came_domotic.const import DOMAIN
 
 from .const import MOCK_CONFIG, MOCK_KEYCODE
 
-_API_CLIENT = (
-    "custom_components.came_domotic_unofficial.api.CameDomoticUnofficialApiClient"
-)
+_API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
 
 @pytest.fixture(autouse=True)
 def bypass_setup_fixture():
     """Prevent setup."""
     with patch(
-        "custom_components.came_domotic_unofficial.async_setup_entry",
+        "custom_components.came_domotic.async_setup_entry",
         return_value=True,
     ):
         yield
@@ -69,7 +67,7 @@ async def test_config_flow_cannot_connect(hass):
 
     with patch(
         f"{_API_CLIENT}.async_connect",
-        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+        side_effect=CameDomoticApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], user_input=MOCK_CONFIG
@@ -89,7 +87,7 @@ async def test_config_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -147,7 +145,7 @@ async def test_config_flow_generic_api_error(hass):
     with (
         patch(
             f"{_API_CLIENT}.async_connect",
-            side_effect=CameDomoticUnofficialApiClientError("Parse error"),
+            side_effect=CameDomoticApiClientError("Parse error"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -202,7 +200,7 @@ async def test_reauth_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -223,7 +221,7 @@ async def test_reauth_flow_cannot_connect(hass):
 
     with patch(
         f"{_API_CLIENT}.async_connect",
-        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+        side_effect=CameDomoticApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -305,7 +303,7 @@ async def test_reconfigure_flow_cannot_connect(hass):
 
     with patch(
         f"{_API_CLIENT}.async_connect",
-        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+        side_effect=CameDomoticApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], user_input=MOCK_CONFIG
@@ -325,7 +323,7 @@ async def test_reconfigure_flow_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
@@ -363,9 +361,7 @@ MOCK_DHCP_SERVICE_INFO = DhcpServiceInfo(
     macaddress="001cb2ddeeff",
 )
 
-_IS_CAME_ENDPOINT = (
-    "custom_components.came_domotic_unofficial.config_flow.async_is_came_endpoint"
-)
+_IS_CAME_ENDPOINT = "custom_components.came_domotic.config_flow.async_is_came_endpoint"
 
 
 async def test_dhcp_discovery_new_device(hass, bypass_test_credentials):
@@ -469,7 +465,7 @@ async def test_dhcp_discovery_cannot_connect(hass):
 
     with patch(
         f"{_API_CLIENT}.async_connect",
-        side_effect=CameDomoticUnofficialApiClientCommunicationError("Timeout"),
+        side_effect=CameDomoticApiClientCommunicationError("Timeout"),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -495,7 +491,7 @@ async def test_dhcp_discovery_invalid_auth(hass):
         patch(f"{_API_CLIENT}.async_connect"),
         patch(
             f"{_API_CLIENT}.async_get_server_info",
-            side_effect=CameDomoticUnofficialApiClientAuthenticationError("Bad creds"),
+            side_effect=CameDomoticApiClientAuthenticationError("Bad creds"),
         ),
         patch(f"{_API_CLIENT}.async_dispose"),
     ):
