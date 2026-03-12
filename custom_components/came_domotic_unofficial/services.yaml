@@ -1,0 +1,65 @@
+create_user:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic_unofficial
+    username:
+      required: true
+      example: "newuser"
+      selector:
+        text:
+    password:
+      required: true
+      example: "securepassword"
+      selector:
+        text:
+    group:
+      required: false
+      default: "*"
+      example: "ETI/Domo"
+      selector:
+        text:
+
+delete_user:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic_unofficial
+    username:
+      required: true
+      example: "olduser"
+      selector:
+        text:
+
+change_password:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic_unofficial
+    username:
+      required: true
+      example: "myuser"
+      selector:
+        text:
+    current_password:
+      required: true
+      selector:
+        text:
+    new_password:
+      required: true
+      selector:
+        text:
+
+get_terminal_groups:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic_unofficial

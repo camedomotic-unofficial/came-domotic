@@ -47,5 +47,98 @@
       "reauth_successful": "Re-authentication successful.",
       "reconfigure_successful": "Reconfiguration successful."
     }
+  },
+  "services": {
+    "create_user": {
+      "name": "Create user",
+      "description": "Create a new user on the CAME Domotic server.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server to create the user on."
+        },
+        "username": {
+          "name": "Username",
+          "description": "The username for the new user."
+        },
+        "password": {
+          "name": "Password",
+          "description": "The password for the new user."
+        },
+        "group": {
+          "name": "Group",
+          "description": "The terminal group for the user. Use '*' for all groups."
+        }
+      }
+    },
+    "delete_user": {
+      "name": "Delete user",
+      "description": "Delete a user from the CAME Domotic server. Cannot delete the currently authenticated user.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server to delete the user from."
+        },
+        "username": {
+          "name": "Username",
+          "description": "The username of the user to delete."
+        }
+      }
+    },
+    "change_password": {
+      "name": "Change password",
+      "description": "Change a user's password on the CAME Domotic server. If changing the authenticated user's password, the integration credentials are updated automatically.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server."
+        },
+        "username": {
+          "name": "Username",
+          "description": "The username whose password to change."
+        },
+        "current_password": {
+          "name": "Current password",
+          "description": "The user's current password."
+        },
+        "new_password": {
+          "name": "New password",
+          "description": "The desired new password."
+        }
+      }
+    },
+    "get_terminal_groups": {
+      "name": "Get terminal groups",
+      "description": "List available terminal groups on the CAME Domotic server. Call this before creating a user to discover valid group names.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server to query."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "config_entry_not_found": {
+      "message": "Configuration entry not found: {config_entry_id}"
+    },
+    "config_entry_not_loaded": {
+      "message": "Configuration entry is not loaded: {config_entry_id}"
+    },
+    "user_not_found": {
+      "message": "User '{username}' not found on the CAME server."
+    },
+    "cannot_delete_current_user": {
+      "message": "Cannot delete the currently authenticated user '{username}'."
+    },
+    "group_not_found": {
+      "message": "Terminal group '{group}' not found on the CAME server. Use the 'get_terminal_groups' service to list available groups."
+    },
+    "service_comm_error": {
+      "message": "Communication error with the CAME server: {error}"
+    },
+    "service_auth_error": {
+      "message": "Authentication error with the CAME server: {error}"
+    }
   }
 }

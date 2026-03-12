@@ -15,9 +15,11 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platfor
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
+from homeassistant.helpers.typing import ConfigType
 
 from .api import CameDomoticUnofficialApiClient
 from .coordinator import CameDomoticUnofficialDataUpdateCoordinator
+from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +40,12 @@ class RuntimeData:
 
     coordinator: CameDomoticUnofficialDataUpdateCoordinator
     client: CameDomoticUnofficialApiClient
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the CAME Domotic Unofficial integration."""
+    await async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(
@@ -108,6 +116,7 @@ async def async_unload_entry(
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         await entry.runtime_data.client.async_dispose()
+        await async_unload_services(hass)
         _LOGGER.info("CAME Domotic integration unloaded successfully")
     else:
         _LOGGER.warning("Failed to unload platforms, skipping API disposal")

@@ -23,8 +23,10 @@ from aiocamedomotic.models import (
     OpeningStatus,
     Scenario,
     ServerInfo,
+    TerminalGroup,
     ThermoZone,
     UpdateList,
+    User,
 )
 import aiohttp
 
@@ -227,6 +229,74 @@ class CameDomoticUnofficialApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Activating scenario '%s' (id=%d)", scenario.name, scenario.id)
         await scenario.async_activate()
+
+    @_translate_errors
+    async def async_get_users(self) -> list[User]:
+        """Fetch users from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching users from %s", self._host)
+        users = await self._api.async_get_users()
+        _LOGGER.debug("Fetched %d user(s)", len(users))
+        return users
+
+    @_translate_errors
+    async def async_add_user(
+        self, username: str, password: str, group: str = "*"
+    ) -> User:
+        """Create a new user on the CAME Domotic server.
+
+        Args:
+            username: Login name for the new user.
+            password: Initial password for the new user.
+            group: Permission group name (e.g., "ETI/Domo"). Defaults to "*".
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Creating user '%s' with group '%s' on %s", username, group, self._host
+        )
+        user = await self._api.async_add_user(username, password, group=group)
+        _LOGGER.debug("User '%s' created successfully", username)
+        return user
+
+    @_translate_errors
+    async def async_delete_user(self, user: User) -> None:
+        """Delete a user from the CAME Domotic server.
+
+        Args:
+            user: The User object to delete.
+
+        Raises:
+            ValueError: If attempting to delete the currently authenticated user.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Deleting user '%s' on %s", user.name, self._host)
+        await user.async_delete()
+        _LOGGER.debug("User '%s' deleted successfully", user.name)
+
+    @_translate_errors
+    async def async_change_user_password(
+        self, user: User, current_password: str, new_password: str
+    ) -> None:
+        """Change a user's password on the CAME Domotic server.
+
+        Args:
+            user: The User object whose password to change.
+            current_password: The user's current password.
+            new_password: The desired new password.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Changing password for user '%s' on %s", user.name, self._host)
+        await user.async_change_password(current_password, new_password)
+        _LOGGER.debug("Password changed for user '%s'", user.name)
+
+    @_translate_errors
+    async def async_get_terminal_groups(self) -> list[TerminalGroup]:
+        """Fetch terminal groups from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching terminal groups from %s", self._host)
+        groups = await self._api.async_get_terminal_groups()
+        _LOGGER.debug("Fetched %d terminal group(s)", len(groups))
+        return groups
 
     @_translate_errors
     async def async_get_updates(self, timeout: int = 120) -> UpdateList:

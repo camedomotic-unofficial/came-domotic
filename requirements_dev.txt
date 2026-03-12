@@ -1,5 +1,5 @@
 homeassistant
-aiocamedomotic==1.5.2
+aiocamedomotic==1.6.0
 ruff
 mypy
 bandit

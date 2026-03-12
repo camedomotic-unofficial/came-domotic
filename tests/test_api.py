@@ -836,3 +836,380 @@ async def test_async_get_digital_inputs_not_initialized(hass):
 
     with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
         await client.async_get_digital_inputs()
+
+
+# --- async_get_users ---
+
+
+async def test_async_get_users_success(hass):
+    """Test successful users retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_users = [MagicMock(), MagicMock()]
+    mock_api.async_get_users.return_value = mock_users
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_users()
+    assert result is mock_users
+
+
+async def test_async_get_users_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_users.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_users()
+
+
+async def test_async_get_users_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_users.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_users()
+
+
+async def test_async_get_users_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_users.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_users()
+
+
+async def test_async_get_users_not_initialized(hass):
+    """Test async_get_users raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_users()
+
+
+# --- async_add_user ---
+
+
+async def test_async_add_user_success(hass):
+    """Test successful user creation."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_api.async_add_user.return_value = mock_user
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_add_user("newuser", "newpass", group="ETI/Domo")
+    assert result is mock_user
+    mock_api.async_add_user.assert_awaited_once_with(
+        "newuser", "newpass", group="ETI/Domo"
+    )
+
+
+async def test_async_add_user_default_group(hass):
+    """Test user creation with default group."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_api.async_add_user.return_value = mock_user
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_add_user("newuser", "newpass")
+    assert result is mock_user
+    mock_api.async_add_user.assert_awaited_once_with("newuser", "newpass", group="*")
+
+
+async def test_async_add_user_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_add_user.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_add_user("newuser", "newpass")
+
+
+async def test_async_add_user_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_add_user.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_add_user("newuser", "newpass")
+
+
+async def test_async_add_user_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_add_user.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_add_user("newuser", "newpass")
+
+
+async def test_async_add_user_not_initialized(hass):
+    """Test async_add_user raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_add_user("newuser", "newpass")
+
+
+# --- async_delete_user ---
+
+
+async def test_async_delete_user_success(hass):
+    """Test successful user deletion."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "olduser"
+    mock_user.async_delete = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_delete_user(mock_user)
+    mock_user.async_delete.assert_awaited_once()
+
+
+async def test_async_delete_user_auth_error(hass):
+    """Test CameDomoticAuthError during deletion raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "olduser"
+    mock_user.async_delete = AsyncMock(side_effect=CameDomoticAuthError("bad creds"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_delete_user(mock_user)
+
+
+async def test_async_delete_user_server_error(hass):
+    """Test CameDomoticServerError during deletion raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "olduser"
+    mock_user.async_delete = AsyncMock(side_effect=CameDomoticServerError("server err"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_delete_user(mock_user)
+
+
+async def test_async_delete_user_generic_error(hass):
+    """Test CameDomoticError during deletion raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "olduser"
+    mock_user.async_delete = AsyncMock(side_effect=CameDomoticError("generic"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_delete_user(mock_user)
+
+
+async def test_async_delete_user_value_error(hass):
+    """Test ValueError propagates when deleting the current user."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "currentuser"
+    mock_user.async_delete = AsyncMock(
+        side_effect=ValueError("Cannot delete current user")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(ValueError, match="Cannot delete current user"):
+        await client.async_delete_user(mock_user)
+
+
+async def test_async_delete_user_not_initialized(hass):
+    """Test async_delete_user raises ApiClientError when not connected."""
+    client = _make_client(hass)
+    mock_user = MagicMock()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_delete_user(mock_user)
+
+
+# --- async_change_user_password ---
+
+
+async def test_async_change_user_password_success(hass):
+    """Test successful password change."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "testuser"
+    mock_user.async_change_password = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_change_user_password(mock_user, "oldpass", "newpass")
+    mock_user.async_change_password.assert_awaited_once_with("oldpass", "newpass")
+
+
+async def test_async_change_user_password_auth_error(hass):
+    """Test CameDomoticAuthError during password change raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "testuser"
+    mock_user.async_change_password = AsyncMock(
+        side_effect=CameDomoticAuthError("bad creds")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_change_user_password(mock_user, "oldpass", "newpass")
+
+
+async def test_async_change_user_password_server_error(hass):
+    """Test CameDomoticServerError during password change raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "testuser"
+    mock_user.async_change_password = AsyncMock(
+        side_effect=CameDomoticServerError("server err")
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_change_user_password(mock_user, "oldpass", "newpass")
+
+
+async def test_async_change_user_password_generic_error(hass):
+    """Test CameDomoticError during password change raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.name = "testuser"
+    mock_user.async_change_password = AsyncMock(side_effect=CameDomoticError("generic"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_change_user_password(mock_user, "oldpass", "newpass")
+
+
+async def test_async_change_user_password_not_initialized(hass):
+    """Test async_change_user_password raises ApiClientError when not connected."""
+    client = _make_client(hass)
+    mock_user = MagicMock()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_change_user_password(mock_user, "oldpass", "newpass")
+
+
+# --- async_get_terminal_groups ---
+
+
+async def test_async_get_terminal_groups_success(hass):
+    """Test successful terminal groups retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_groups = [MagicMock(), MagicMock()]
+    mock_api.async_get_terminal_groups.return_value = mock_groups
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_terminal_groups()
+    assert result is mock_groups
+
+
+async def test_async_get_terminal_groups_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_terminal_groups.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientAuthenticationError):
+        await client.async_get_terminal_groups()
+
+
+async def test_async_get_terminal_groups_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_terminal_groups.side_effect = CameDomoticServerError(
+        "server err"
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientCommunicationError):
+        await client.async_get_terminal_groups()
+
+
+async def test_async_get_terminal_groups_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_terminal_groups.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticUnofficialApiClientError):
+        await client.async_get_terminal_groups()
+
+
+async def test_async_get_terminal_groups_not_initialized(hass):
+    """Test async_get_terminal_groups raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticUnofficialApiClientError, match="Not initialized"):
+        await client.async_get_terminal_groups()
