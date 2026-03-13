@@ -26,7 +26,9 @@ _SEASON_OPTIONS: dict[str, ThermoZoneSeason] = {
     "summer": ThermoZoneSeason.SUMMER,
     "plant_off": ThermoZoneSeason.PLANT_OFF,
 }
-_SEASON_REVERSE: dict[ThermoZoneSeason, str] = {v: k for k, v in _SEASON_OPTIONS.items()}
+_SEASON_REVERSE: dict[ThermoZoneSeason, str] = {
+    v: k for k, v in _SEASON_OPTIONS.items()
+}
 
 
 async def async_setup_entry(

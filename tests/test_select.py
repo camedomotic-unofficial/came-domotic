@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from aiocamedomotic.models import ThermoZoneSeason
 from homeassistant.helpers import entity_registry as er
@@ -95,9 +95,9 @@ async def test_thermo_season_select_not_created_when_no_zones(hass):
 
 async def test_thermo_season_select_current_option(hass):
     """Test current_option reads season from first thermo zone."""
-    config_entry = await _setup_entry(hass)
+    await _setup_entry(hass)
 
-    state = hass.states.get("select.came_domotic_test_home")
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
     assert state is not None
     assert state.state == "winter"
 
@@ -109,7 +109,7 @@ async def test_thermo_season_select_current_option_summer(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("select.came_domotic_test_home")
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
     assert state is not None
     assert state.state == "summer"
 
@@ -121,7 +121,7 @@ async def test_thermo_season_select_current_option_plant_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("select.came_domotic_test_home")
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
     assert state is not None
     assert state.state == "plant_off"
 
@@ -141,7 +141,7 @@ async def test_thermo_season_select_current_option_no_zones(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("select.came_domotic_test_home")
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
     assert state is not None
     assert state.state == "unknown"
 
@@ -157,7 +157,7 @@ async def test_thermo_season_select_option_winter(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home",
+            "entity_id": "select.came_domotic_test_home_thermo_season",
             "option": "winter",
         },
         blocking=True,
@@ -179,7 +179,7 @@ async def test_thermo_season_select_option_summer(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home",
+            "entity_id": "select.came_domotic_test_home_thermo_season",
             "option": "summer",
         },
         blocking=True,
@@ -201,7 +201,7 @@ async def test_thermo_season_select_option_plant_off(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home",
+            "entity_id": "select.came_domotic_test_home_thermo_season",
             "option": "plant_off",
         },
         blocking=True,
@@ -216,7 +216,7 @@ async def test_thermo_season_select_options_list(hass):
     """Test the select entity exposes the correct options."""
     await _setup_entry(hass)
 
-    state = hass.states.get("select.came_domotic_test_home")
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
     assert state is not None
     assert state.attributes["options"] == ["winter", "summer", "plant_off"]
 
@@ -242,3 +242,21 @@ async def test_thermo_season_select_unknown_option(hass):
 
     await entity.async_select_option("invalid_season")
     coordinator.api.async_set_thermo_season.assert_not_awaited()
+
+
+async def test_thermo_season_select_unavailable_when_disconnected(hass):
+    """Test the select entity becomes unavailable when the server disconnects."""
+    config_entry = await _setup_entry(hass)
+
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    assert state is not None
+    assert state.state != "unavailable"
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._server_available = False
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    assert state is not None
+    assert state.state == "unavailable"
