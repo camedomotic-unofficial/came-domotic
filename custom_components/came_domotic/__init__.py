@@ -13,17 +13,14 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
-from .api import (
-    CameDomoticApiClient,
-    CameDomoticApiClientCommunicationError,
-    CameDomoticApiClientError,
-)
-from .const import DOMAIN
+from .api import CameDomoticApiClient, CameDomoticApiClientCommunicationError
+from .const import DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
 from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
 from .models import CameDomoticServerData, PingResult
 from .services import async_setup_services, async_unload_services
@@ -82,7 +79,7 @@ async def async_setup_entry(
         await client.async_connect()
         connected = True
         _LOGGER.debug("Connected to CAME server at %s", host)
-    except (CameDomoticApiClientCommunicationError, CameDomoticApiClientError):
+    except CameDomoticApiClientCommunicationError:
         connected = False
         _LOGGER.warning(
             "CAME server at %s is not reachable; "
@@ -97,10 +94,19 @@ async def async_setup_entry(
     )
 
     if connected:
-        await coordinator.async_config_entry_first_refresh()
-        _LOGGER.debug("Initial data refresh completed")
-        coordinator.start_long_poll()
-    else:
+        try:
+            await coordinator.async_config_entry_first_refresh()
+            _LOGGER.debug("Initial data refresh completed")
+            coordinator.start_long_poll()
+        except ConfigEntryNotReady:
+            connected = False
+            _LOGGER.warning(
+                "CAME server at %s dropped during initial data fetch; "
+                "continuing in offline mode (will retry via ping)",
+                host,
+            )
+
+    if not connected:
         # Set empty data so platforms can set up (no device entities yet).
         # The entry will be reloaded once the server becomes reachable.
         coordinator.async_set_updated_data(CameDomoticServerData())
@@ -113,6 +119,7 @@ async def async_setup_entry(
     if connected:
         await ping_coordinator.async_config_entry_first_refresh()
     else:
+        ping_coordinator.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
         ping_coordinator.async_set_updated_data(
             PingResult(connected=False, latency_ms=None)
         )

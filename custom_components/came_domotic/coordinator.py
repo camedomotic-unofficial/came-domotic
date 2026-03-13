@@ -130,8 +130,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 self._server_available = False
                 self.async_update_listeners()
                 if self._long_poll_task is not None:
-                    self._long_poll_task.cancel()
-                    self._long_poll_task = None
+                    self.hass.async_create_task(self.stop_long_poll())
 
         self.config_entry.async_on_unload(
             ping_coordinator.async_add_listener(_on_ping_update)
@@ -157,7 +156,12 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 "Resuming long-poll with stale data",
                 err,
             )
-        self.start_long_poll()
+        if self._server_available:
+            self.start_long_poll()
+        else:
+            _LOGGER.debug(
+                "Server went unavailable during refresh; not starting long-poll"
+            )
 
     async def _async_update_data(self) -> CameDomoticServerData:
         """Perform a full data fetch from the CAME server.

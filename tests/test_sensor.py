@@ -288,9 +288,6 @@ async def test_server_latency_sensor_no_data_when_unreachable(hass):
 
 def test_server_latency_native_value():
     """Test CameDomoticServerLatencySensor.native_value reads from coordinator data."""
-    from unittest.mock import MagicMock
-
-    from custom_components.came_domotic.models import PingResult
     from custom_components.came_domotic.sensor import CameDomoticServerLatencySensor
 
     coordinator = MagicMock()

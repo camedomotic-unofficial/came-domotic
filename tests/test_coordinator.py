@@ -1853,6 +1853,46 @@ async def test_reconnect_refresh_comm_error_resumes_long_poll(hass):
         await coordinator.stop_long_poll()
 
 
+async def test_reconnect_skips_long_poll_if_server_went_unavailable(hass):
+    """Test that refresh_and_resume skips long-poll if server went unavailable."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=5.0),
+        patch.object(
+            CameDomoticDataUpdateCoordinator,
+            "_async_long_poll_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = config_entry.runtime_data.coordinator
+        await coordinator.stop_long_poll()
+
+        # Mark server as unavailable (simulates a fast flap where a new
+        # disconnect arrives while _async_refresh_and_resume is running)
+        coordinator._server_available = False
+
+        # Call _async_refresh_and_resume directly — it should NOT start long-poll
+        await coordinator._async_refresh_and_resume()
+
+        assert coordinator._long_poll_task is None
+
+
 async def test_ping_coordinator_attempts_connect_when_not_connected(hass):
     """Test ping coordinator tries async_connect when API is not connected."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")

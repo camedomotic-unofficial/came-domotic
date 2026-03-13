@@ -33,7 +33,7 @@ class CameDomoticEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator]):
             manufacturer=MANUFACTURER,
             model=(
                 f"Server type: {stored['type']} - Board: {stored['board']}"
-                if "type" in stored
+                if "type" in stored and "board" in stored
                 else None
             ),
             serial_number=stored.get("serial"),

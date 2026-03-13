@@ -1256,6 +1256,19 @@ async def test_async_ping_server_error(hass):
         await client.async_ping()
 
 
+async def test_async_ping_generic_error(hass):
+    """Test CameDomoticError during ping raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_ping.side_effect = CameDomoticError("unexpected")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_ping()
+
+
 async def test_async_ping_not_initialized(hass):
     """Test async_ping raises ApiClientError when not connected."""
     client = _make_client(hass)
