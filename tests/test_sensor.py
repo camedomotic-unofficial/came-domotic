@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+from aiocamedomotic.models import ThermoZoneSeason
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import entity_registry as er
@@ -12,7 +13,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
-from .conftest import _mock_server_info
+from .conftest import MOCK_FLOORS, MOCK_ROOMS, _mock_server_info
 from .const import MOCK_CONFIG
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
@@ -28,7 +29,7 @@ def _mock_thermo_zone(
     temperature,
     set_point=21.0,
     mode="AUTO",
-    season="winter",
+    season=ThermoZoneSeason.WINTER,
     status=1,
     antifreeze=5.0,
     floor_ind=0,
@@ -42,7 +43,7 @@ def _mock_thermo_zone(
     zone.temperature = temperature
     zone.set_point = set_point
     zone.mode.name = mode
-    zone.season.name = season
+    zone.season = season
     zone.status.name = "ON" if status else "OFF"
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
@@ -54,7 +55,7 @@ def _mock_thermo_zone(
         "temp_dec": int(temperature * 10),
         "set_point": int(set_point * 10),
         "mode": 2 if mode == "AUTO" else 1,
-        "season": season,
+        "season": season.value,
         "status": status,
         "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
         "leaf": int(leaf),
@@ -101,6 +102,14 @@ async def _setup_entry(hass, mock_zones, ping_return=10.0):
         patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_floors",
+            return_value=list(MOCK_FLOORS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_rooms",
+            return_value=list(MOCK_ROOMS),
+        ),
         patch(f"{_API_CLIENT}.async_ping", return_value=ping_return),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),
@@ -205,7 +214,7 @@ async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
     assert state is not None
     assert state.attributes["set_point"] == 21.0
     assert state.attributes["mode"] == "AUTO"
-    assert state.attributes["season"] == "winter"
+    assert state.attributes["season"] == "WINTER"
     assert state.attributes["status"] == "ON"
     assert state.attributes["antifreeze"] == 5.0
 

@@ -21,7 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CameDomoticConfigEntry
 from .coordinator import CameDomoticDataUpdateCoordinator
-from .entity import CameDomoticEntity
+from .entity import CameDomoticDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,12 +41,19 @@ async def async_setup_entry(
     openings = coordinator.data.openings
     _LOGGER.debug("Setting up %d opening cover(s)", len(openings))
     async_add_entities(
-        CameDomoticCover(coordinator, open_act_id, opening.name, opening.type)
+        CameDomoticCover(
+            coordinator,
+            open_act_id,
+            opening.name,
+            opening.type,
+            opening.floor_ind,
+            opening.room_ind,
+        )
         for open_act_id, opening in openings.items()
     )
 
 
-class CameDomoticCover(CameDomoticEntity, CoverEntity):
+class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
     """Cover entity for a CAME Domotic opening (e.g. shutter).
 
     Supports open/close/stop motor control and slat (tilt) open/close.
@@ -69,6 +76,8 @@ class CameDomoticCover(CameDomoticEntity, CoverEntity):
         open_act_id: int,
         opening_name: str,
         opening_type: OpeningType,
+        floor_ind: int | None = None,
+        room_ind: int | None = None,
     ) -> None:
         """Initialize the opening cover.
 
@@ -77,8 +86,17 @@ class CameDomoticCover(CameDomoticEntity, CoverEntity):
             open_act_id: The actuator ID that identifies this opening.
             opening_name: The display name of the opening.
             opening_type: The type of opening (e.g. SHUTTER).
+            floor_ind: Floor index for suggested area lookup.
+            room_ind: Room index for suggested area lookup.
         """
-        super().__init__(coordinator, entity_key=f"opening_{open_act_id}")
+        super().__init__(
+            coordinator,
+            entity_key=f"opening_{open_act_id}",
+            device_name=opening_name,
+            device_id=f"opening_{open_act_id}",
+            floor_ind=floor_ind,
+            room_ind=room_ind,
+        )
         self._open_act_id = open_act_id
         self._attr_has_entity_name = False
         self._attr_name = opening_name

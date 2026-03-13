@@ -17,14 +17,17 @@ from aiocamedomotic.errors import (
 )
 from aiocamedomotic.models import (
     DigitalInput,
+    Floor,
     Light,
     LightStatus,
     Opening,
     OpeningStatus,
+    Room,
     Scenario,
     ServerInfo,
     TerminalGroup,
     ThermoZone,
+    ThermoZoneSeason,
     UpdateList,
     User,
 )
@@ -232,6 +235,31 @@ class CameDomoticApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Activating scenario '%s' (id=%d)", scenario.name, scenario.id)
         await scenario.async_activate()
+
+    @_translate_errors
+    async def async_get_floors(self) -> list[Floor]:
+        """Fetch floors from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching floors from %s", self._host)
+        floors = await self._api.async_get_floors()
+        _LOGGER.debug("Fetched %d floor(s)", len(floors))
+        return floors
+
+    @_translate_errors
+    async def async_get_rooms(self) -> list[Room]:
+        """Fetch rooms from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching rooms from %s", self._host)
+        rooms = await self._api.async_get_rooms()
+        _LOGGER.debug("Fetched %d room(s)", len(rooms))
+        return rooms
+
+    @_translate_errors
+    async def async_set_thermo_season(self, season: ThermoZoneSeason) -> None:
+        """Set the global thermoregulation season."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Setting thermo season to %s", season.name)
+        await self._api.async_set_thermo_season(season)
 
     @_translate_errors
     async def async_get_users(self) -> list[User]:

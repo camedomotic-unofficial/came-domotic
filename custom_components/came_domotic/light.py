@@ -24,7 +24,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CameDomoticConfigEntry
 from .coordinator import CameDomoticDataUpdateCoordinator
-from .entity import CameDomoticEntity
+from .entity import CameDomoticDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,12 +46,19 @@ async def async_setup_entry(
     lights = coordinator.data.lights
     _LOGGER.debug("Setting up %d light(s)", len(lights))
     async_add_entities(
-        CameDomoticLight(coordinator, act_id, light.name, light.type)
+        CameDomoticLight(
+            coordinator,
+            act_id,
+            light.name,
+            light.type,
+            light.floor_ind,
+            light.room_ind,
+        )
         for act_id, light in lights.items()
     )
 
 
-class CameDomoticLight(CameDomoticEntity, LightEntity):
+class CameDomoticLight(CameDomoticDeviceEntity, LightEntity):
     """Light entity for a CAME Domotic light.
 
     Supports on/off, dimmable, and RGB lights depending on the
@@ -64,6 +71,8 @@ class CameDomoticLight(CameDomoticEntity, LightEntity):
         act_id: int,
         light_name: str,
         light_type: LightType,
+        floor_ind: int | None = None,
+        room_ind: int | None = None,
     ) -> None:
         """Initialize the light entity.
 
@@ -72,8 +81,17 @@ class CameDomoticLight(CameDomoticEntity, LightEntity):
             act_id: The actuator ID that identifies this light.
             light_name: The display name of the light.
             light_type: The type of light (STEP_STEP, DIMMER, RGB).
+            floor_ind: Floor index for suggested area lookup.
+            room_ind: Room index for suggested area lookup.
         """
-        super().__init__(coordinator, entity_key=f"light_{act_id}")
+        super().__init__(
+            coordinator,
+            entity_key=f"light_{act_id}",
+            device_name=light_name,
+            device_id=f"light_{act_id}",
+            floor_ind=floor_ind,
+            room_ind=room_ind,
+        )
         self._act_id = act_id
         self._attr_has_entity_name = False
         self._attr_name = light_name

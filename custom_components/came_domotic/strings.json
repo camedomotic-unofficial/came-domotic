@@ -54,6 +54,16 @@
         "name": "Connectivity"
       }
     },
+    "select": {
+      "thermo_season": {
+        "name": "Thermo season",
+        "state": {
+          "winter": "Winter",
+          "summer": "Summer",
+          "plant_off": "Plant off"
+        }
+      }
+    },
     "sensor": {
       "ping_latency": {
         "name": "Ping latency"

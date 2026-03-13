@@ -1,5 +1,7 @@
 """Global fixtures for CAME Domotic integration."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 from aiocamedomotic.models import (
@@ -9,6 +11,7 @@ from aiocamedomotic.models import (
     LightType,
     OpeningStatus,
     OpeningType,
+    ThermoZoneSeason,
 )
 import pytest
 
@@ -34,7 +37,7 @@ def _mock_thermo_zone(
     temperature,
     set_point=21.0,
     mode="AUTO",
-    season="winter",
+    season=ThermoZoneSeason.WINTER,
     status=1,
     antifreeze=5.0,
     floor_ind=0,
@@ -52,7 +55,7 @@ def _mock_thermo_zone(
     zone.temperature = temperature
     zone.set_point = set_point
     zone.mode.name = mode
-    zone.season.name = season
+    zone.season = season
     zone.status.name = "ON" if status else "OFF"
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
@@ -64,7 +67,7 @@ def _mock_thermo_zone(
         "temp_dec": int(temperature * 10),
         "set_point": int(set_point * 10),
         "mode": 2 if mode == "AUTO" else 1,
-        "season": 1 if season == "winter" else 2,
+        "season": season.value,
         "status": status,
         "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
         "leaf": int(leaf),
@@ -253,6 +256,34 @@ MOCK_DIGITAL_INPUTS = [
 ]
 
 
+def _mock_floor(floor_id, name):
+    """Create a mock Floor object."""
+    floor = MagicMock()
+    floor.id = floor_id
+    floor.name = name
+    return floor
+
+
+def _mock_room(room_id, name, floor_id=0):
+    """Create a mock Room object."""
+    room = MagicMock()
+    room.id = room_id
+    room.name = name
+    room.floor_id = floor_id
+    return room
+
+
+MOCK_FLOORS = [
+    _mock_floor(0, "Ground Floor"),
+    _mock_floor(1, "First Floor"),
+]
+
+MOCK_ROOMS = [
+    _mock_room(0, "Living Room", floor_id=0),
+    _mock_room(1, "Bedroom", floor_id=1),
+]
+
+
 def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
@@ -273,6 +304,8 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     openings={o.open_act_id: o for o in MOCK_OPENINGS},
     lights={lt.act_id: lt for lt in MOCK_LIGHTS},
     digital_inputs={di.act_id: di for di in MOCK_DIGITAL_INPUTS},
+    floors={f.id: f for f in MOCK_FLOORS},
+    rooms={r.id: r for r in MOCK_ROOMS},
 )
 
 
@@ -310,6 +343,14 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_digital_inputs",
             return_value=list(MOCK_DIGITAL_INPUTS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_floors",
+            return_value=list(MOCK_FLOORS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_rooms",
+            return_value=list(MOCK_ROOMS),
         ),
         patch(f"{_API_CLIENT}.async_ping", return_value=10.0),
         patch(f"{_API_CLIENT}.async_dispose"),

@@ -40,6 +40,14 @@ async def _setup_entry(hass, mock_digital_inputs, ping_return=10.0):
             f"{_API_CLIENT}.async_get_digital_inputs",
             return_value=mock_digital_inputs,
         ),
+        patch(
+            f"{_API_CLIENT}.async_get_floors",
+            return_value=[],
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_rooms",
+            return_value=[],
+        ),
         patch(f"{_API_CLIENT}.async_ping", return_value=ping_return),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),

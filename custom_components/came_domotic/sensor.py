@@ -23,7 +23,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import CameDomoticConfigEntry
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
-from .entity import CameDomoticEntity
+from .entity import CameDomoticDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +60,14 @@ async def async_setup_entry(
         [
             CameDomoticServerLatencySensor(ping_coordinator, entry.entry_id),
             *(
-                CameDomoticThermoZoneSensor(coordinator, act_id, zone.name, description)
+                CameDomoticThermoZoneSensor(
+                    coordinator,
+                    act_id,
+                    zone.name,
+                    description,
+                    zone.floor_ind,
+                    zone.room_ind,
+                )
                 for act_id, zone in zones.items()
                 for description in THERMO_ZONE_SENSORS
             ),
@@ -68,7 +75,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticThermoZoneSensor(CameDomoticEntity, SensorEntity):
+class CameDomoticThermoZoneSensor(CameDomoticDeviceEntity, SensorEntity):
     """Sensor for a CAME Domotic thermoregulation zone."""
 
     entity_description: CameDomoticSensorDescription
@@ -79,10 +86,17 @@ class CameDomoticThermoZoneSensor(CameDomoticEntity, SensorEntity):
         act_id: int,
         zone_name: str,
         description: CameDomoticSensorDescription,
+        floor_ind: int | None = None,
+        room_ind: int | None = None,
     ) -> None:
         """Initialize the thermo zone sensor."""
         super().__init__(
-            coordinator, entity_key=f"thermo_zone_{act_id}_{description.key}"
+            coordinator,
+            entity_key=f"thermo_zone_{act_id}_{description.key}",
+            device_name=zone_name,
+            device_id=f"thermo_zone_{act_id}",
+            floor_ind=floor_ind,
+            room_ind=room_ind,
         )
         self.entity_description = description
         self._act_id = act_id
