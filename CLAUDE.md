@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A Home Assistant custom integration for CAME Domotic devices. Distributed via HACS (Home Assistant Community Store). Built from the `integration_blueprint` / cookiecutter template.
 
 - **Domain**: `came_domotic`
-- **IoT class**: `local_push` — communicates with a local CAME Domotic server via long polling
+- **IoT class**: `local_push` — communicates with a local CAME Domotic server via long polling. The only exception is the ping coordinator, which uses interval-based polling to monitor server reachability
 - **Multiple config entries**: supports multiple instances (e.g., different local devices)
 - **API layer**: `api.py` is a wrapper around the `aiocamedomotic` library (not direct HTTP calls).
 - **aiocamedomotic docs**: Fetch the up-to-date API reference from these remote URLs:
@@ -64,10 +64,10 @@ Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (securi
 ### Key modules (`custom_components/came_domotic/`)
 
 - **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`. Includes `async_get_updates()` for long-polling.
-- **coordinator.py** - Push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`.
+- **coordinator.py** - Contains two coordinators: (1) `CameDomoticDataUpdateCoordinator` — push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`. (2) `CameDomoticPingCoordinator` — polling-based coordinator that monitors server reachability via `async_ping()`, adjusting its interval between connected (`PING_UPDATE_INTERVAL`) and disconnected (`PING_UPDATE_INTERVAL_DISCONNECTED`) cadences. Drives the long-poll lifecycle (stop on disconnect, restart on recovery).
 - **entity.py** - Base `CoordinatorEntity` subclass setting common attributes (attribution, device info, unique_id)
 - **config_flow.py** - Setup flow (user step, DHCP discovery, reconfigure, reauth)
-- **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`)
+- **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`), and ping constants (`PING_UPDATE_INTERVAL`, `PING_UPDATE_INTERVAL_DISCONNECTED`)
 
 ### Adding a new device type platform
 

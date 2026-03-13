@@ -26,7 +26,7 @@ from .api import (
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
 )
-from .const import DOMAIN
+from .const import CONF_SERVER_INFO, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,9 +44,10 @@ async def _async_test_credentials(
     host: str,
     username: str,
     password: str,
-) -> str:
-    """Validate credentials and return the server keycode.
+) -> tuple[str, dict[str, str | None]]:
+    """Validate credentials and return the server keycode and info.
 
+    Returns a tuple of (keycode, server_info_dict).
     Raises CannotConnect or InvalidAuth on failure.
     """
     _LOGGER.debug("Testing credentials for host %s", host)
@@ -56,7 +57,12 @@ async def _async_test_credentials(
         await client.async_connect()
         server_info = await client.async_get_server_info()
         _LOGGER.debug("Credentials validated, server keycode: %s", server_info.keycode)
-        return server_info.keycode
+        return server_info.keycode, {
+            "board": server_info.board,
+            "type": server_info.type,
+            "serial": server_info.serial,
+            "swver": server_info.swver,
+        }
     except CameDomoticApiClientAuthenticationError as err:
         raise InvalidAuth from err
     except CameDomoticApiClientCommunicationError as err:
@@ -81,7 +87,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                keycode = await _async_test_credentials(
+                keycode, server_info_dict = await _async_test_credentials(
                     self.hass,
                     user_input[CONF_HOST],
                     user_input[CONF_USERNAME],
@@ -104,7 +110,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                 )
                 return self.async_create_entry(
                     title=f"CAME Domotic ({user_input[CONF_HOST]})",
-                    data=user_input,
+                    data={**user_input, CONF_SERVER_INFO: server_info_dict},
                 )
 
         return self.async_show_form(
@@ -154,7 +160,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                keycode = await _async_test_credentials(
+                keycode, server_info_dict = await _async_test_credentials(
                     self.hass,
                     self._discovered_host,
                     user_input[CONF_USERNAME],
@@ -179,6 +185,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                         CONF_HOST: self._discovered_host,
                         CONF_USERNAME: user_input[CONF_USERNAME],
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
+                        CONF_SERVER_INFO: server_info_dict,
                     },
                 )
 
@@ -215,7 +222,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                await _async_test_credentials(
+                _keycode, server_info_dict = await _async_test_credentials(
                     self.hass,
                     reauth_entry.data[CONF_HOST],
                     user_input[CONF_USERNAME],
@@ -242,6 +249,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                         **reauth_entry.data,
                         CONF_USERNAME: user_input[CONF_USERNAME],
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
+                        CONF_SERVER_INFO: server_info_dict,
                     },
                 )
 
@@ -273,7 +281,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                await _async_test_credentials(
+                _keycode, server_info_dict = await _async_test_credentials(
                     self.hass,
                     user_input[CONF_HOST],
                     user_input[CONF_USERNAME],
@@ -300,7 +308,11 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                 return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     unique_id=reconfigure_entry.unique_id,
-                    data={**reconfigure_entry.data, **user_input},
+                    data={
+                        **reconfigure_entry.data,
+                        **user_input,
+                        CONF_SERVER_INFO: server_info_dict,
+                    },
                     reason="reconfigure_successful",
                 )
 

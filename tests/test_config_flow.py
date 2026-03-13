@@ -22,7 +22,7 @@ from custom_components.came_domotic.api import (
 )
 from custom_components.came_domotic.const import DOMAIN
 
-from .const import MOCK_CONFIG, MOCK_KEYCODE
+from .const import MOCK_CONFIG, MOCK_CONFIG_WITH_SERVER_INFO, MOCK_KEYCODE
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
@@ -55,7 +55,7 @@ async def test_successful_config_flow(hass, bypass_test_credentials):
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == f"CAME Domotic ({MOCK_CONFIG[CONF_HOST]})"
-    assert result["data"] == MOCK_CONFIG
+    assert result["data"] == MOCK_CONFIG_WITH_SERVER_INFO
     assert result["result"]
 
 
@@ -386,7 +386,7 @@ async def test_dhcp_discovery_new_device(hass, bypass_test_credentials):
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == f"CAME Domotic ({MOCK_CONFIG[CONF_HOST]})"
-    assert result["data"] == MOCK_CONFIG
+    assert result["data"] == MOCK_CONFIG_WITH_SERVER_INFO
     assert result["result"].unique_id == MOCK_KEYCODE
 
 

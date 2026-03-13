@@ -13,14 +13,16 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
-from .api import CameDomoticApiClient
-from .const import DOMAIN
-from .coordinator import CameDomoticDataUpdateCoordinator
+from .api import CameDomoticApiClient, CameDomoticApiClientCommunicationError
+from .const import DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
+from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
+from .models import CameDomoticServerData, PingResult
 from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,6 +46,7 @@ class RuntimeData:
 
     coordinator: CameDomoticDataUpdateCoordinator
     client: CameDomoticApiClient
+    ping_coordinator: CameDomoticPingCoordinator
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -69,21 +72,69 @@ async def async_setup_entry(
 
     session = async_get_clientsession(hass)
     client = CameDomoticApiClient(host, username, password, session)
-    await client.async_connect()
-    _LOGGER.debug("Connected to CAME server at %s", host)
+
+    # Attempt connection — if the server is offline, continue setup gracefully.
+    # The ping coordinator will keep retrying and reload the entry on recovery.
+    try:
+        await client.async_connect()
+        connected = True
+        _LOGGER.debug("Connected to CAME server at %s", host)
+    except CameDomoticApiClientCommunicationError:
+        connected = False
+        _LOGGER.warning(
+            "CAME server at %s is not reachable; "
+            "setting up in offline mode (will retry via ping)",
+            host,
+        )
 
     coordinator = CameDomoticDataUpdateCoordinator(
         hass,
         client=client,
         config_entry=entry,
     )
-    await coordinator.async_config_entry_first_refresh()
-    _LOGGER.debug("Initial data refresh completed")
 
-    # Start the long-polling background task for real-time updates
-    coordinator.start_long_poll()
+    if connected:
+        try:
+            await coordinator.async_config_entry_first_refresh()
+            _LOGGER.debug("Initial data refresh completed")
+            coordinator.start_long_poll()
+        except ConfigEntryNotReady:
+            connected = False
+            _LOGGER.warning(
+                "CAME server at %s dropped during initial data fetch; "
+                "continuing in offline mode (will retry via ping)",
+                host,
+            )
 
-    entry.runtime_data = RuntimeData(coordinator=coordinator, client=client)
+    if not connected:
+        # Set empty data so platforms can set up (no device entities yet).
+        # The entry will be reloaded once the server becomes reachable.
+        coordinator.async_set_updated_data(CameDomoticServerData())
+        coordinator._server_available = False  # noqa: SLF001
+        coordinator._started_offline = True  # noqa: SLF001
+
+    ping_coordinator = CameDomoticPingCoordinator(
+        hass, client=client, config_entry=entry
+    )
+    if connected:
+        await ping_coordinator.async_config_entry_first_refresh()
+    else:
+        ping_coordinator.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=False, latency_ms=None)
+        )
+
+    # Ping is the single authority on connectivity: it drives entity availability
+    # and the long-poll lifecycle (stop on disconnect, restart on recovery).
+    coordinator.attach_ping_coordinator(ping_coordinator)
+
+    entry.runtime_data = RuntimeData(
+        coordinator=coordinator, client=client, ping_coordinator=ping_coordinator
+    )
+
+    # Ensure services are registered (idempotent — covers edge cases where
+    # async_setup was not called, e.g. after a failed first load attempt).
+    await async_setup_services(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

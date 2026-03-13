@@ -311,6 +311,7 @@ def bypass_get_data_fixture():
             f"{_API_CLIENT}.async_get_digital_inputs",
             return_value=list(MOCK_DIGITAL_INPUTS),
         ),
+        patch(f"{_API_CLIENT}.async_ping", return_value=10.0),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),
     ):

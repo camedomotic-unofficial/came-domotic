@@ -338,7 +338,10 @@ async def async_handle_get_users(call: ServiceCall) -> ServiceResponse:
 
 
 async def async_setup_services(hass: HomeAssistant) -> None:
-    """Register the integration services."""
+    """Register the integration services (idempotent)."""
+    if hass.services.has_service(DOMAIN, SERVICE_CREATE_USER):
+        return
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_CREATE_USER,
@@ -386,10 +389,14 @@ async def async_unload_services(hass: HomeAssistant) -> None:
     if loaded_entries:
         return
 
-    hass.services.async_remove(DOMAIN, SERVICE_CREATE_USER)
-    hass.services.async_remove(DOMAIN, SERVICE_DELETE_USER)
-    hass.services.async_remove(DOMAIN, SERVICE_CHANGE_PASSWORD)
-    hass.services.async_remove(DOMAIN, SERVICE_GET_TERMINAL_GROUPS)
-    hass.services.async_remove(DOMAIN, SERVICE_GET_USERS)
+    for service in (
+        SERVICE_CREATE_USER,
+        SERVICE_DELETE_USER,
+        SERVICE_CHANGE_PASSWORD,
+        SERVICE_GET_TERMINAL_GROUPS,
+        SERVICE_GET_USERS,
+    ):
+        if hass.services.has_service(DOMAIN, service):
+            hass.services.async_remove(DOMAIN, service)
 
     _LOGGER.debug("Removed %s services", DOMAIN)

@@ -10,7 +10,7 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.came_domotic.const import DOMAIN
-from custom_components.came_domotic.models import CameDomoticServerData
+from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
 from .conftest import _mock_server_info
 from .const import MOCK_CONFIG
@@ -82,7 +82,7 @@ def _mock_zones_list():
     ]
 
 
-async def _setup_entry(hass, mock_zones):
+async def _setup_entry(hass, mock_zones, ping_return=10.0):
     """Set up a config entry with the given mock thermo zones list."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
@@ -101,6 +101,7 @@ async def _setup_entry(hass, mock_zones):
         patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_ping", return_value=ping_return),
         patch(f"{_API_CLIENT}.async_dispose"),
         patch(f"{_COORDINATOR}.start_long_poll"),
     ):
@@ -124,7 +125,7 @@ async def test_thermo_zone_sensors_created(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     ]
-    assert len(entries) == 2
+    assert len(entries) == 3
 
 
 async def test_thermo_zone_sensor_state(hass, bypass_get_data):
@@ -175,11 +176,12 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
     assert unique_ids == {
         "test_thermo_zone_1_temperature",
         "test_thermo_zone_52_temperature",
+        "test_ping_latency",
     }
 
 
 async def test_no_thermo_zones(hass):
-    """Test no sensor entities created when there are no thermo zones."""
+    """Test only the latency sensor is created when there are no thermo zones."""
     config_entry = await _setup_entry(hass, [])
 
     registry = er.async_get(hass)
@@ -188,7 +190,7 @@ async def test_no_thermo_zones(hass):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     ]
-    assert len(entries) == 0
+    assert len(entries) == 1
 
 
 async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
@@ -234,3 +236,64 @@ async def test_thermo_zone_sensor_zone_not_found(hass):
     state = hass.states.get("sensor.living_room")
     assert state is not None
     assert state.state == "unknown"
+
+
+# --- Server latency sensor ---
+
+
+async def test_server_latency_sensor_created(hass, bypass_get_data):
+    """Test one latency sensor is created per config entry, disabled by default."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    entry = next(
+        (
+            e
+            for e in registry.entities.values()
+            if e.config_entry_id == config_entry.entry_id
+            and e.unique_id == "test_ping_latency"
+        ),
+        None,
+    )
+    assert entry is not None
+    assert entry.domain == "sensor"
+    assert entry.disabled_by is not None  # disabled by default
+
+
+async def test_server_latency_sensor_value(hass):
+    """Test latency sensor reflects the round-trip time from async_ping."""
+    config_entry = await _setup_entry(hass, [], ping_return=12.5)
+
+    ping_coordinator = config_entry.runtime_data.ping_coordinator
+    assert ping_coordinator.data is not None
+    assert ping_coordinator.data.latency_ms == 12.5
+
+
+async def test_server_latency_sensor_no_data_when_unreachable(hass):
+    """Test latency sensor returns None when server is unreachable."""
+    config_entry = await _setup_entry(hass, [], ping_return=10.0)
+
+    ping_coordinator = config_entry.runtime_data.ping_coordinator
+    ping_coordinator.async_set_updated_data(
+        PingResult(connected=False, latency_ms=None)
+    )
+    await hass.async_block_till_done()
+
+    assert ping_coordinator.data.latency_ms is None
+
+
+def test_server_latency_native_value():
+    """Test CameDomoticServerLatencySensor.native_value reads from coordinator data."""
+    from custom_components.came_domotic.sensor import CameDomoticServerLatencySensor
+
+    coordinator = MagicMock()
+    coordinator.data = PingResult(connected=True, latency_ms=25.0)
+    entity = CameDomoticServerLatencySensor(coordinator, "test_entry")
+    assert entity.native_value == 25.0
+
+    coordinator.data = PingResult(connected=False, latency_ms=None)
+    assert entity.native_value is None

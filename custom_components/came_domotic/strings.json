@@ -48,6 +48,18 @@
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
     }
   },
+  "entity": {
+    "binary_sensor": {
+      "server_connectivity": {
+        "name": "Connectivity"
+      }
+    },
+    "sensor": {
+      "ping_latency": {
+        "name": "Ping latency"
+      }
+    }
+  },
   "services": {
     "create_user": {
       "name": "Create user",
