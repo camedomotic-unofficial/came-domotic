@@ -14,12 +14,15 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CameDomoticConfigEntry
-from .coordinator import CameDomoticDataUpdateCoordinator
+from .const import ATTRIBUTION, DOMAIN
+from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
 from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,12 +53,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensor platform."""
     coordinator = entry.runtime_data.coordinator
+    ping_coordinator = entry.runtime_data.ping_coordinator
     zones = coordinator.data.thermo_zones
     _LOGGER.debug("Setting up %d thermo zone sensor(s)", len(zones))
     async_add_entities(
-        CameDomoticThermoZoneSensor(coordinator, act_id, zone.name, description)
-        for act_id, zone in zones.items()
-        for description in THERMO_ZONE_SENSORS
+        [
+            CameDomoticServerLatencySensor(ping_coordinator, entry.entry_id),
+            *(
+                CameDomoticThermoZoneSensor(coordinator, act_id, zone.name, description)
+                for act_id, zone in zones.items()
+                for description in THERMO_ZONE_SENSORS
+            ),
+        ]
     )
 
 
@@ -101,3 +110,38 @@ class CameDomoticThermoZoneSensor(CameDomoticEntity, SensorEntity):
             "status": zone.status.name,
             "antifreeze": zone.antifreeze,
         }
+
+
+class CameDomoticServerLatencySensor(
+    CoordinatorEntity[CameDomoticPingCoordinator], SensorEntity
+):
+    """Diagnostic sensor reporting round-trip latency to the CAME server in ms.
+
+    Disabled by default — enable it to monitor server response times.
+    Shows unknown when the server is unreachable.
+    """
+
+    _attr_has_entity_name = True
+    _attr_attribution = ATTRIBUTION
+    _attr_translation_key = "ping_latency"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.MILLISECONDS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_suggested_display_precision = 1
+
+    def __init__(
+        self,
+        coordinator: CameDomoticPingCoordinator,
+        entry_id: str,
+    ) -> None:
+        """Initialize the server latency sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_ping_latency"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the last measured round-trip latency in milliseconds."""
+        return self.coordinator.data.latency_ms

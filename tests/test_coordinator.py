@@ -23,7 +23,9 @@ from custom_components.came_domotic.const import (
 )
 from custom_components.came_domotic.coordinator import (
     CameDomoticDataUpdateCoordinator,
+    CameDomoticPingCoordinator,
 )
+from custom_components.came_domotic.models import PingResult
 
 from .conftest import MOCK_THERMO_ZONES, _mock_server_info
 from .const import MOCK_CONFIG
@@ -1588,3 +1590,332 @@ async def test_merge_updates_preserves_digital_input_fields_not_in_update(hass):
     assert di.name == "Front Door Sensor"  # preserved
     assert di.addr == 0  # preserved
     assert di.utc_time == 0  # preserved (was 0 initially)
+
+
+# --- CameDomoticPingCoordinator ---
+
+
+async def test_ping_coordinator_success(hass):
+    """Test ping coordinator returns PingResult with latency on success."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.async_ping.return_value = 7.3
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+    result = await coordinator._async_update_data()
+
+    assert result == PingResult(connected=True, latency_ms=7.3)
+
+
+async def test_ping_coordinator_comm_error_returns_disconnected(hass):
+    """Test ping coordinator returns PingResult(connected=False) on comm error."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.async_ping.side_effect = CameDomoticApiClientCommunicationError("timeout")
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+    result = await coordinator._async_update_data()
+
+    assert result == PingResult(connected=False, latency_ms=None)
+
+
+async def test_ping_coordinator_base_error_returns_disconnected(hass):
+    """Test ping coordinator returns PingResult(connected=False) on base API error."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.async_ping.side_effect = CameDomoticApiClientError("not initialized")
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+    result = await coordinator._async_update_data()
+
+    assert result == PingResult(connected=False, latency_ms=None)
+
+
+async def test_ping_coordinator_auth_error_raises(hass):
+    """Test ping coordinator raises ConfigEntryAuthFailed on auth error."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.async_ping.side_effect = CameDomoticApiClientAuthenticationError("bad creds")
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+
+    with pytest.raises(ConfigEntryAuthFailed):
+        await coordinator._async_update_data()
+
+
+# --- attach_ping_coordinator ---
+
+
+async def test_attach_ping_coordinator_disconnect_stops_long_poll(hass):
+    """Test that a ping failure pauses the long-poll and marks entities unavailable."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=5.0),
+        patch.object(
+            CameDomoticDataUpdateCoordinator,
+            "_async_long_poll_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = config_entry.runtime_data.coordinator
+        ping_coordinator = config_entry.runtime_data.ping_coordinator
+
+        assert coordinator.server_available is True
+        assert coordinator._long_poll_task is not None
+
+        # Simulate a ping failure
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=False, latency_ms=None)
+        )
+        await hass.async_block_till_done()
+
+        assert coordinator.server_available is False
+        assert coordinator._long_poll_task is None
+
+
+async def test_attach_ping_coordinator_reconnect_resumes_long_poll(hass):
+    """Test that ping recovery restarts the long-poll and marks entities available."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=5.0),
+        patch.object(
+            CameDomoticDataUpdateCoordinator,
+            "_async_long_poll_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = config_entry.runtime_data.coordinator
+        ping_coordinator = config_entry.runtime_data.ping_coordinator
+
+        # Force server into unavailable state (simulates a prior disconnect)
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=False, latency_ms=None)
+        )
+        await hass.async_block_till_done()
+        assert coordinator.server_available is False
+        assert coordinator._long_poll_task is None
+
+        # Simulate ping recovery
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=True, latency_ms=3.0)
+        )
+        await hass.async_block_till_done()
+
+        assert coordinator.server_available is True
+        assert coordinator._long_poll_task is not None
+
+        await coordinator.stop_long_poll()
+
+
+async def test_reconnect_refresh_auth_error_triggers_reauth(hass):
+    """Test that auth error during reconnect refresh triggers reauth, no long-poll."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=5.0),
+        patch.object(
+            CameDomoticDataUpdateCoordinator,
+            "_async_long_poll_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = config_entry.runtime_data.coordinator
+        ping_coordinator = config_entry.runtime_data.ping_coordinator
+
+        # Force server into unavailable state
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=False, latency_ms=None)
+        )
+        await hass.async_block_till_done()
+        assert coordinator.server_available is False
+        await coordinator.stop_long_poll()
+
+        # Make the full refresh raise auth error on reconnect
+        with patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            side_effect=CameDomoticApiClientAuthenticationError("auth fail"),
+        ):
+            ping_coordinator.async_set_updated_data(
+                PingResult(connected=True, latency_ms=3.0)
+            )
+            await hass.async_block_till_done()
+
+        # Auth error should prevent long-poll from starting
+        assert coordinator._long_poll_task is None
+
+
+async def test_reconnect_refresh_comm_error_resumes_long_poll(hass):
+    """Test that comm error during reconnect refresh still resumes long-poll."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=5.0),
+        patch.object(
+            CameDomoticDataUpdateCoordinator,
+            "_async_long_poll_loop",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = config_entry.runtime_data.coordinator
+        ping_coordinator = config_entry.runtime_data.ping_coordinator
+
+        # Force server into unavailable state
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=False, latency_ms=None)
+        )
+        await hass.async_block_till_done()
+        assert coordinator.server_available is False
+        await coordinator.stop_long_poll()
+
+        # Make the full refresh raise comm error on reconnect
+        with patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            side_effect=CameDomoticApiClientCommunicationError("timeout"),
+        ):
+            ping_coordinator.async_set_updated_data(
+                PingResult(connected=True, latency_ms=3.0)
+            )
+            await hass.async_block_till_done()
+
+        # Long-poll should still start despite refresh failure
+        assert coordinator._long_poll_task is not None
+
+        await coordinator.stop_long_poll()
+
+
+async def test_ping_coordinator_attempts_connect_when_not_connected(hass):
+    """Test ping coordinator tries async_connect when API is not connected."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.is_connected = False
+    client.async_connect.side_effect = CameDomoticApiClientCommunicationError("offline")
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+    result = await coordinator._async_update_data()
+
+    client.async_connect.assert_awaited_once()
+    assert result == PingResult(connected=False, latency_ms=None)
+
+
+async def test_ping_coordinator_successful_reconnect(hass):
+    """Test ping coordinator connects and pings successfully after offline."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.is_connected = False
+    client.async_connect.return_value = None
+    client.async_ping.return_value = 5.0
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+    result = await coordinator._async_update_data()
+
+    client.async_connect.assert_awaited_once()
+    client.async_ping.assert_awaited_once()
+    assert result == PingResult(connected=True, latency_ms=5.0)
+
+
+async def test_attach_ping_coordinator_offline_start_reloads_entry(hass):
+    """Test that ping recovery after offline startup triggers config entry reload."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    with (
+        patch(
+            f"{_API_CLIENT}.async_connect",
+            side_effect=CameDomoticApiClientCommunicationError("Timeout"),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch(f"{_API_CLIENT}.async_ping", return_value=10.0),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    ping_coordinator = config_entry.runtime_data.ping_coordinator
+
+    assert coordinator._started_offline is True
+    assert coordinator.server_available is False
+
+    # Simulate ping detecting server is back online
+    with patch.object(
+        hass.config_entries, "async_reload", return_value=None
+    ) as mock_reload:
+        ping_coordinator.async_set_updated_data(
+            PingResult(connected=True, latency_ms=5.0)
+        )
+        await hass.async_block_till_done()
+
+        mock_reload.assert_called_once_with(config_entry.entry_id)

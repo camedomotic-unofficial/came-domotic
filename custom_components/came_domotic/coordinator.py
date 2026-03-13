@@ -14,7 +14,7 @@ import logging
 
 from aiocamedomotic.models import DeviceType
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -26,11 +26,13 @@ from .api import (
 from .const import (
     DEFAULT_LONG_POLL_TIMEOUT,
     DOMAIN,
+    PING_UPDATE_INTERVAL,
+    PING_UPDATE_INTERVAL_DISCONNECTED,
     RECONNECT_DELAY,
     SESSION_RECYCLE_THRESHOLD,
     UPDATE_THROTTLE_DELAY,
 )
-from .models import CameDomoticServerData
+from .models import CameDomoticServerData, PingResult
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -71,7 +73,91 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
         # Tracks successful long-poll calls to trigger periodic session recycling.
         # See _async_recycle_session() for why this is needed (cseq reset).
         self._long_poll_count: int = 0
+        # Tracks whether the server was reachable on the last long-poll attempt.
+        # Set to False on communication errors so entities report unavailable.
+        self._server_available: bool = True
+        # True when the entry was set up while the server was offline.
+        # On first successful ping, the entry is reloaded to discover devices.
+        self._started_offline: bool = False
         _LOGGER.debug("Coordinator initialized (push-based, no polling interval)")
+
+    @property
+    def server_available(self) -> bool:
+        """Return True if the ping coordinator last reported the server as reachable."""
+        return self._server_available
+
+    def attach_ping_coordinator(
+        self, ping_coordinator: CameDomoticPingCoordinator
+    ) -> None:
+        """Subscribe to the ping coordinator to drive availability and long-poll.
+
+        The ping coordinator is the single authority on server connectivity:
+        - When ping fails: the long-poll loop is stopped and entities are marked
+          unavailable until the server comes back.
+        - When ping recovers: the long-poll loop is restarted and entities become
+          available again.
+
+        This way the long-poll loop only handles data updates, not connectivity.
+        """
+
+        @callback
+        def _on_ping_update() -> None:
+            connected = ping_coordinator.data.connected
+            if connected and not self._server_available:
+                if self._started_offline:
+                    # First successful connection after offline startup.
+                    # Reload the entry so platforms discover all devices.
+                    _LOGGER.info(
+                        "CAME server now reachable after offline startup; "
+                        "reloading config entry to discover devices"
+                    )
+                    self.hass.async_create_task(
+                        self.hass.config_entries.async_reload(
+                            self.config_entry.entry_id
+                        )
+                    )
+                    return
+                _LOGGER.info(
+                    "CAME server reachable again; "
+                    "refreshing data before resuming long-poll"
+                )
+                self._server_available = True
+                self.hass.async_create_task(self._async_refresh_and_resume())
+            elif not connected and self._server_available:
+                _LOGGER.warning(
+                    "CAME server unreachable (ping failed); pausing long-poll"
+                )
+                self._server_available = False
+                self.async_update_listeners()
+                if self._long_poll_task is not None:
+                    self._long_poll_task.cancel()
+                    self._long_poll_task = None
+
+        self.config_entry.async_on_unload(
+            ping_coordinator.async_add_listener(_on_ping_update)
+        )
+
+    async def _async_refresh_and_resume(self) -> None:
+        """Perform a full data refresh, then start the long-poll loop.
+
+        Called when the server becomes reachable again after a disconnection.
+        A full refresh ensures we pick up any state changes that occurred
+        while the server was unreachable.
+        """
+        try:
+            new_data = await self._async_update_data()
+            self.async_set_updated_data(new_data)
+            _LOGGER.debug("Full data refresh after reconnect succeeded")
+        except ConfigEntryAuthFailed:
+            # Reauth already triggered inside _async_update_data
+            return
+        except UpdateFailed as err:
+            _LOGGER.warning(
+                "Full refresh after reconnect failed: %s. "
+                "Resuming long-poll with stale data",
+                err,
+            )
+        self.start_long_poll()
 
     async def _async_update_data(self) -> CameDomoticServerData:
         """Perform a full data fetch from the CAME server.
@@ -372,3 +458,59 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                     "Received update for unknown digital input act_id=%d, ignoring",
                     update.act_id,
                 )
+
+
+class CameDomoticPingCoordinator(DataUpdateCoordinator[PingResult]):
+    """Coordinator for periodic server connectivity and latency diagnostics.
+
+    Polls the CAME server via async_ping() on a fixed interval and exposes
+    the result as a PingResult (connected flag + latency in ms). Communication
+    errors are caught and returned as PingResult(connected=False, latency_ms=None)
+    so the connectivity binary sensor shows OFF rather than unavailable.
+    Auth errors raise ConfigEntryAuthFailed to trigger a reauth flow.
+    """
+
+    config_entry: ConfigEntry
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: CameDomoticApiClient,
+        config_entry: ConfigEntry,
+    ) -> None:
+        """Initialize the ping coordinator."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN}_ping",
+            update_interval=PING_UPDATE_INTERVAL,
+            config_entry=config_entry,
+        )
+        self._client = client
+
+    async def _async_update_data(self) -> PingResult:
+        """Ping the server and return connectivity status and latency.
+
+        When the API client is not connected (e.g. server was offline at
+        startup), attempts to establish the connection before pinging.
+        """
+        if not self._client.is_connected:
+            try:
+                await self._client.async_connect()
+                _LOGGER.info("API connection established during ping recovery")
+            except CameDomoticApiClientError:
+                _LOGGER.debug("Ping: connection attempt failed, server still offline")
+                self.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
+                return PingResult(connected=False, latency_ms=None)
+
+        try:
+            latency_ms = await self._client.async_ping()
+            _LOGGER.debug("Ping succeeded: %.1f ms", latency_ms)
+            self.update_interval = PING_UPDATE_INTERVAL
+            return PingResult(connected=True, latency_ms=latency_ms)
+        except CameDomoticApiClientAuthenticationError as err:
+            raise ConfigEntryAuthFailed("Authentication failed during ping") from err
+        except CameDomoticApiClientError:
+            _LOGGER.debug("Ping failed: server unreachable")
+            self.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
+            return PingResult(connected=False, latency_ms=None)

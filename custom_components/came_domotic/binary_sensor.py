@@ -10,13 +10,20 @@ import logging
 from typing import Any
 
 from aiocamedomotic.models import DigitalInputStatus
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import CameDomoticConfigEntry
-from .coordinator import CameDomoticDataUpdateCoordinator
+from .const import ATTRIBUTION, DOMAIN
+from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
 from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,11 +36,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensor platform."""
     coordinator = entry.runtime_data.coordinator
+    ping_coordinator = entry.runtime_data.ping_coordinator
     digital_inputs = coordinator.data.digital_inputs
     _LOGGER.debug("Setting up %d digital input binary sensor(s)", len(digital_inputs))
     async_add_entities(
-        CameDomoticDigitalInput(coordinator, act_id, di.name)
-        for act_id, di in digital_inputs.items()
+        [
+            CameDomoticServerConnectivitySensor(ping_coordinator, entry.entry_id),
+            *(
+                CameDomoticDigitalInput(coordinator, act_id, di.name)
+                for act_id, di in digital_inputs.items()
+            ),
+        ]
     )
 
 
@@ -88,3 +101,34 @@ class CameDomoticDigitalInput(CameDomoticEntity, BinarySensorEntity):
             .astimezone(dt_util.DEFAULT_TIME_ZONE)
             .isoformat(),
         }
+
+
+class CameDomoticServerConnectivitySensor(
+    CoordinatorEntity[CameDomoticPingCoordinator], BinarySensorEntity
+):
+    """Diagnostic binary sensor reporting whether the CAME server is reachable.
+
+    Shows ON when the server responds to ping, OFF when unreachable.
+    Uses EntityCategory.DIAGNOSTIC so it is grouped separately in the UI.
+    """
+
+    _attr_has_entity_name = True
+    _attr_attribution = ATTRIBUTION
+    _attr_translation_key = "server_connectivity"
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: CameDomoticPingCoordinator,
+        entry_id: str,
+    ) -> None:
+        """Initialize the server connectivity binary sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_server_connectivity"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the server responded to the last ping."""
+        return self.coordinator.data.connected

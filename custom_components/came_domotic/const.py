@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 # Base component constants
 NAME = "CAME Domotic"
 DOMAIN = "came_domotic"
 
 ATTRIBUTION = "Data provided by CAME Domotic"
 MANUFACTURER = "CAME"
+
+# Stored server info keys (persisted in config entry data)
+CONF_SERVER_INFO = "server_info"
 
 # Icons
 ICON = "mdi:home-automation"
@@ -22,3 +27,8 @@ UPDATE_THROTTLE_DELAY = 1  # seconds to wait between long-poll iterations
 # The server is likely not built for such long-running sessions, so we recycle
 # periodically to reset the cseq counter.
 SESSION_RECYCLE_THRESHOLD = 900  # recycle API session after this many long-poll calls
+
+# Ping coordinator: interval between server connectivity/latency checks.
+# A shorter interval is used when the server is unreachable so we recover faster.
+PING_UPDATE_INTERVAL: timedelta = timedelta(seconds=60)
+PING_UPDATE_INTERVAL_DISCONNECTED: timedelta = timedelta(seconds=10)

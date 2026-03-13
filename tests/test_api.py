@@ -1211,3 +1211,54 @@ async def test_async_get_terminal_groups_not_initialized(hass):
 
     with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_get_terminal_groups()
+
+
+# --- async_ping ---
+
+
+async def test_async_ping_success(hass):
+    """Test successful ping returns float latency in ms."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_ping.return_value = 12.5
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_ping()
+    assert result == 12.5
+    mock_api.async_ping.assert_awaited_once()
+
+
+async def test_async_ping_auth_error(hass):
+    """Test CameDomoticAuthError during ping raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_ping.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_ping()
+
+
+async def test_async_ping_server_error(hass):
+    """Test CameDomoticServerError during ping raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_ping.side_effect = CameDomoticServerError("timeout")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_ping()
+
+
+async def test_async_ping_not_initialized(hass):
+    """Test async_ping raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_ping()

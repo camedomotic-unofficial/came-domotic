@@ -95,6 +95,11 @@ class CameDomoticApiClient:
         self._websession = websession
         self._api: CameDomoticAPI | None = None
 
+    @property
+    def is_connected(self) -> bool:
+        """Return True if the API client has an active connection."""
+        return self._api is not None
+
     async def async_connect(self) -> None:
         """Create the CameDomoticAPI instance (validates host reachability)."""
         _LOGGER.debug("Connecting to CAME server at %s", self._host)
@@ -295,6 +300,15 @@ class CameDomoticApiClient:
         groups = await self._api.async_get_terminal_groups()
         _LOGGER.debug("Fetched %d terminal group(s)", len(groups))
         return groups
+
+    @_translate_errors
+    async def async_ping(self) -> float:
+        """Ping the CAME server and return round-trip latency in milliseconds."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Pinging CAME server at %s", self._host)
+        latency_ms = await self._api.async_ping()
+        _LOGGER.debug("Ping response from %s: %.1f ms", self._host, latency_ms)
+        return latency_ms
 
     @_translate_errors
     async def async_get_updates(self, timeout: int = 120) -> UpdateList:

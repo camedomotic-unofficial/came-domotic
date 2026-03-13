@@ -15,6 +15,14 @@ from aiocamedomotic.models import (
 
 
 @dataclass
+class PingResult:
+    """Result of a server ping operation."""
+
+    connected: bool
+    latency_ms: float | None
+
+
+@dataclass
 class CameDomoticServerData:
     """Holds all device data fetched from the CAME server.
 
@@ -23,7 +31,7 @@ class CameDomoticServerData:
     the objects in-place when incremental updates arrive.
     """
 
-    server_info: ServerInfo
+    server_info: ServerInfo | None = None
     thermo_zones: dict[int, ThermoZone] = field(default_factory=dict)
     scenarios: dict[int, Scenario] = field(default_factory=dict)
     openings: dict[int, Opening] = field(default_factory=dict)
