@@ -1,5 +1,7 @@
 """Global fixtures for CAME Domotic integration."""
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 from aiocamedomotic.models import (
@@ -9,6 +11,7 @@ from aiocamedomotic.models import (
     LightType,
     OpeningStatus,
     OpeningType,
+    ThermoZoneSeason,
 )
 import pytest
 
@@ -34,7 +37,7 @@ def _mock_thermo_zone(
     temperature,
     set_point=21.0,
     mode="AUTO",
-    season="winter",
+    season=ThermoZoneSeason.WINTER,
     status=1,
     antifreeze=5.0,
     floor_ind=0,
@@ -52,7 +55,7 @@ def _mock_thermo_zone(
     zone.temperature = temperature
     zone.set_point = set_point
     zone.mode.name = mode
-    zone.season.name = season
+    zone.season = season
     zone.status.name = "ON" if status else "OFF"
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
@@ -64,7 +67,7 @@ def _mock_thermo_zone(
         "temp_dec": int(temperature * 10),
         "set_point": int(set_point * 10),
         "mode": 2 if mode == "AUTO" else 1,
-        "season": 1 if season == "winter" else 2,
+        "season": season.value,
         "status": status,
         "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
         "leaf": int(leaf),
@@ -253,6 +256,44 @@ MOCK_DIGITAL_INPUTS = [
 ]
 
 
+def _mock_topology_room(room_id, name):
+    """Create a mock TopologyRoom object."""
+    room = MagicMock()
+    room.id = room_id
+    room.name = name
+    return room
+
+
+def _mock_topology_floor(floor_id, name, rooms=None):
+    """Create a mock TopologyFloor object."""
+    floor = MagicMock()
+    floor.id = floor_id
+    floor.name = name
+    floor.rooms = rooms or []
+    return floor
+
+
+def _mock_topology():
+    """Create a mock PlantTopology object."""
+    topology = MagicMock()
+    topology.floors = [
+        _mock_topology_floor(
+            0,
+            "Ground Floor",
+            rooms=[_mock_topology_room(0, "Living Room")],
+        ),
+        _mock_topology_floor(
+            1,
+            "First Floor",
+            rooms=[_mock_topology_room(1, "Bedroom")],
+        ),
+    ]
+    return topology
+
+
+MOCK_TOPOLOGY = _mock_topology()
+
+
 def _mock_server_info():
     """Create a mock ServerInfo object."""
     info = MagicMock()
@@ -273,6 +314,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     openings={o.open_act_id: o for o in MOCK_OPENINGS},
     lights={lt.act_id: lt for lt in MOCK_LIGHTS},
     digital_inputs={di.act_id: di for di in MOCK_DIGITAL_INPUTS},
+    topology=MOCK_TOPOLOGY,
 )
 
 
@@ -310,6 +352,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_digital_inputs",
             return_value=list(MOCK_DIGITAL_INPUTS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
         ),
         patch(f"{_API_CLIENT}.async_ping", return_value=10.0),
         patch(f"{_API_CLIENT}.async_dispose"),

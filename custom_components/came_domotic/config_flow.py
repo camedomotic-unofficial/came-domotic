@@ -26,7 +26,7 @@ from .api import (
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
 )
-from .const import CONF_SERVER_INFO, DOMAIN
+from .const import CONF_SERVER_INFO, CONF_TOPOLOGY_IMPORTED, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,6 +86,10 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            # Populate flow_title placeholder (used by strings.json)
+            self.context["title_placeholders"] = {
+                "host": user_input[CONF_HOST],
+            }
             try:
                 keycode, server_info_dict = await _async_test_credentials(
                     self.hass,
@@ -210,6 +214,11 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
         entry_data: dict[str, Any],  # noqa: ARG002
     ) -> ConfigFlowResult:
         """Handle reauth when credentials become invalid."""
+        # Populate flow_title placeholder (used by strings.json)
+        reauth_entry = self._get_reauth_entry()
+        self.context["title_placeholders"] = {
+            "host": reauth_entry.data[CONF_HOST],
+        }
         return self.async_show_form(step_id="reauth_confirm")
 
     async def async_step_reauth_confirm(
@@ -279,6 +288,11 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         reconfigure_entry = self._get_reconfigure_entry()
 
+        # Populate flow_title placeholder (used by strings.json)
+        self.context["title_placeholders"] = {
+            "host": (user_input or reconfigure_entry.data)[CONF_HOST],
+        }
+
         if user_input is not None:
             try:
                 _keycode, server_info_dict = await _async_test_credentials(
@@ -309,7 +323,11 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                     reconfigure_entry,
                     unique_id=reconfigure_entry.unique_id,
                     data={
-                        **reconfigure_entry.data,
+                        **{
+                            k: v
+                            for k, v in reconfigure_entry.data.items()
+                            if k != CONF_TOPOLOGY_IMPORTED
+                        },
                         **user_input,
                         CONF_SERVER_INFO: server_info_dict,
                     },

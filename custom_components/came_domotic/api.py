@@ -21,10 +21,12 @@ from aiocamedomotic.models import (
     LightStatus,
     Opening,
     OpeningStatus,
+    PlantTopology,
     Scenario,
     ServerInfo,
     TerminalGroup,
     ThermoZone,
+    ThermoZoneSeason,
     UpdateList,
     User,
 )
@@ -232,6 +234,22 @@ class CameDomoticApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Activating scenario '%s' (id=%d)", scenario.name, scenario.id)
         await scenario.async_activate()
+
+    @_translate_errors
+    async def async_get_topology(self) -> PlantTopology:
+        """Fetch the plant topology (floors and rooms) from the CAME server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching topology from %s", self._host)
+        topology = await self._api.async_get_topology()
+        _LOGGER.debug("Fetched topology: %d floor(s)", len(topology.floors))
+        return topology
+
+    @_translate_errors
+    async def async_set_thermo_season(self, season: ThermoZoneSeason) -> None:
+        """Set the global thermoregulation season."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Setting thermo season to %s", season.name)
+        await self._api.async_set_thermo_season(season)
 
     @_translate_errors
     async def async_get_users(self) -> list[User]:

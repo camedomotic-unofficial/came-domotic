@@ -183,14 +183,34 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             _LOGGER.warning("Error updating data: %s", exception)
             raise UpdateFailed(exception) from exception
 
+        # Topology (floors/rooms) is structural metadata — fetch best-effort
+        # so failures here don't abort the entire data update.
+        # Preserve previous topology as fallback for transient failures.
+        topology = getattr(self, "data", None) and self.data.topology
+        try:
+            topology = await self.api.async_get_topology()
+        except CameDomoticApiClientAuthenticationError as exception:
+            _LOGGER.warning("Authentication failed fetching topology")
+            raise ConfigEntryAuthFailed(exception) from exception
+        except CameDomoticApiClientError as err:
+            _LOGGER.warning(
+                "Failed to fetch topology, %s: %s",
+                "keeping previous area data"
+                if topology
+                else "continuing without area data",
+                err,
+            )
+
         _LOGGER.debug(
             "Full data fetch complete: %d thermo zone(s), %d scenario(s), "
-            "%d opening(s), %d light(s), %d digital input(s)",
+            "%d opening(s), %d light(s), %d digital input(s), "
+            "topology=%s",
             len(thermo_zones),
             len(scenarios),
             len(openings),
             len(lights),
             len(digital_inputs),
+            f"{len(topology.floors)} floor(s)" if topology else "unavailable",
         )
         return CameDomoticServerData(
             server_info=server_info,
@@ -199,6 +219,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             openings={o.open_act_id: o for o in openings},
             lights={lt.act_id: lt for lt in lights},
             digital_inputs={di.act_id: di for di in digital_inputs},
+            topology=topology,
         )
 
     def start_long_poll(self) -> None:

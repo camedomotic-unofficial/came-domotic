@@ -13,6 +13,7 @@ MANUFACTURER = "CAME"
 
 # Stored server info keys (persisted in config entry data)
 CONF_SERVER_INFO = "server_info"
+CONF_TOPOLOGY_IMPORTED = "topology_imported"
 
 # Icons
 ICON = "mdi:home-automation"

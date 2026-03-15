@@ -24,7 +24,7 @@ from homeassistant.util import dt as dt_util
 from . import CameDomoticConfigEntry
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
-from .entity import CameDomoticEntity
+from .entity import CameDomoticDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticDigitalInput(CameDomoticEntity, BinarySensorEntity):
+class CameDomoticDigitalInput(CameDomoticDeviceEntity, BinarySensorEntity):
     """Binary sensor entity for a CAME Domotic digital input.
 
     Read-only device that reports ACTIVE (on) or IDLE (off) state.
@@ -69,7 +69,12 @@ class CameDomoticDigitalInput(CameDomoticEntity, BinarySensorEntity):
             act_id: The actuator ID that identifies this digital input.
             input_name: The display name of the digital input.
         """
-        super().__init__(coordinator, entity_key=f"digital_input_{act_id}")
+        super().__init__(
+            coordinator,
+            entity_key=f"digital_input_{act_id}",
+            device_name=input_name,
+            device_id=f"digital_input_{act_id}",
+        )
         self._act_id = act_id
         self._attr_has_entity_name = False
         self._attr_name = input_name

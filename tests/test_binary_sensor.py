@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
-from .conftest import _mock_digital_input, _mock_server_info
+from .conftest import _mock_digital_input, _mock_server_info, _mock_topology
 from .const import MOCK_CONFIG
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
@@ -39,6 +39,10 @@ async def _setup_entry(hass, mock_digital_inputs, ping_return=10.0):
         patch(
             f"{_API_CLIENT}.async_get_digital_inputs",
             return_value=mock_digital_inputs,
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
         ),
         patch(f"{_API_CLIENT}.async_ping", return_value=ping_return),
         patch(f"{_API_CLIENT}.async_dispose"),

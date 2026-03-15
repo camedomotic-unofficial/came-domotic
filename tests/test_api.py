@@ -1275,3 +1275,140 @@ async def test_async_ping_not_initialized(hass):
 
     with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_ping()
+
+
+# --- async_get_topology ---
+
+
+async def test_async_get_topology_success(hass):
+    """Test successful topology retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_topology = MagicMock()
+    mock_topology.floors = [MagicMock(), MagicMock()]
+    mock_api.async_get_topology.return_value = mock_topology
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_topology()
+    assert result is mock_topology
+
+
+async def test_async_get_topology_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_topology.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_topology()
+
+
+async def test_async_get_topology_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_topology.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_topology()
+
+
+async def test_async_get_topology_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_topology.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_topology()
+
+
+async def test_async_get_topology_not_initialized(hass):
+    """Test async_get_topology raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_topology()
+
+
+# --- async_set_thermo_season ---
+
+
+async def test_async_set_thermo_season_success(hass):
+    """Test successful thermo season setting."""
+    from aiocamedomotic.models import ThermoZoneSeason
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_set_thermo_season(ThermoZoneSeason.WINTER)
+    mock_api.async_set_thermo_season.assert_awaited_once_with(ThermoZoneSeason.WINTER)
+
+
+async def test_async_set_thermo_season_auth_error(hass):
+    """Test CameDomoticAuthError during set_thermo_season raises AuthenticationError."""
+    from aiocamedomotic.models import ThermoZoneSeason
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_set_thermo_season.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_set_thermo_season(ThermoZoneSeason.WINTER)
+
+
+async def test_async_set_thermo_season_server_error(hass):
+    """Test CameDomoticServerError during set_thermo_season raises CommunicationError."""
+    from aiocamedomotic.models import ThermoZoneSeason
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_set_thermo_season.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_set_thermo_season(ThermoZoneSeason.SUMMER)
+
+
+async def test_async_set_thermo_season_generic_error(hass):
+    """Test CameDomoticError during set_thermo_season raises ApiClientError."""
+    from aiocamedomotic.models import ThermoZoneSeason
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_set_thermo_season.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_thermo_season(ThermoZoneSeason.PLANT_OFF)
+
+
+async def test_async_set_thermo_season_not_initialized(hass):
+    """Test async_set_thermo_season raises ApiClientError when not connected."""
+    from aiocamedomotic.models import ThermoZoneSeason
+
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_thermo_season(ThermoZoneSeason.WINTER)

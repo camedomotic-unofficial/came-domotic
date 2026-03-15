@@ -12,15 +12,17 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import homeassistant.helpers.area_registry as ar
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
+import homeassistant.helpers.floor_registry as fr
 from homeassistant.helpers.typing import ConfigType
 
 from .api import CameDomoticApiClient, CameDomoticApiClientCommunicationError
-from .const import DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
+from .const import CONF_TOPOLOGY_IMPORTED, DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
 from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
 from .models import CameDomoticServerData, PingResult
 from .services import async_setup_services, async_unload_services
@@ -34,6 +36,7 @@ PLATFORMS: list[Platform] = [
     Platform.COVER,
     Platform.LIGHT,
     Platform.SCENE,
+    Platform.SELECT,
     Platform.SENSOR,
 ]
 
@@ -47,6 +50,39 @@ class RuntimeData:
     coordinator: CameDomoticDataUpdateCoordinator
     client: CameDomoticApiClient
     ping_coordinator: CameDomoticPingCoordinator
+
+
+@callback
+def _setup_topology(
+    hass: HomeAssistant,
+    data: CameDomoticServerData,
+) -> None:
+    """Create HA floors and assign areas based on CAME plant topology.
+
+    Uses the PlantTopology from the coordinator data to:
+    1. Create HA floors for each CAME floor (or reuse existing by name).
+    2. Create HA areas for each CAME room (or reuse existing by name).
+    3. Assign areas to their parent floors (only if not already assigned,
+       to respect any user customizations).
+    """
+    if data.topology is None:
+        return
+
+    floor_registry = fr.async_get(hass)
+    area_registry = ar.async_get(hass)
+
+    for topo_floor in data.topology.floors:
+        # Get or create HA floor
+        ha_floor = floor_registry.async_get_floor_by_name(topo_floor.name)
+        if ha_floor is None:
+            ha_floor = floor_registry.async_create(topo_floor.name, level=topo_floor.id)
+        ha_floor_id = ha_floor.floor_id
+
+        # Create areas for each room and assign to this floor
+        for topo_room in topo_floor.rooms:
+            ha_area = area_registry.async_get_or_create(topo_room.name)
+            if ha_area.floor_id is None:
+                area_registry.async_update(ha_area.id, floor_id=ha_floor_id)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -97,6 +133,11 @@ async def async_setup_entry(
         try:
             await coordinator.async_config_entry_first_refresh()
             _LOGGER.debug("Initial data refresh completed")
+            if not entry.data.get(CONF_TOPOLOGY_IMPORTED, False):
+                _setup_topology(hass, coordinator.data)
+                hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, CONF_TOPOLOGY_IMPORTED: True}
+                )
             coordinator.start_long_poll()
         except ConfigEntryNotReady:
             connected = False
