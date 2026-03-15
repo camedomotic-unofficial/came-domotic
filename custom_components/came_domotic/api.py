@@ -6,7 +6,7 @@ from collections.abc import Callable, Coroutine
 import functools
 import logging
 import time
-from typing import Any, TypeVar
+from typing import Any
 
 from aiocamedomotic import CameDomoticAPI
 from aiocamedomotic.errors import (
@@ -36,8 +36,6 @@ import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
-_T = TypeVar("_T")
-
 
 class CameDomoticApiClientError(Exception):
     """Base exception for API client errors."""
@@ -55,7 +53,7 @@ class CameDomoticApiClientAuthenticationError(
     """Exception for authentication errors."""
 
 
-def _translate_errors(
+def _translate_errors[_T](
     func: Callable[..., Coroutine[Any, Any, _T]],
 ) -> Callable[..., Coroutine[Any, Any, _T]]:
     """Translate aiocamedomotic errors to integration errors."""

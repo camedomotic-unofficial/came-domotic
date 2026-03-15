@@ -266,6 +266,12 @@ class CameDomoticClimate(CameDomoticDeviceEntity, ClimateEntity):
             await self.coordinator.api.async_set_thermo_zone_mode(
                 zone, ThermoZoneMode.AUTO
             )
+        else:
+            _LOGGER.warning(
+                "Unhandled HVAC mode %s for zone act_id=%d",
+                hvac_mode,
+                self._act_id,
+            )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set the target temperature.

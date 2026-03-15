@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 import logging
-from typing import Any
 
 from aiocamedomotic.models import ThermoZone
 from homeassistant.components.sensor import (
@@ -111,20 +110,6 @@ class CameDomoticThermoZoneSensor(CameDomoticDeviceEntity, SensorEntity):
         if zone is None:
             return None
         return self.entity_description.value_fn(zone)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return additional thermo zone attributes."""
-        zone = self.coordinator.data.thermo_zones.get(self._act_id)
-        if zone is None:
-            return None
-        return {
-            "set_point": zone.set_point,
-            "mode": zone.mode.name,
-            "season": zone.season.name,
-            "status": zone.status.name,
-            "antifreeze": zone.antifreeze,
-        }
 
 
 class CameDomoticServerLatencySensor(

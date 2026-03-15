@@ -1477,6 +1477,34 @@ async def test_async_set_thermo_zone_mode_server_error(hass):
         await client.async_set_thermo_zone_mode(zone, ThermoZoneMode.AUTO)
 
 
+async def test_async_set_thermo_zone_mode_generic_error(hass):
+    """Test CameDomoticError during zone mode setting raises ApiClientError."""
+    from aiocamedomotic.models import ThermoZoneMode
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    zone = _mock_zone()
+    zone.async_set_mode.side_effect = CameDomoticError("generic")
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_thermo_zone_mode(zone, ThermoZoneMode.MANUAL)
+
+
+async def test_async_set_thermo_zone_mode_not_initialized(hass):
+    """Test async_set_thermo_zone_mode raises ApiClientError when not connected."""
+    from aiocamedomotic.models import ThermoZoneMode
+
+    client = _make_client(hass)
+    zone = _mock_zone()
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_thermo_zone_mode(zone, ThermoZoneMode.AUTO)
+
+
 # --- async_set_thermo_zone_config ---
 
 
@@ -1533,6 +1561,51 @@ async def test_async_set_thermo_zone_config_auth_error(hass):
         await client.async_set_thermo_zone_config(zone, ThermoZoneMode.MANUAL, 22.0)
 
 
+async def test_async_set_thermo_zone_config_server_error(hass):
+    """Test CameDomoticServerError during zone config setting raises CommunicationError."""
+    from aiocamedomotic.models import ThermoZoneMode
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    zone = _mock_zone()
+    zone.async_set_config.side_effect = CameDomoticServerError("server err")
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_set_thermo_zone_config(zone, ThermoZoneMode.MANUAL, 22.0)
+
+
+async def test_async_set_thermo_zone_config_generic_error(hass):
+    """Test CameDomoticError during zone config setting raises ApiClientError."""
+    from aiocamedomotic.models import ThermoZoneMode
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    zone = _mock_zone()
+    zone.async_set_config.side_effect = CameDomoticError("generic")
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_thermo_zone_config(zone, ThermoZoneMode.MANUAL, 22.0)
+
+
+async def test_async_set_thermo_zone_config_not_initialized(hass):
+    """Test async_set_thermo_zone_config raises ApiClientError when not connected."""
+    from aiocamedomotic.models import ThermoZoneMode
+
+    client = _make_client(hass)
+    zone = _mock_zone()
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_thermo_zone_config(zone, ThermoZoneMode.MANUAL, 22.0)
+
+
 # --- async_set_thermo_zone_fan_speed ---
 
 
@@ -1566,3 +1639,48 @@ async def test_async_set_thermo_zone_fan_speed_server_error(hass):
 
     with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_set_thermo_zone_fan_speed(zone, ThermoZoneFanSpeed.SLOW)
+
+
+async def test_async_set_thermo_zone_fan_speed_auth_error(hass):
+    """Test CameDomoticAuthError during fan speed setting raises AuthenticationError."""
+    from aiocamedomotic.models import ThermoZoneFanSpeed
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    zone = _mock_zone()
+    zone.async_set_fan_speed.side_effect = CameDomoticAuthError("bad creds")
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_set_thermo_zone_fan_speed(zone, ThermoZoneFanSpeed.FAST)
+
+
+async def test_async_set_thermo_zone_fan_speed_generic_error(hass):
+    """Test CameDomoticError during fan speed setting raises ApiClientError."""
+    from aiocamedomotic.models import ThermoZoneFanSpeed
+
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    zone = _mock_zone()
+    zone.async_set_fan_speed.side_effect = CameDomoticError("generic")
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_thermo_zone_fan_speed(zone, ThermoZoneFanSpeed.MEDIUM)
+
+
+async def test_async_set_thermo_zone_fan_speed_not_initialized(hass):
+    """Test async_set_thermo_zone_fan_speed raises ApiClientError when not connected."""
+    from aiocamedomotic.models import ThermoZoneFanSpeed
+
+    client = _make_client(hass)
+    zone = _mock_zone()
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_thermo_zone_fan_speed(zone, ThermoZoneFanSpeed.AUTO)

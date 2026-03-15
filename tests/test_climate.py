@@ -21,8 +21,11 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.helpers import entity_registry as er
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.came_domotic.api import CameDomoticApiClientError
+from custom_components.came_domotic.climate import CameDomoticClimate
 from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData
 
@@ -80,6 +83,19 @@ async def _setup_entry(hass, mock_zones=None):
     return config_entry
 
 
+def _get_climate_entity(hass, config_entry_id: str = "test") -> CameDomoticClimate:
+    """Look up the first climate entity for the given config entry."""
+    registry = er.async_get(hass)
+    entry = next(
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry_id and e.domain == "climate"
+    )
+    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
+    assert isinstance(entity, CameDomoticClimate)
+    return entity
+
+
 # --- Entity creation ---
 
 
@@ -127,8 +143,6 @@ async def test_no_climate_entities_when_no_zones(hass):
 
 async def test_suggested_area_none_when_topology_missing(hass):
     """Test device has no suggested_area when topology is unavailable."""
-    from custom_components.came_domotic.api import CameDomoticApiClientError
-
     zones = [_mock_thermo_zone(1, "Zone A", 20.0, room_ind=0)]
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
@@ -447,29 +461,25 @@ async def test_temperature_none_when_zone_missing(hass):
 # --- Fan mode ---
 
 
-async def test_fan_mode_mapping(hass):
-    """Test fan mode maps correctly from ThermoZoneFanSpeed."""
-    test_cases = [
+@pytest.mark.parametrize(
+    ("fan_speed", "expected_mode"),
+    [
         (ThermoZoneFanSpeed.OFF, "off"),
         (ThermoZoneFanSpeed.SLOW, "low"),
         (ThermoZoneFanSpeed.MEDIUM, "medium"),
         (ThermoZoneFanSpeed.FAST, "high"),
         (ThermoZoneFanSpeed.AUTO, "auto"),
+    ],
+)
+async def test_fan_mode_mapping(hass, fan_speed, expected_mode):
+    """Test fan mode maps correctly from ThermoZoneFanSpeed."""
+    zones = [
+        _mock_thermo_zone(1, "Zone A", 20.0, fan_speed=fan_speed),
     ]
-    for fan_speed, expected_mode in test_cases:
-        zones = [
-            _mock_thermo_zone(1, "Zone A", 20.0, fan_speed=fan_speed),
-        ]
-        config_entry = await _setup_entry(hass, mock_zones=zones)
+    await _setup_entry(hass, mock_zones=zones)
 
-        state = hass.states.get("climate.zone_a")
-        assert state.attributes["fan_mode"] == expected_mode, (
-            f"Expected {expected_mode} for {fan_speed}, got {state.attributes['fan_mode']}"
-        )
-
-        # Clean up for next iteration
-        await hass.config_entries.async_unload(config_entry.entry_id)
-        await hass.async_block_till_done()
+    state = hass.states.get("climate.zone_a")
+    assert state.attributes["fan_mode"] == expected_mode
 
 
 async def test_fan_mode_none_when_no_fan_support(hass):
@@ -479,16 +489,7 @@ async def test_fan_mode_none_when_no_fan_support(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     assert entity.fan_mode is None
 
 
@@ -727,20 +728,26 @@ async def test_set_hvac_mode_zone_missing(hass, caplog):
     await hass.async_block_till_done()
 
     # Call directly on the entity since HA may reject service calls for unknown state
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_hvac_mode(HVACMode.OFF)
 
     coordinator.api.async_set_thermo_zone_mode.assert_not_awaited()
     assert "not found in coordinator data" in caplog.text
+
+
+async def test_set_hvac_mode_unhandled(hass, caplog):
+    """Test set_hvac_mode logs warning for unhandled HVAC mode."""
+    zones = [_mock_thermo_zone(1, "Zone A", 20.0)]
+    config_entry = await _setup_entry(hass, mock_zones=zones)
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.api.async_set_thermo_zone_mode = AsyncMock()
+
+    entity = _get_climate_entity(hass)
+    await entity.async_set_hvac_mode(HVACMode.FAN_ONLY)
+
+    coordinator.api.async_set_thermo_zone_mode.assert_not_awaited()
+    assert "Unhandled HVAC mode" in caplog.text
 
 
 # --- set_temperature ---
@@ -794,16 +801,7 @@ async def test_set_temperature_no_temp_kwarg(hass):
     coordinator = config_entry.runtime_data.coordinator
     coordinator.api.async_set_thermo_zone_config = AsyncMock()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_temperature()
 
     coordinator.api.async_set_thermo_zone_config.assert_not_awaited()
@@ -821,16 +819,7 @@ async def test_set_temperature_zone_missing(hass, caplog):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_temperature(temperature=22.5)
 
     coordinator.api.async_set_thermo_zone_config.assert_not_awaited()
@@ -871,16 +860,7 @@ async def test_set_fan_mode_zone_missing(hass, caplog):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_fan_mode("high")
 
     coordinator.api.async_set_thermo_zone_fan_speed.assert_not_awaited()
@@ -895,16 +875,7 @@ async def test_set_fan_mode_unknown(hass, caplog):
     coordinator = config_entry.runtime_data.coordinator
     coordinator.api.async_set_thermo_zone_fan_speed = AsyncMock()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_fan_mode("turbo_invalid")
 
     coordinator.api.async_set_thermo_zone_fan_speed.assert_not_awaited()
@@ -987,16 +958,7 @@ async def test_set_preset_zone_missing(hass, caplog):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_set_preset_mode("Jolly")
 
     coordinator.api.async_set_thermo_zone_mode.assert_not_awaited()
@@ -1057,16 +1019,7 @@ async def test_turn_on_zone_missing(hass, caplog):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_turn_on()
 
     coordinator.api.async_set_thermo_zone_mode.assert_not_awaited()
@@ -1085,16 +1038,7 @@ async def test_turn_off_zone_missing(hass, caplog):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    from custom_components.came_domotic.climate import CameDomoticClimate
-
-    registry = er.async_get(hass)
-    entry = next(
-        e
-        for e in registry.entities.values()
-        if e.config_entry_id == "test" and e.domain == "climate"
-    )
-    entity = hass.data["entity_components"]["climate"].get_entity(entry.entity_id)
-    assert isinstance(entity, CameDomoticClimate)
+    entity = _get_climate_entity(hass)
     await entity.async_turn_off()
 
     coordinator.api.async_set_thermo_zone_mode.assert_not_awaited()
