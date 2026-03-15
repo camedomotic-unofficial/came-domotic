@@ -25,6 +25,8 @@ _COORDINATOR = (
     "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
+_ENTITY_ID = "select.came_eti_domo_server_192_168_1_100_thermo_season"
+
 
 async def _setup_entry(hass, mock_zones=None):
     """Set up a config entry with the given mock thermo zones."""
@@ -92,7 +94,7 @@ async def test_thermo_season_select_current_option(hass):
     """Test current_option reads season from first thermo zone."""
     await _setup_entry(hass)
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state == "winter"
 
@@ -104,7 +106,7 @@ async def test_thermo_season_select_current_option_summer(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state == "summer"
 
@@ -116,7 +118,7 @@ async def test_thermo_season_select_current_option_plant_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state == "plant_off"
 
@@ -136,7 +138,7 @@ async def test_thermo_season_select_current_option_no_zones(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state == "unknown"
 
@@ -153,7 +155,7 @@ async def test_thermo_season_select_option_winter(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home_thermo_season",
+            "entity_id": _ENTITY_ID,
             "option": "winter",
         },
         blocking=True,
@@ -176,7 +178,7 @@ async def test_thermo_season_select_option_summer(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home_thermo_season",
+            "entity_id": _ENTITY_ID,
             "option": "summer",
         },
         blocking=True,
@@ -199,7 +201,7 @@ async def test_thermo_season_select_option_plant_off(hass):
         "select",
         "select_option",
         {
-            "entity_id": "select.came_domotic_test_home_thermo_season",
+            "entity_id": _ENTITY_ID,
             "option": "plant_off",
         },
         blocking=True,
@@ -214,7 +216,7 @@ async def test_thermo_season_select_options_list(hass):
     """Test the select entity exposes the correct options."""
     await _setup_entry(hass)
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.attributes["options"] == ["winter", "summer", "plant_off"]
 
@@ -247,7 +249,7 @@ async def test_thermo_season_select_unavailable_when_disconnected(hass):
     """Test the select entity becomes unavailable when the server disconnects."""
     config_entry = await _setup_entry(hass)
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state != "unavailable"
 
@@ -256,6 +258,6 @@ async def test_thermo_season_select_unavailable_when_disconnected(hass):
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    state = hass.states.get("select.came_domotic_test_home_thermo_season")
+    state = hass.states.get(_ENTITY_ID)
     assert state is not None
     assert state.state == "unavailable"

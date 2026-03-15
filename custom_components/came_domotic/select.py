@@ -55,6 +55,7 @@ class CameDomoticThermoSeasonSelect(CameDomoticEntity, SelectEntity):
     """
 
     _attr_translation_key = "thermo_season"
+    _attr_icon = "mdi:home-thermometer"
     _attr_options = list(_SEASON_OPTIONS.keys())
 
     def __init__(
