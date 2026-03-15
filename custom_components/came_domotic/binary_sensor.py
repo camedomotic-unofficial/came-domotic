@@ -23,8 +23,9 @@ from homeassistant.util import dt as dt_util
 
 from . import CameDomoticConfigEntry
 from .const import ATTRIBUTION, DOMAIN
-from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
+from .coordinator import CameDomoticDataUpdateCoordinator
 from .entity import CameDomoticDeviceEntity
+from .ping_coordinator import CameDomoticPingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

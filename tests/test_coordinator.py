@@ -23,9 +23,11 @@ from custom_components.came_domotic.const import (
 )
 from custom_components.came_domotic.coordinator import (
     CameDomoticDataUpdateCoordinator,
-    CameDomoticPingCoordinator,
 )
 from custom_components.came_domotic.models import PingResult
+from custom_components.came_domotic.ping_coordinator import (
+    CameDomoticPingCoordinator,
+)
 
 from .conftest import MOCK_THERMO_ZONES, _mock_server_info, _mock_topology
 from .const import MOCK_CONFIG
@@ -2045,6 +2047,25 @@ async def test_ping_coordinator_attempts_connect_when_not_connected(hass):
 
     client.async_connect.assert_awaited_once()
     assert result == PingResult(connected=False, latency_ms=None)
+
+
+async def test_ping_coordinator_connect_auth_error_raises(hass):
+    """Test ping coordinator raises ConfigEntryAuthFailed on auth error during connect."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    client = AsyncMock()
+    client.is_connected = False
+    client.async_connect.side_effect = CameDomoticApiClientAuthenticationError(
+        "bad creds"
+    )
+
+    coordinator = CameDomoticPingCoordinator(hass, client, config_entry)
+
+    with pytest.raises(ConfigEntryAuthFailed):
+        await coordinator._async_update_data()
+
+    client.async_connect.assert_awaited_once()
 
 
 async def test_ping_coordinator_successful_reconnect(hass):

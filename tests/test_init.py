@@ -23,9 +23,11 @@ from custom_components.came_domotic.const import (
 )
 from custom_components.came_domotic.coordinator import (
     CameDomoticDataUpdateCoordinator,
-    CameDomoticPingCoordinator,
 )
 from custom_components.came_domotic.models import CameDomoticServerData
+from custom_components.came_domotic.ping_coordinator import (
+    CameDomoticPingCoordinator,
+)
 
 from .conftest import _mock_topology, _mock_topology_floor, _mock_topology_room
 from .const import MOCK_CONFIG

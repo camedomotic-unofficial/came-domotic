@@ -23,8 +23,9 @@ from homeassistant.helpers.typing import ConfigType
 
 from .api import CameDomoticApiClient, CameDomoticApiClientCommunicationError
 from .const import CONF_TOPOLOGY_IMPORTED, DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
-from .coordinator import CameDomoticDataUpdateCoordinator, CameDomoticPingCoordinator
+from .coordinator import CameDomoticDataUpdateCoordinator
 from .models import CameDomoticServerData, PingResult
+from .ping_coordinator import CameDomoticPingCoordinator
 from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)

@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from typing import TYPE_CHECKING
 
 from aiocamedomotic.models import DeviceType
 from homeassistant.config_entries import ConfigEntry
@@ -26,13 +27,14 @@ from .api import (
 from .const import (
     DEFAULT_LONG_POLL_TIMEOUT,
     DOMAIN,
-    PING_UPDATE_INTERVAL,
-    PING_UPDATE_INTERVAL_DISCONNECTED,
     RECONNECT_DELAY,
     SESSION_RECYCLE_THRESHOLD,
     UPDATE_THROTTLE_DELAY,
 )
-from .models import CameDomoticServerData, PingResult
+from .models import CameDomoticServerData
+
+if TYPE_CHECKING:
+    from .ping_coordinator import CameDomoticPingCoordinator
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -483,59 +485,3 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                     "Received update for unknown digital input act_id=%d, ignoring",
                     update.act_id,
                 )
-
-
-class CameDomoticPingCoordinator(DataUpdateCoordinator[PingResult]):
-    """Coordinator for periodic server connectivity and latency diagnostics.
-
-    Polls the CAME server via async_ping() on a fixed interval and exposes
-    the result as a PingResult (connected flag + latency in ms). Communication
-    errors are caught and returned as PingResult(connected=False, latency_ms=None)
-    so the connectivity binary sensor shows OFF rather than unavailable.
-    Auth errors raise ConfigEntryAuthFailed to trigger a reauth flow.
-    """
-
-    config_entry: ConfigEntry
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: CameDomoticApiClient,
-        config_entry: ConfigEntry,
-    ) -> None:
-        """Initialize the ping coordinator."""
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=f"{DOMAIN}_ping",
-            update_interval=PING_UPDATE_INTERVAL,
-            config_entry=config_entry,
-        )
-        self._client = client
-
-    async def _async_update_data(self) -> PingResult:
-        """Ping the server and return connectivity status and latency.
-
-        When the API client is not connected (e.g. server was offline at
-        startup), attempts to establish the connection before pinging.
-        """
-        if not self._client.is_connected:
-            try:
-                await self._client.async_connect()
-                _LOGGER.info("API connection established during ping recovery")
-            except CameDomoticApiClientError:
-                _LOGGER.debug("Ping: connection attempt failed, server still offline")
-                self.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
-                return PingResult(connected=False, latency_ms=None)
-
-        try:
-            latency_ms = await self._client.async_ping()
-            _LOGGER.debug("Ping succeeded: %.1f ms", latency_ms)
-            self.update_interval = PING_UPDATE_INTERVAL
-            return PingResult(connected=True, latency_ms=latency_ms)
-        except CameDomoticApiClientAuthenticationError as err:
-            raise ConfigEntryAuthFailed("Authentication failed during ping") from err
-        except CameDomoticApiClientError:
-            _LOGGER.debug("Ping failed: server unreachable")
-            self.update_interval = PING_UPDATE_INTERVAL_DISCONNECTED
-            return PingResult(connected=False, latency_ms=None)
