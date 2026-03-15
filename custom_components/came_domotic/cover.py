@@ -107,10 +107,16 @@ class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Clear optimistic state when coordinator pushes real data."""
-        if self._optimistic_is_opening is not None:
+        if (
+            self._optimistic_is_opening is not None
+            or self._optimistic_is_closing is not None
+        ):
             _LOGGER.debug(
-                "Coordinator update clearing optimistic state for cover open_act_id=%d",
+                "Coordinator update clearing optimistic state for cover open_act_id=%d"
+                " (is_opening=%s, is_closing=%s)",
                 self._open_act_id,
+                self._optimistic_is_opening,
+                self._optimistic_is_closing,
             )
         self._optimistic_is_opening = None
         self._optimistic_is_closing = None
@@ -190,14 +196,14 @@ class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt (slat open)."""
         await self._async_set_status(
-            OpeningStatus.SLAT_OPEN, "open tilt for", is_opening=False, is_closing=False
+            OpeningStatus.SLAT_OPEN, "open tilt", is_opening=False, is_closing=False
         )
 
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt (slat close)."""
         await self._async_set_status(
             OpeningStatus.SLAT_CLOSE,
-            "close tilt for",
+            "close tilt",
             is_opening=False,
             is_closing=False,
         )
@@ -206,7 +212,7 @@ class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
         """Stop the cover tilt."""
         await self._async_set_status(
             OpeningStatus.STOPPED,
-            "stop tilt for",
+            "stop tilt",
             is_opening=False,
             is_closing=False,
         )

@@ -661,153 +661,186 @@ async def test_light_extra_attributes_not_found(hass):
 # --- Optimistic state updates ---
 
 
-async def test_light_turn_on_optimistic_state(hass):
-    """Test state shows 'on' immediately after successful turn_on."""
-    lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
-    config_entry = await _setup_entry(hass, lights)
+class TestLightOptimisticState:
+    """Tests for optimistic state update behaviour on lights."""
 
-    coordinator = config_entry.runtime_data.coordinator
+    async def test_light_turn_on_optimistic_state(self, hass):
+        """Test state shows 'on' immediately after successful turn_on."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
+        config_entry = await _setup_entry(hass, lights)
 
-    with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
-        await hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": "light.hallway_light"},
-            blocking=True,
+        coordinator = config_entry.runtime_data.coordinator
+
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
+
+        state = hass.states.get("light.hallway_light")
+        assert state is not None
+        assert state.state == "on"
+
+    async def test_light_turn_off_optimistic_state(self, hass):
+        """Test state shows 'off' immediately after successful turn_off."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.ON)]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_off",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
+
+        state = hass.states.get("light.hallway_light")
+        assert state is not None
+        assert state.state == "off"
+
+    async def test_light_turn_on_with_brightness_optimistic(self, hass):
+        """Test brightness updates immediately after successful turn_on."""
+        lights = [
+            _mock_light(
+                301,
+                "Living Room Dimmer",
+                status=LightStatus.OFF,
+                light_type=LightType.DIMMER,
+                perc=0,
+            ),
+        ]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.living_room_dimmer", ATTR_BRIGHTNESS: 191},
+                blocking=True,
+            )
+
+        state = hass.states.get("light.living_room_dimmer")
+        assert state is not None
+        assert state.state == "on"
+        assert state.attributes[ATTR_BRIGHTNESS] == 191
+
+    async def test_light_turn_on_with_rgb_optimistic(self, hass):
+        """Test rgb_color updates immediately after successful turn_on."""
+        lights = [
+            _mock_light(
+                302,
+                "Bedroom RGB",
+                status=LightStatus.OFF,
+                light_type=LightType.RGB,
+                perc=50,
+                rgb=[0, 0, 0],
+            ),
+        ]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.bedroom_rgb", ATTR_RGB_COLOR: (255, 128, 0)},
+                blocking=True,
+            )
+
+        state = hass.states.get("light.bedroom_rgb")
+        assert state is not None
+        assert state.state == "on"
+        assert state.attributes[ATTR_RGB_COLOR] == (255, 128, 0)
+
+    async def test_light_optimistic_cleared_on_coordinator_update(self, hass):
+        """Test optimistic state is cleared when coordinator data catches up."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+
+        # Set optimistic state
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
+
+        state = hass.states.get("light.hallway_light")
+        assert state.state == "on"
+
+        # Simulate server catching up: light status changes to ON
+        coordinator.data.lights[300].status = LightStatus.ON
+        coordinator.async_set_updated_data(coordinator.data)
+        await hass.async_block_till_done()
+
+        # State still "on" from real data, but optimistic is cleared
+        state = hass.states.get("light.hallway_light")
+        assert state.state == "on"
+
+        # Push light back to OFF to prove optimistic was truly cleared
+        coordinator.data.lights[300].status = LightStatus.OFF
+        coordinator.async_set_updated_data(coordinator.data)
+        await hass.async_block_till_done()
+
+        state = hass.states.get("light.hallway_light")
+        assert state.state == "off"
+
+    async def test_light_turn_on_api_error_no_optimistic(self, hass):
+        """Test no optimistic update when API call fails."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+        mock_set_status = AsyncMock(
+            side_effect=CameDomoticApiClientCommunicationError("fail"),
         )
 
-    state = hass.states.get("light.hallway_light")
-    assert state is not None
-    assert state.state == "on"
+        with (
+            patch.object(coordinator.api, "async_set_light_status", mock_set_status),
+            pytest.raises(CameDomoticApiClientCommunicationError),
+        ):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
 
+        state = hass.states.get("light.hallway_light")
+        assert state is not None
+        assert state.state == "off"
 
-async def test_light_turn_off_optimistic_state(hass):
-    """Test state shows 'off' immediately after successful turn_off."""
-    lights = [_mock_light(300, "Hallway Light", status=LightStatus.ON)]
-    config_entry = await _setup_entry(hass, lights)
+    async def test_light_turn_off_api_error_no_optimistic(self, hass):
+        """Test no optimistic update when API call fails on turn_off."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.ON)]
+        config_entry = await _setup_entry(hass, lights)
 
-    coordinator = config_entry.runtime_data.coordinator
-
-    with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
-        await hass.services.async_call(
-            "light",
-            "turn_off",
-            {"entity_id": "light.hallway_light"},
-            blocking=True,
+        coordinator = config_entry.runtime_data.coordinator
+        mock_set_status = AsyncMock(
+            side_effect=CameDomoticApiClientCommunicationError("fail"),
         )
 
-    state = hass.states.get("light.hallway_light")
-    assert state is not None
-    assert state.state == "off"
+        with (
+            patch.object(coordinator.api, "async_set_light_status", mock_set_status),
+            pytest.raises(CameDomoticApiClientCommunicationError),
+        ):
+            await hass.services.async_call(
+                "light",
+                "turn_off",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
 
-
-async def test_light_turn_on_with_brightness_optimistic(hass):
-    """Test brightness updates immediately after successful turn_on."""
-    lights = [
-        _mock_light(
-            301,
-            "Living Room Dimmer",
-            status=LightStatus.OFF,
-            light_type=LightType.DIMMER,
-            perc=0,
-        ),
-    ]
-    config_entry = await _setup_entry(hass, lights)
-
-    coordinator = config_entry.runtime_data.coordinator
-
-    with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
-        await hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": "light.living_room_dimmer", ATTR_BRIGHTNESS: 191},
-            blocking=True,
-        )
-
-    state = hass.states.get("light.living_room_dimmer")
-    assert state is not None
-    assert state.state == "on"
-    assert state.attributes[ATTR_BRIGHTNESS] == 191
-
-
-async def test_light_turn_on_with_rgb_optimistic(hass):
-    """Test rgb_color updates immediately after successful turn_on."""
-    lights = [
-        _mock_light(
-            302,
-            "Bedroom RGB",
-            status=LightStatus.OFF,
-            light_type=LightType.RGB,
-            perc=50,
-            rgb=[0, 0, 0],
-        ),
-    ]
-    config_entry = await _setup_entry(hass, lights)
-
-    coordinator = config_entry.runtime_data.coordinator
-
-    with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
-        await hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": "light.bedroom_rgb", ATTR_RGB_COLOR: (255, 128, 0)},
-            blocking=True,
-        )
-
-    state = hass.states.get("light.bedroom_rgb")
-    assert state is not None
-    assert state.state == "on"
-    assert state.attributes[ATTR_RGB_COLOR] == (255, 128, 0)
-
-
-async def test_light_optimistic_cleared_on_coordinator_update(hass):
-    """Test optimistic state is cleared when coordinator pushes real data."""
-    lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
-    config_entry = await _setup_entry(hass, lights)
-
-    coordinator = config_entry.runtime_data.coordinator
-
-    # Set optimistic state
-    with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
-        await hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": "light.hallway_light"},
-            blocking=True,
-        )
-
-    state = hass.states.get("light.hallway_light")
-    assert state.state == "on"
-
-    # Coordinator update should clear optimistic state, reverting to OFF
-    coordinator.async_set_updated_data(coordinator.data)
-    await hass.async_block_till_done()
-
-    state = hass.states.get("light.hallway_light")
-    assert state.state == "off"
-
-
-async def test_light_turn_on_api_error_no_optimistic(hass):
-    """Test no optimistic update when API call fails."""
-    lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
-    config_entry = await _setup_entry(hass, lights)
-
-    coordinator = config_entry.runtime_data.coordinator
-    mock_set_status = AsyncMock(
-        side_effect=CameDomoticApiClientCommunicationError("fail"),
-    )
-
-    with (
-        patch.object(coordinator.api, "async_set_light_status", mock_set_status),
-        pytest.raises(CameDomoticApiClientCommunicationError),
-    ):
-        await hass.services.async_call(
-            "light",
-            "turn_on",
-            {"entity_id": "light.hallway_light"},
-            blocking=True,
-        )
-
-    state = hass.states.get("light.hallway_light")
-    assert state is not None
-    assert state.state == "off"
+        state = hass.states.get("light.hallway_light")
+        assert state is not None
+        assert state.state == "on"
