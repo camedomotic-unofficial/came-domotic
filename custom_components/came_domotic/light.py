@@ -178,6 +178,13 @@ class CameDomoticLight(CameDomoticDeviceEntity, LightEntity):
             return None
         return (light.rgb[0], light.rgb[1], light.rgb[2])
 
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel any pending optimistic timeout on entity removal."""
+        if self._optimistic_timeout_cancel is not None:
+            self._optimistic_timeout_cancel()
+            self._optimistic_timeout_cancel = None
+        await super().async_will_remove_from_hass()
+
     def _schedule_optimistic_timeout(self) -> None:
         """Schedule an active timer to force-clear optimistic state."""
         # Cancel any existing timer (e.g., from a previous rapid command)

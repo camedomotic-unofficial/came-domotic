@@ -915,3 +915,26 @@ class TestLightOptimisticState:
         # Optimistic state cleared; entity reads coordinator data (OFF)
         state = hass.states.get("light.hallway_light")
         assert state.state == "off"
+
+    async def test_light_optimistic_timeout_cancelled_on_removal(self, hass):
+        """Test pending optimistic timeout is cancelled when entity is removed."""
+        lights = [_mock_light(300, "Hallway Light", status=LightStatus.OFF)]
+        config_entry = await _setup_entry(hass, lights)
+
+        coordinator = config_entry.runtime_data.coordinator
+
+        with patch.object(coordinator.api, "async_set_light_status", AsyncMock()):
+            await hass.services.async_call(
+                "light",
+                "turn_on",
+                {"entity_id": "light.hallway_light"},
+                blocking=True,
+            )
+
+        # Unload the entry (triggers async_will_remove_from_hass)
+        await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        # Advance time past the timeout — should not raise or write state
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=8))
+        await hass.async_block_till_done()
