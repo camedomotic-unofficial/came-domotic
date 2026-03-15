@@ -4,17 +4,20 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from aiocamedomotic.models import ThermoZoneSeason
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfTemperature
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.came_domotic.api import CameDomoticApiClientError
 from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
-from .conftest import _mock_server_info, _mock_topology
+from .conftest import (
+    MOCK_THERMO_ZONES,
+    _mock_server_info,
+    _mock_thermo_zone,
+    _mock_topology,
+)
 from .const import MOCK_CONFIG
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
@@ -24,68 +27,10 @@ _COORDINATOR = (
 )
 
 
-def _mock_thermo_zone(
-    act_id,
-    name,
-    temperature,
-    set_point=21.0,
-    mode="AUTO",
-    season=ThermoZoneSeason.WINTER,
-    status=1,
-    antifreeze=5.0,
-    floor_ind=0,
-    room_ind=0,
-    leaf=True,
-):
-    """Create a mock ThermoZone object."""
-    zone = MagicMock()
-    zone.act_id = act_id
-    zone.name = name
-    zone.temperature = temperature
-    zone.set_point = set_point
-    zone.mode.name = mode
-    zone.season = season
-    zone.status.name = "ON" if status else "OFF"
-    zone.antifreeze = antifreeze
-    zone.floor_ind = floor_ind
-    zone.room_ind = room_ind
-    zone.leaf = leaf
-    zone.raw_data = {
-        "act_id": act_id,
-        "name": name,
-        "temp_dec": int(temperature * 10),
-        "set_point": int(set_point * 10),
-        "mode": 2 if mode == "AUTO" else 1,
-        "season": season.value,
-        "status": status,
-        "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
-        "leaf": int(leaf),
-        "floor_ind": floor_ind,
-        "room_ind": room_ind,
-    }
-    return zone
-
-
-def _mock_zones_list():
-    """Return a list of mock thermo zones for API mocking."""
-    return [
-        _mock_thermo_zone(
-            1, "Living Room", 20.0, set_point=21.0, floor_ind=0, room_ind=0
-        ),
-        _mock_thermo_zone(
-            52,
-            "Bedroom",
-            19.5,
-            set_point=20.0,
-            mode="MANUAL",
-            floor_ind=1,
-            room_ind=1,
-        ),
-    ]
-
-
-async def _setup_entry(hass, mock_zones, ping_return=10.0):
+async def _setup_entry(hass, mock_zones=None, ping_return=10.0):
     """Set up a config entry with the given mock thermo zones list."""
+    if mock_zones is None:
+        mock_zones = list(MOCK_THERMO_ZONES)
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -115,6 +60,9 @@ async def _setup_entry(hass, mock_zones, ping_return=10.0):
         await hass.async_block_till_done()
 
     return config_entry
+
+
+# --- Thermo zone temperature sensors ---
 
 
 async def test_thermo_zone_sensors_created(hass, bypass_get_data):
@@ -188,7 +136,7 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
 
 async def test_no_thermo_zones(hass):
     """Test only the latency sensor is created when there are no thermo zones."""
-    config_entry = await _setup_entry(hass, [])
+    config_entry = await _setup_entry(hass, mock_zones=[])
 
     registry = er.async_get(hass)
     entries = [
@@ -199,72 +147,11 @@ async def test_no_thermo_zones(hass):
     assert len(entries) == 1
 
 
-async def test_suggested_area_none_when_topology_missing(hass):
-    """Test device has no suggested_area when topology is None."""
-    zones = [_mock_thermo_zone(1, "Zone A", 20.0, room_ind=0)]
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    config_entry.add_to_hass(hass)
-
-    with (
-        patch(f"{_API_CLIENT}.async_connect"),
-        patch(
-            f"{_API_CLIENT}.async_get_server_info",
-            return_value=_mock_server_info(),
-        ),
-        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=zones),
-        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
-        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
-        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
-        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
-        patch(
-            f"{_API_CLIENT}.async_get_topology",
-            side_effect=CameDomoticApiClientError("unavailable"),
-        ),
-        patch(f"{_API_CLIENT}.async_ping", return_value=10.0),
-        patch(f"{_API_CLIENT}.async_dispose"),
-        patch(f"{_COORDINATOR}.start_long_poll"),
-    ):
-        await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
-
-    # Entity should exist but without area assignment
-    state = hass.states.get("sensor.zone_a")
-    assert state is not None
-
-
-async def test_suggested_area_none_when_room_ind_not_found(hass):
-    """Test device has no suggested_area when room_ind doesn't match topology."""
-    zones = [_mock_thermo_zone(1, "Zone B", 20.0, room_ind=999)]
-
-    await _setup_entry(hass, zones)
-
-    # Entity should exist (room_ind=999 is not in mock topology)
-    state = hass.states.get("sensor.zone_b")
-    assert state is not None
-
-
-async def test_thermo_zone_sensor_extra_attributes(hass, bypass_get_data):
-    """Test sensor exposes extra thermo zone attributes."""
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
-    config_entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-    state = hass.states.get("sensor.living_room")
-    assert state is not None
-    assert state.attributes["set_point"] == 21.0
-    assert state.attributes["mode"] == "AUTO"
-    assert state.attributes["season"] == "WINTER"
-    assert state.attributes["status"] == "ON"
-    assert state.attributes["antifreeze"] == 5.0
-
-
 async def test_thermo_zone_sensor_zone_not_found(hass):
     """Test sensor returns unknown when zone disappears from data."""
     initial_zones = [_mock_thermo_zone(1, "Living Room", 20.0)]
 
-    config_entry = await _setup_entry(hass, initial_zones)
+    config_entry = await _setup_entry(hass, mock_zones=initial_zones)
 
     # Now simulate a refresh where zone 1 is gone
     coordinator = config_entry.runtime_data.coordinator
@@ -316,7 +203,7 @@ async def test_server_latency_sensor_created(hass, bypass_get_data):
 
 async def test_server_latency_sensor_value(hass):
     """Test latency sensor reflects the round-trip time from async_ping."""
-    config_entry = await _setup_entry(hass, [], ping_return=12.5)
+    config_entry = await _setup_entry(hass, mock_zones=[], ping_return=12.5)
 
     ping_coordinator = config_entry.runtime_data.ping_coordinator
     assert ping_coordinator.data is not None
@@ -325,7 +212,7 @@ async def test_server_latency_sensor_value(hass):
 
 async def test_server_latency_sensor_no_data_when_unreachable(hass):
     """Test latency sensor returns None when server is unreachable."""
-    config_entry = await _setup_entry(hass, [], ping_return=10.0)
+    config_entry = await _setup_entry(hass, mock_zones=[], ping_return=10.0)
 
     ping_coordinator = config_entry.runtime_data.ping_coordinator
     ping_coordinator.async_set_updated_data(

@@ -6,7 +6,7 @@ from collections.abc import Callable, Coroutine
 import functools
 import logging
 import time
-from typing import Any, TypeVar
+from typing import Any
 
 from aiocamedomotic import CameDomoticAPI
 from aiocamedomotic.errors import (
@@ -26,6 +26,8 @@ from aiocamedomotic.models import (
     ServerInfo,
     TerminalGroup,
     ThermoZone,
+    ThermoZoneFanSpeed,
+    ThermoZoneMode,
     ThermoZoneSeason,
     UpdateList,
     User,
@@ -33,8 +35,6 @@ from aiocamedomotic.models import (
 import aiohttp
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
-
-_T = TypeVar("_T")
 
 
 class CameDomoticApiClientError(Exception):
@@ -53,7 +53,7 @@ class CameDomoticApiClientAuthenticationError(
     """Exception for authentication errors."""
 
 
-def _translate_errors(
+def _translate_errors[_T](
     func: Callable[..., Coroutine[Any, Any, _T]],
 ) -> Callable[..., Coroutine[Any, Any, _T]]:
     """Translate aiocamedomotic errors to integration errors."""
@@ -250,6 +250,73 @@ class CameDomoticApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Setting thermo season to %s", season.name)
         await self._api.async_set_thermo_season(season)
+
+    @_translate_errors
+    async def async_set_thermo_zone_mode(
+        self, zone: ThermoZone, mode: ThermoZoneMode
+    ) -> None:
+        """Set the operating mode of a thermo zone.
+
+        Args:
+            zone: The ThermoZone object to control.
+            mode: The desired ThermoZoneMode (OFF, MANUAL, AUTO, JOLLY).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting thermo zone '%s' (act_id=%d) mode to %s",
+            zone.name,
+            zone.act_id,
+            mode.name,
+        )
+        await zone.async_set_mode(mode)
+
+    @_translate_errors
+    async def async_set_thermo_zone_config(
+        self,
+        zone: ThermoZone,
+        mode: ThermoZoneMode,
+        set_point: float,
+        *,
+        fan_speed: ThermoZoneFanSpeed | None = None,
+    ) -> None:
+        """Set mode, target temperature, and optionally fan speed of a thermo zone.
+
+        Args:
+            zone: The ThermoZone object to control.
+            mode: The desired ThermoZoneMode.
+            set_point: The target temperature in degrees Celsius.
+            fan_speed: Optional fan speed setting.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting thermo zone '%s' (act_id=%d) config: "
+            "mode=%s, set_point=%.1f, fan_speed=%s",
+            zone.name,
+            zone.act_id,
+            mode.name,
+            set_point,
+            fan_speed.name if fan_speed else None,
+        )
+        await zone.async_set_config(mode, set_point, fan_speed=fan_speed)
+
+    @_translate_errors
+    async def async_set_thermo_zone_fan_speed(
+        self, zone: ThermoZone, fan_speed: ThermoZoneFanSpeed
+    ) -> None:
+        """Set the fan speed of a thermo zone.
+
+        Args:
+            zone: The ThermoZone object to control.
+            fan_speed: The desired ThermoZoneFanSpeed.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting thermo zone '%s' (act_id=%d) fan speed to %s",
+            zone.name,
+            zone.act_id,
+            fan_speed.name,
+        )
+        await zone.async_set_fan_speed(fan_speed)
 
     @_translate_errors
     async def async_get_users(self) -> list[User]:

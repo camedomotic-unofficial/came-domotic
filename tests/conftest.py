@@ -11,7 +11,10 @@ from aiocamedomotic.models import (
     LightType,
     OpeningStatus,
     OpeningType,
+    ThermoZoneFanSpeed,
+    ThermoZoneMode,
     ThermoZoneSeason,
+    ThermoZoneStatus,
 )
 import pytest
 
@@ -36,13 +39,19 @@ def _mock_thermo_zone(
     name,
     temperature,
     set_point=21.0,
-    mode="AUTO",
+    mode=ThermoZoneMode.AUTO,
     season=ThermoZoneSeason.WINTER,
-    status=1,
+    status=ThermoZoneStatus.ON,
     antifreeze=5.0,
     floor_ind=0,
     room_ind=0,
     leaf=True,
+    fan_speed=ThermoZoneFanSpeed.AUTO,
+    dehumidifier_enabled=False,
+    dehumidifier_setpoint=None,
+    t1=None,
+    t2=None,
+    t3=None,
 ):
     """Create a mock ThermoZone object with all required attributes.
 
@@ -54,21 +63,27 @@ def _mock_thermo_zone(
     zone.name = name
     zone.temperature = temperature
     zone.set_point = set_point
-    zone.mode.name = mode
+    zone.mode = mode
     zone.season = season
-    zone.status.name = "ON" if status else "OFF"
+    zone.status = status
     zone.antifreeze = antifreeze
     zone.floor_ind = floor_ind
     zone.room_ind = room_ind
     zone.leaf = leaf
+    zone.fan_speed = fan_speed
+    zone.dehumidifier_enabled = dehumidifier_enabled
+    zone.dehumidifier_setpoint = dehumidifier_setpoint
+    zone.t1 = t1
+    zone.t2 = t2
+    zone.t3 = t3
     zone.raw_data = {
         "act_id": act_id,
         "name": name,
         "temp_dec": int(temperature * 10),
         "set_point": int(set_point * 10),
-        "mode": 2 if mode == "AUTO" else 1,
+        "mode": mode.value,
         "season": season.value,
-        "status": status,
+        "status": status.value,
         "antifreeze": int(antifreeze * 10) if antifreeze is not None else 0,
         "leaf": int(leaf),
         "floor_ind": floor_ind,
@@ -80,7 +95,13 @@ def _mock_thermo_zone(
 MOCK_THERMO_ZONES = [
     _mock_thermo_zone(1, "Living Room", 20.0, set_point=21.0, floor_ind=0, room_ind=0),
     _mock_thermo_zone(
-        52, "Bedroom", 19.5, set_point=20.0, mode="MANUAL", floor_ind=1, room_ind=1
+        52,
+        "Bedroom",
+        19.5,
+        set_point=20.0,
+        mode=ThermoZoneMode.MANUAL,
+        floor_ind=1,
+        room_ind=1,
     ),
 ]
 

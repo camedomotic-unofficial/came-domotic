@@ -34,6 +34,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
     Platform.COVER,
     Platform.LIGHT,
     Platform.SCENE,
