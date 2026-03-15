@@ -195,13 +195,17 @@ class CameDomoticLight(CameDomoticDeviceEntity, LightEntity):
         if ATTR_RGB_COLOR in kwargs:
             rgb = list(kwargs[ATTR_RGB_COLOR])
 
+        # Capture pre-call state so _handle_coordinator_update can detect changes
+        pre_call_status = light.status
+        pre_call_time = time.monotonic()
+
         await self.coordinator.api.async_set_light_status(
             light, LightStatus.ON, brightness=brightness, rgb=rgb
         )
 
         # Optimistic update after successful API call
-        self._optimistic_snapshot_status = light.status
-        self._optimistic_set_at = time.monotonic()
+        self._optimistic_snapshot_status = pre_call_status
+        self._optimistic_set_at = pre_call_time
         self._optimistic_is_on = True
         if brightness is not None:
             self._optimistic_brightness = round(brightness * 255 / 100)
@@ -225,10 +229,14 @@ class CameDomoticLight(CameDomoticDeviceEntity, LightEntity):
                 self._act_id,
             )
             return
+        # Capture pre-call state so _handle_coordinator_update can detect changes
+        pre_call_status = light.status
+        pre_call_time = time.monotonic()
+
         await self.coordinator.api.async_set_light_status(light, LightStatus.OFF)
 
-        self._optimistic_snapshot_status = light.status
-        self._optimistic_set_at = time.monotonic()
+        self._optimistic_snapshot_status = pre_call_status
+        self._optimistic_set_at = pre_call_time
         self._optimistic_is_on = False
         _LOGGER.debug(
             "Optimistic update for light act_id=%d: is_on=False",
