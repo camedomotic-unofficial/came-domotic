@@ -1028,6 +1028,70 @@ async def test_async_get_cameras_not_initialized(hass):
         await client.async_get_cameras()
 
 
+# --- async_get_map_pages ---
+
+
+async def test_async_get_map_pages_success(hass):
+    """Test successful map pages retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_pages = [MagicMock(), MagicMock()]
+    mock_api.async_get_map_pages.return_value = mock_pages
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_map_pages()
+    assert result is mock_pages
+
+
+async def test_async_get_map_pages_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_map_pages.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_map_pages()
+
+
+async def test_async_get_map_pages_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_map_pages.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_map_pages()
+
+
+async def test_async_get_map_pages_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_map_pages.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_map_pages()
+
+
+async def test_async_get_map_pages_not_initialized(hass):
+    """Test async_get_map_pages raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_map_pages()
+
+
 # --- async_set_relay_status ---
 
 

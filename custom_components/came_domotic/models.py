@@ -9,6 +9,7 @@ from aiocamedomotic.models import (
     Camera,
     DigitalInput,
     Light,
+    MapPage,
     Opening,
     PlantTopology,
     Relay,
@@ -44,4 +45,5 @@ class CameDomoticServerData:
     analog_sensors: dict[int, AnalogSensor] = field(default_factory=dict)
     relays: dict[int, Relay] = field(default_factory=dict)
     cameras: dict[int, Camera] = field(default_factory=dict)
+    maps: dict[int, MapPage] = field(default_factory=dict)
     topology: PlantTopology | None = None

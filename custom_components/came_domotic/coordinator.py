@@ -241,11 +241,22 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 err,
             )
 
+        # Maps (floor plans) are structural metadata — fetch best-effort
+        # so failures here don't abort the entire data update.
+        maps_pages: list = []
+        try:
+            maps_pages = await self.api.async_get_map_pages()
+        except CameDomoticApiClientAuthenticationError as exception:
+            _LOGGER.warning("Authentication failed fetching maps")
+            raise ConfigEntryAuthFailed(exception) from exception
+        except CameDomoticApiClientError as err:
+            _LOGGER.debug("Maps not available on this server: %s", err)
+
         _LOGGER.debug(
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
             "%d digital input(s), %d analog sensor(s), %d relay(s), "
-            "%d camera(s), topology=%s",
+            "%d camera(s), %d map page(s), topology=%s",
             features,
             len(thermo_zones),
             len(scenarios),
@@ -255,6 +266,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(analog_sensors),
             len(relays),
             len(cameras),
+            len(maps_pages),
             f"{len(topology.floors)} floor(s)" if topology else "unavailable",
         )
         return CameDomoticServerData(
@@ -267,6 +279,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             analog_sensors={s.act_id: s for s in analog_sensors},
             relays={r.act_id: r for r in relays},
             cameras={c.id: c for c in cameras},
+            maps={p.page_id: p for p in maps_pages},
             topology=topology,
         )
 

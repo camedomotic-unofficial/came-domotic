@@ -37,6 +37,7 @@ PLATFORMS: list[Platform] = [
     Platform.CAMERA,
     Platform.CLIMATE,
     Platform.COVER,
+    Platform.IMAGE,
     Platform.LIGHT,
     Platform.SCENE,
     Platform.SELECT,

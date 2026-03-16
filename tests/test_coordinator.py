@@ -345,6 +345,63 @@ async def test_camera_auth_error_raises_config_entry_auth_failed(hass, bypass_ge
         await coordinator._async_update_data()
 
 
+async def test_maps_fetched_in_update_data(hass, bypass_get_data):
+    """Test that map pages are included in coordinator data after setup."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    assert len(coordinator.data.maps) == 2
+    assert 0 in coordinator.data.maps
+    assert 1 in coordinator.data.maps
+
+
+async def test_maps_comm_error_continues(hass, bypass_get_data):
+    """Test that a comm error fetching maps does not abort the update."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api,
+        "async_get_map_pages",
+        side_effect=CameDomoticApiClientCommunicationError("Timeout"),
+    ):
+        data = await coordinator._async_update_data()
+
+    # Update succeeds with empty maps
+    assert data.maps == {}
+    assert len(data.thermo_zones) > 0
+
+
+async def test_maps_auth_error_raises_config_entry_auth_failed(hass, bypass_get_data):
+    """Test that an auth error fetching maps triggers reauth."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with (
+        patch.object(
+            coordinator.api,
+            "async_get_map_pages",
+            side_effect=CameDomoticApiClientAuthenticationError("Bad auth"),
+        ),
+        pytest.raises(ConfigEntryAuthFailed),
+    ):
+        await coordinator._async_update_data()
+
+
 # --- start_long_poll / stop_long_poll ---
 
 

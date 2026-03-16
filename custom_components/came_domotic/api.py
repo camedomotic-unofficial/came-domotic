@@ -21,6 +21,7 @@ from aiocamedomotic.models import (
     DigitalInput,
     Light,
     LightStatus,
+    MapPage,
     Opening,
     OpeningStatus,
     PlantTopology,
@@ -218,6 +219,15 @@ class CameDomoticApiClient:
         cameras = await self._api.async_get_cameras()
         _LOGGER.debug("Fetched %d camera(s)", len(cameras))
         return cameras
+
+    @_translate_errors
+    async def async_get_map_pages(self) -> list[MapPage]:
+        """Fetch map pages (floor plans) from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching maps pages from %s", self._host)
+        pages = await self._api.async_get_map_pages()
+        _LOGGER.debug("Fetched %d map page(s)", len(pages))
+        return pages
 
     @_translate_errors
     async def async_set_relay_status(self, relay: Relay, status: RelayStatus) -> None:

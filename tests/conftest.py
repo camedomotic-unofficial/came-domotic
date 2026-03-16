@@ -400,6 +400,29 @@ MOCK_CAMERAS = [
 ]
 
 
+def _mock_map_page(
+    page_id,
+    page_label,
+    background="images/floor plan.jpg",
+    page_scale=1024,
+    elements=None,
+):
+    """Create a mock MapPage object with all required attributes."""
+    page = MagicMock()
+    page.page_id = page_id
+    page.page_label = page_label
+    page.background = background
+    page.page_scale = page_scale
+    page.elements = elements or []
+    return page
+
+
+MOCK_MAP_PAGES = [
+    _mock_map_page(0, "Ground Floor", background="images/ground floor.jpg"),
+    _mock_map_page(1, "First Floor", background="images/first_floor.png"),
+]
+
+
 def _mock_topology_room(room_id, name):
     """Create a mock TopologyRoom object."""
     room = MagicMock()
@@ -478,6 +501,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     analog_sensors={s.act_id: s for s in MOCK_ANALOG_SENSORS},
     relays={r.act_id: r for r in MOCK_RELAYS},
     cameras={c.id: c for c in MOCK_CAMERAS},
+    maps={p.page_id: p for p in MOCK_MAP_PAGES},
     topology=MOCK_TOPOLOGY,
 )
 
@@ -528,6 +552,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_cameras",
             return_value=list(MOCK_CAMERAS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_map_pages",
+            return_value=list(MOCK_MAP_PAGES),
         ),
         patch(
             f"{_API_CLIENT}.async_get_topology",
