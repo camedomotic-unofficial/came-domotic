@@ -324,6 +324,27 @@ async def test_topology_auth_error_raises_config_entry_auth_failed(
         await coordinator._async_update_data()
 
 
+async def test_camera_auth_error_raises_config_entry_auth_failed(hass, bypass_get_data):
+    """Test that an auth error fetching cameras triggers reauth."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with (
+        patch.object(
+            coordinator.api,
+            "async_get_cameras",
+            side_effect=CameDomoticApiClientAuthenticationError("Bad auth"),
+        ),
+        pytest.raises(ConfigEntryAuthFailed),
+    ):
+        await coordinator._async_update_data()
+
+
 # --- start_long_poll / stop_long_poll ---
 
 

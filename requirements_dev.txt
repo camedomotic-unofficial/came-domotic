@@ -1,5 +1,6 @@
 homeassistant
-aiocamedomotic==1.7.0
+aiocamedomotic==1.8.0
+PyTurboJPEG
 ruff
 mypy
 bandit

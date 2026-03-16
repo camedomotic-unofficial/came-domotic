@@ -17,6 +17,7 @@ from aiocamedomotic.errors import (
 )
 from aiocamedomotic.models import (
     AnalogSensor,
+    Camera,
     DigitalInput,
     Light,
     LightStatus,
@@ -208,6 +209,15 @@ class CameDomoticApiClient:
         relays = await self._api.async_get_relays()
         _LOGGER.debug("Fetched %d relay(s)", len(relays))
         return relays
+
+    @_translate_errors
+    async def async_get_cameras(self) -> list[Camera]:
+        """Fetch TVCC cameras from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching cameras from %s", self._host)
+        cameras = await self._api.async_get_cameras()
+        _LOGGER.debug("Fetched %d camera(s)", len(cameras))
+        return cameras
 
     @_translate_errors
     async def async_set_relay_status(self, relay: Relay, status: RelayStatus) -> None:

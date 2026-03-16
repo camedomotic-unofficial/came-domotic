@@ -964,6 +964,70 @@ async def test_async_get_relays_not_initialized(hass):
         await client.async_get_relays()
 
 
+# --- async_get_cameras ---
+
+
+async def test_async_get_cameras_success(hass):
+    """Test successful cameras retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_cameras = [MagicMock(), MagicMock()]
+    mock_api.async_get_cameras.return_value = mock_cameras
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_cameras()
+    assert result is mock_cameras
+
+
+async def test_async_get_cameras_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_cameras.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_cameras()
+
+
+async def test_async_get_cameras_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_cameras.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_cameras()
+
+
+async def test_async_get_cameras_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_cameras.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_cameras()
+
+
+async def test_async_get_cameras_not_initialized(hass):
+    """Test async_get_cameras raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_cameras()
+
+
 # --- async_set_relay_status ---
 
 

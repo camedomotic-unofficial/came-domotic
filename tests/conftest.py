@@ -357,6 +357,49 @@ MOCK_RELAYS = [
 ]
 
 
+def _mock_camera(
+    camera_id,
+    name,
+    uri="",
+    uri_still="",
+    stream_type="mjpeg",
+    is_flash=False,
+):
+    """Create a mock Camera object with all required attributes.
+
+    Includes a raw_data dict for consistency with other mock factories.
+    """
+    camera = MagicMock()
+    camera.id = camera_id
+    camera.name = name
+    camera.uri = uri
+    camera.uri_still = uri_still
+    camera.stream_type = stream_type
+    camera.is_flash = is_flash
+    camera.raw_data = {
+        "id": camera_id,
+        "name": name,
+    }
+    return camera
+
+
+MOCK_CAMERAS = [
+    _mock_camera(
+        700,
+        "Front Door Camera",
+        uri="rtsp://192.168.1.50/stream1",
+        uri_still="http://192.168.1.50/snapshot.jpg",
+    ),
+    _mock_camera(
+        701,
+        "Garden Camera",
+        uri_still="http://192.168.1.51/snapshot.jpg",
+        stream_type="swf",
+        is_flash=True,
+    ),
+]
+
+
 def _mock_topology_room(room_id, name):
     """Create a mock TopologyRoom object."""
     room = MagicMock()
@@ -434,6 +477,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     digital_inputs={di.act_id: di for di in MOCK_DIGITAL_INPUTS},
     analog_sensors={s.act_id: s for s in MOCK_ANALOG_SENSORS},
     relays={r.act_id: r for r in MOCK_RELAYS},
+    cameras={c.id: c for c in MOCK_CAMERAS},
     topology=MOCK_TOPOLOGY,
 )
 
@@ -480,6 +524,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_relays",
             return_value=list(MOCK_RELAYS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_cameras",
+            return_value=list(MOCK_CAMERAS),
         ),
         patch(
             f"{_API_CLIENT}.async_get_topology",

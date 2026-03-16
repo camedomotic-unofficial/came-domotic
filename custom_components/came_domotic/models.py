@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from aiocamedomotic.models import (
     AnalogSensor,
+    Camera,
     DigitalInput,
     Light,
     Opening,
@@ -42,4 +43,5 @@ class CameDomoticServerData:
     digital_inputs: dict[int, DigitalInput] = field(default_factory=dict)
     analog_sensors: dict[int, AnalogSensor] = field(default_factory=dict)
     relays: dict[int, Relay] = field(default_factory=dict)
+    cameras: dict[int, Camera] = field(default_factory=dict)
     topology: PlantTopology | None = None

@@ -211,6 +211,18 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             _LOGGER.warning("Error updating data: %s", exception)
             raise UpdateFailed(exception) from exception
 
+        # Cameras are fetched best-effort: the TVCC feature is not advertised
+        # in server_info.features, and the API is marked as unverified, so
+        # failures here must not abort the entire data update.
+        cameras: list = []
+        try:
+            cameras = await self.api.async_get_cameras()
+        except CameDomoticApiClientAuthenticationError as exception:
+            _LOGGER.warning("Authentication failed fetching cameras")
+            raise ConfigEntryAuthFailed(exception) from exception
+        except CameDomoticApiClientError as err:
+            _LOGGER.debug("Cameras not available on this server: %s", err)
+
         # Topology (floors/rooms) is structural metadata — fetch best-effort
         # so failures here don't abort the entire data update.
         # Preserve previous topology as fallback for transient failures.
@@ -233,7 +245,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
             "%d digital input(s), %d analog sensor(s), %d relay(s), "
-            "topology=%s",
+            "%d camera(s), topology=%s",
             features,
             len(thermo_zones),
             len(scenarios),
@@ -242,6 +254,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(digital_inputs),
             len(analog_sensors),
             len(relays),
+            len(cameras),
             f"{len(topology.floors)} floor(s)" if topology else "unavailable",
         )
         return CameDomoticServerData(
@@ -253,6 +266,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             digital_inputs={di.act_id: di for di in digital_inputs},
             analog_sensors={s.act_id: s for s in analog_sensors},
             relays={r.act_id: r for r in relays},
+            cameras={c.id: c for c in cameras},
             topology=topology,
         )
 
