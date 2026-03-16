@@ -151,51 +151,44 @@ class CameDomoticRelay(CameDomoticDeviceEntity, SwitchEntity):
             self.hass, _OPTIMISTIC_TIMEOUT, _on_timeout
         )
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn on the relay."""
+    async def _async_apply_relay_state(
+        self, target_status: RelayStatus, optimistic_is_on: bool
+    ) -> None:
+        """Send a relay command and apply an optimistic state update.
+
+        Args:
+            target_status: The RelayStatus to send to the server.
+            optimistic_is_on: The optimistic is_on value to display until confirmed.
+        """
         relay = self.coordinator.data.relays.get(self._act_id)
         if relay is None:
             _LOGGER.warning(
-                "Cannot turn on relay act_id=%d: not found in coordinator data",
+                "Cannot set relay act_id=%d to %s: not found in coordinator data",
                 self._act_id,
+                target_status.name,
             )
             return
 
         # Capture pre-call state so _handle_coordinator_update can detect changes
         pre_call_status = relay.status
 
-        await self.coordinator.api.async_set_relay_status(relay, RelayStatus.ON)
+        await self.coordinator.api.async_set_relay_status(relay, target_status)
 
         # Optimistic update after successful API call
         self._optimistic_snapshot_status = pre_call_status
-        self._optimistic_is_on = True
+        self._optimistic_is_on = optimistic_is_on
         self._schedule_optimistic_timeout()
         _LOGGER.debug(
-            "Optimistic update for relay act_id=%d: is_on=True",
+            "Optimistic update for relay act_id=%d: is_on=%s",
             self._act_id,
+            optimistic_is_on,
         )
         self.async_write_ha_state()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on the relay."""
+        await self._async_apply_relay_state(RelayStatus.ON, optimistic_is_on=True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the relay."""
-        relay = self.coordinator.data.relays.get(self._act_id)
-        if relay is None:
-            _LOGGER.warning(
-                "Cannot turn off relay act_id=%d: not found in coordinator data",
-                self._act_id,
-            )
-            return
-
-        # Capture pre-call state so _handle_coordinator_update can detect changes
-        pre_call_status = relay.status
-
-        await self.coordinator.api.async_set_relay_status(relay, RelayStatus.OFF)
-
-        self._optimistic_snapshot_status = pre_call_status
-        self._optimistic_is_on = False
-        self._schedule_optimistic_timeout()
-        _LOGGER.debug(
-            "Optimistic update for relay act_id=%d: is_on=False",
-            self._act_id,
-        )
-        self.async_write_ha_state()
+        await self._async_apply_relay_state(RelayStatus.OFF, optimistic_is_on=False)
