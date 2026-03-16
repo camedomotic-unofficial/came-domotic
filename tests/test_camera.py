@@ -27,6 +27,17 @@ _COORDINATOR = (
 )
 
 
+def _mock_aiohttp_get(resp=None, side_effect=None):
+    """Return a callable mimicking session.get() as an async context manager."""
+    cm = MagicMock()
+    if side_effect:
+        cm.__aenter__ = AsyncMock(side_effect=side_effect)
+    else:
+        cm.__aenter__ = AsyncMock(return_value=resp)
+    cm.__aexit__ = AsyncMock(return_value=False)
+    return MagicMock(return_value=cm)
+
+
 async def _setup_entry(hass, mock_cameras):
     """Set up a config entry with the given mock cameras list."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
@@ -281,7 +292,7 @@ async def test_camera_image_success(hass):
     mock_resp.read = AsyncMock(return_value=b"\xff\xd8\xff\xe0fake-jpeg")
 
     mock_session = MagicMock()
-    mock_session.get = AsyncMock(return_value=mock_resp)
+    mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
     with patch(
         "custom_components.came_domotic.camera.async_get_clientsession",
@@ -304,7 +315,7 @@ async def test_camera_image_timeout(hass):
     await _setup_entry(hass, cameras)
 
     mock_session = MagicMock()
-    mock_session.get = AsyncMock(side_effect=TimeoutError)
+    mock_session.get = _mock_aiohttp_get(side_effect=TimeoutError)
 
     with (
         patch(
@@ -328,7 +339,7 @@ async def test_camera_image_client_error(hass):
     await _setup_entry(hass, cameras)
 
     mock_session = MagicMock()
-    mock_session.get = AsyncMock(side_effect=aiohttp.ClientError)
+    mock_session.get = _mock_aiohttp_get(side_effect=aiohttp.ClientError)
 
     with (
         patch(
@@ -356,7 +367,7 @@ async def test_camera_image_non_200(hass):
     mock_resp.content_type = "text/html"
 
     mock_session = MagicMock()
-    mock_session.get = AsyncMock(return_value=mock_resp)
+    mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
     with (
         patch(
@@ -384,7 +395,7 @@ async def test_camera_image_bad_content_type(hass):
     mock_resp.content_type = "text/html"
 
     mock_session = MagicMock()
-    mock_session.get = AsyncMock(return_value=mock_resp)
+    mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
     with (
         patch(
@@ -455,6 +466,8 @@ async def test_extra_state_attributes_camera_missing(hass):
 
     state = hass.states.get("camera.front_door_camera")
     assert state is not None
+    assert "stream_type" not in state.attributes
+    assert "is_flash" not in state.attributes
 
 
 # --- Edge cases ---

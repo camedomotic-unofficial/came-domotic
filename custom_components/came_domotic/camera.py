@@ -127,30 +127,32 @@ class CameDomoticCamera(CameDomoticDeviceEntity, CameraEntity):
         if camera is None or not camera.uri_still:
             return None
 
-        url = f"{camera.uri_still}?t={int(time.time())}"
+        separator = "&" if "?" in camera.uri_still else "?"
+        url = f"{camera.uri_still}{separator}t={int(time.time())}"
         try:
             session = async_get_clientsession(self.hass)
-            async with asyncio.timeout(_SNAPSHOT_TIMEOUT):
-                resp = await session.get(url)
+            async with (
+                asyncio.timeout(_SNAPSHOT_TIMEOUT),
+                session.get(url) as resp,
+            ):
+                if resp.status != 200:
+                    _LOGGER.warning(
+                        "Snapshot fetch returned status %d for camera %d",
+                        resp.status,
+                        self._camera_id,
+                    )
+                    return None
 
-            if resp.status != 200:
-                _LOGGER.warning(
-                    "Snapshot fetch returned status %d for camera %d",
-                    resp.status,
-                    self._camera_id,
-                )
-                return None
+                content_type = resp.content_type or ""
+                if not content_type.startswith("image/"):
+                    _LOGGER.warning(
+                        "Unexpected content type '%s' for camera %d snapshot",
+                        content_type,
+                        self._camera_id,
+                    )
+                    return None
 
-            content_type = resp.content_type or ""
-            if not content_type.startswith("image/"):
-                _LOGGER.warning(
-                    "Unexpected content type '%s' for camera %d snapshot",
-                    content_type,
-                    self._camera_id,
-                )
-                return None
-
-            return await resp.read()
+                return await resp.read()
         except TimeoutError:
             _LOGGER.warning("Timeout fetching snapshot for camera %d", self._camera_id)
             return None
