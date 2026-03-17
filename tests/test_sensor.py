@@ -14,8 +14,10 @@ from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
 from .conftest import (
+    MOCK_ANALOG_INPUTS,
     MOCK_ANALOG_SENSORS,
     MOCK_THERMO_ZONES,
+    _mock_analog_input,
     _mock_analog_sensor,
     _mock_server_info,
     _mock_thermo_zone,
@@ -31,13 +33,19 @@ _COORDINATOR = (
 
 
 async def _setup_entry(
-    hass, mock_zones=None, mock_analog_sensors=None, ping_return=10.0
+    hass,
+    mock_zones=None,
+    mock_analog_sensors=None,
+    mock_analog_inputs=None,
+    ping_return=10.0,
 ):
     """Set up a config entry with the given mock device lists."""
     if mock_zones is None:
         mock_zones = list(MOCK_THERMO_ZONES)
     if mock_analog_sensors is None:
         mock_analog_sensors = list(MOCK_ANALOG_SENSORS)
+    if mock_analog_inputs is None:
+        mock_analog_inputs = list(MOCK_ANALOG_INPUTS)
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -58,6 +66,10 @@ async def _setup_entry(
         patch(
             f"{_API_CLIENT}.async_get_analog_sensors",
             return_value=mock_analog_sensors,
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_analog_inputs",
+            return_value=mock_analog_inputs,
         ),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
@@ -91,8 +103,8 @@ async def test_thermo_zone_sensors_created(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     ]
-    # 2 thermo zones + 1 latency + 2 analog sensors = 5
-    assert len(entries) == 5
+    # 2 thermo zones + 1 latency + 2 analog sensors + 2 analog inputs = 7
+    assert len(entries) == 7
 
 
 async def test_thermo_zone_sensor_state(hass, bypass_get_data):
@@ -146,12 +158,16 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
         "test_ping_latency",
         "test_analog_sensor_500_analog_temperature",
         "test_analog_sensor_501_analog_humidity",
+        "test_analog_input_800_analog_input_temperature",
+        "test_analog_input_801_analog_input_humidity",
     }
 
 
 async def test_no_thermo_zones(hass):
     """Test only the latency sensor is created when there are no device sensors."""
-    config_entry = await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+    config_entry = await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=[]
+    )
 
     registry = er.async_get(hass)
     entries = [
@@ -382,6 +398,149 @@ async def test_analog_sensor_pressure(hass):
     await _setup_entry(hass, mock_zones=[], mock_analog_sensors=sensors)
 
     state = hass.states.get("sensor.barometer")
+    assert state is not None
+    assert state.state == "1013.25"
+    assert state.attributes["device_class"] == SensorDeviceClass.ATMOSPHERIC_PRESSURE
+    assert state.attributes["unit_of_measurement"] == UnitOfPressure.HPA
+
+
+# --- Analog input tests ---
+
+
+async def test_analog_input_created(hass):
+    """Test analog input entities are created."""
+    config_entry = await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+
+    registry = er.async_get(hass)
+    entries = [
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id
+        and e.domain == "sensor"
+        and "analog_input" in e.unique_id
+    ]
+    assert len(entries) == 2
+
+
+async def test_analog_input_state(hass):
+    """Test analog input states match sensor values."""
+    await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+
+    state = hass.states.get("sensor.garden_thermometer")
+    assert state is not None
+    assert state.state == "22.5"
+
+    state = hass.states.get("sensor.basement_hygrometer")
+    assert state is not None
+    assert state.state == "65.0"
+
+
+async def test_analog_input_temperature_attributes(hass):
+    """Test temperature analog input attributes are correctly set."""
+    await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+
+    state = hass.states.get("sensor.garden_thermometer")
+    assert state.attributes["device_class"] == SensorDeviceClass.TEMPERATURE
+    assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
+    assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
+
+
+async def test_analog_input_humidity_attributes(hass):
+    """Test humidity analog input attributes are correctly set."""
+    await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+
+    state = hass.states.get("sensor.basement_hygrometer")
+    assert state.attributes["device_class"] == SensorDeviceClass.HUMIDITY
+    assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
+    assert state.attributes["unit_of_measurement"] == PERCENTAGE
+
+
+async def test_analog_input_unique_ids(hass):
+    """Test analog input unique IDs follow the expected pattern."""
+    config_entry = await _setup_entry(hass, mock_zones=[], mock_analog_sensors=[])
+
+    registry = er.async_get(hass)
+    unique_ids = {
+        e.unique_id
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id and "analog_input" in e.unique_id
+    }
+    assert unique_ids == {
+        "test_analog_input_800_analog_input_temperature",
+        "test_analog_input_801_analog_input_humidity",
+    }
+
+
+async def test_no_analog_inputs(hass):
+    """Test no analog input entities when list is empty."""
+    config_entry = await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=[]
+    )
+
+    registry = er.async_get(hass)
+    entries = [
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id and "analog_input" in e.unique_id
+    ]
+    assert len(entries) == 0
+
+
+async def test_analog_input_disappears(hass):
+    """Test analog input returns unknown when sensor disappears from data."""
+    initial = [_mock_analog_input(800, "Garden Thermometer", 22.5)]
+    config_entry = await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=initial
+    )
+
+    coordinator = config_entry.runtime_data.coordinator
+    empty_data = CameDomoticServerData(server_info=_mock_server_info())
+
+    with patch.object(coordinator, "_async_update_data", return_value=empty_data):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.garden_thermometer")
+    assert state is not None
+    assert state.state == "unknown"
+
+
+async def test_analog_input_generic_unit(hass):
+    """Test unknown unit creates a generic sensor with raw unit string."""
+    inputs = [_mock_analog_input(900, "Air Quality", 42.0, unit="ppm")]
+    await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=inputs
+    )
+
+    state = hass.states.get("sensor.air_quality")
+    assert state is not None
+    assert state.state == "42.0"
+    assert state.attributes.get("device_class") is None
+    assert state.attributes["unit_of_measurement"] == "ppm"
+
+
+async def test_analog_input_empty_unit(hass):
+    """Test empty unit string creates sensor with no unit of measurement."""
+    inputs = [_mock_analog_input(901, "Raw Sensor", 100.0, unit="")]
+    await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=inputs
+    )
+
+    state = hass.states.get("sensor.raw_sensor")
+    assert state is not None
+    assert state.state == "100.0"
+    assert state.attributes.get("device_class") is None
+    assert state.attributes.get("unit_of_measurement") is None
+
+
+async def test_analog_input_pressure(hass):
+    """Test pressure analog input attributes."""
+    inputs = [_mock_analog_input(902, "Barometer Input", 1013.25, unit="hPa")]
+    await _setup_entry(
+        hass, mock_zones=[], mock_analog_sensors=[], mock_analog_inputs=inputs
+    )
+
+    state = hass.states.get("sensor.barometer_input")
     assert state is not None
     assert state.state == "1013.25"
     assert state.attributes["device_class"] == SensorDeviceClass.ATMOSPHERIC_PRESSURE

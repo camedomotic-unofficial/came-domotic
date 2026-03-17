@@ -61,6 +61,7 @@ async def _setup_entry(hass, mock_cameras):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_cameras",
@@ -533,6 +534,7 @@ async def test_cameras_not_fetched_on_api_error(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_cameras",

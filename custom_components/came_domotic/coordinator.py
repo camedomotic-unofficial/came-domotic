@@ -201,6 +201,10 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             if "digitalin" in features:
                 digital_inputs = await self.api.async_get_digital_inputs()
 
+            analog_inputs: list = []
+            if "analogin" in features:
+                analog_inputs = await self.api.async_get_analog_inputs()
+
             relays: list = []
             if "relays" in features:
                 relays = await self.api.async_get_relays()
@@ -255,8 +259,8 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
         _LOGGER.debug(
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
-            "%d digital input(s), %d analog sensor(s), %d relay(s), "
-            "%d camera(s), %d map page(s), topology=%s",
+            "%d digital input(s), %d analog sensor(s), %d analog input(s), "
+            "%d relay(s), %d camera(s), %d map page(s), topology=%s",
             features,
             len(thermo_zones),
             len(scenarios),
@@ -264,6 +268,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(lights),
             len(digital_inputs),
             len(analog_sensors),
+            len(analog_inputs),
             len(relays),
             len(cameras),
             len(maps_pages),
@@ -277,6 +282,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             lights={lt.act_id: lt for lt in lights},
             digital_inputs={di.act_id: di for di in digital_inputs},
             analog_sensors={s.act_id: s for s in analog_sensors},
+            analog_inputs={ai.act_id: ai for ai in analog_inputs},
             relays={r.act_id: r for r in relays},
             cameras={c.id: c for c in cameras},
             maps={p.page_id: p for p in maps_pages},
@@ -564,5 +570,29 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             else:
                 _LOGGER.debug(
                     "Received update for unknown relay act_id=%d, ignoring",
+                    update.act_id,
+                )
+
+        # Merge analog input updates
+        analog_input_updates = update_list.get_typed_by_device_type(
+            DeviceType.ANALOG_INPUT
+        )
+        if analog_input_updates:
+            _LOGGER.debug(
+                "Merging incremental updates: %d analog input update(s)",
+                len(analog_input_updates),
+            )
+        for update in analog_input_updates:
+            analog_input = self.data.analog_inputs.get(update.act_id)
+            if analog_input is not None:
+                analog_input.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to analog input '%s' (act_id=%d)",
+                    update.name,
+                    update.act_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown analog input act_id=%d, ignoring",
                     update.act_id,
                 )

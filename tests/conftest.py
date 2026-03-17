@@ -323,6 +323,27 @@ MOCK_ANALOG_SENSORS = [
 ]
 
 
+def _mock_analog_input(act_id, name, value, unit="C"):
+    """Create a mock AnalogIn object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic works correctly
+    in tests.
+    """
+    ai = MagicMock()
+    ai.act_id = act_id
+    ai.name = name
+    ai.value = value
+    ai.unit = unit
+    ai.raw_data = {"act_id": act_id, "name": name, "value": value, "unit": unit}
+    return ai
+
+
+MOCK_ANALOG_INPUTS = [
+    _mock_analog_input(800, "Garden Thermometer", 22.5, unit="C"),
+    _mock_analog_input(801, "Basement Hygrometer", 65.0, unit="%"),
+]
+
+
 def _mock_relay(
     act_id,
     name,
@@ -477,6 +498,7 @@ def _mock_server_info(
             "thermoregulation",
             "scenarios",
             "digitalin",
+            "analogin",
             "relays",
         ]
     info = MagicMock()
@@ -499,6 +521,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     lights={lt.act_id: lt for lt in MOCK_LIGHTS},
     digital_inputs={di.act_id: di for di in MOCK_DIGITAL_INPUTS},
     analog_sensors={s.act_id: s for s in MOCK_ANALOG_SENSORS},
+    analog_inputs={ai.act_id: ai for ai in MOCK_ANALOG_INPUTS},
     relays={r.act_id: r for r in MOCK_RELAYS},
     cameras={c.id: c for c in MOCK_CAMERAS},
     maps={p.page_id: p for p in MOCK_MAP_PAGES},
@@ -544,6 +567,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_analog_sensors",
             return_value=list(MOCK_ANALOG_SENSORS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_analog_inputs",
+            return_value=list(MOCK_ANALOG_INPUTS),
         ),
         patch(
             f"{_API_CLIENT}.async_get_relays",
