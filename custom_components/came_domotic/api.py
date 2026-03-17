@@ -16,6 +16,7 @@ from aiocamedomotic.errors import (
     CameDomoticServerNotFoundError,
 )
 from aiocamedomotic.models import (
+    AnalogIn,
     AnalogSensor,
     Camera,
     DigitalInput,
@@ -203,6 +204,15 @@ class CameDomoticApiClient:
         return sensors
 
     @_translate_errors
+    async def async_get_analog_inputs(self) -> list[AnalogIn]:
+        """Fetch analog inputs from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching analog inputs from %s", self._host)
+        inputs = await self._api.async_get_analog_inputs()
+        _LOGGER.debug("Fetched %d analog input(s)", len(inputs))
+        return inputs
+
+    @_translate_errors
     async def async_get_relays(self) -> list[Relay]:
         """Fetch relays from the CAME Domotic server."""
         assert self._api is not None  # noqa: S101  # nosec B101
@@ -299,7 +309,12 @@ class CameDomoticApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Fetching topology from %s", self._host)
         topology = await self._api.async_get_topology()
-        _LOGGER.debug("Fetched topology: %d floor(s)", len(topology.floors))
+        total_rooms = sum(len(f.rooms) for f in topology.floors)
+        _LOGGER.debug(
+            "Fetched topology: %d floor(s), %d room(s)",
+            len(topology.floors),
+            total_rooms,
+        )
         return topology
 
     @_translate_errors

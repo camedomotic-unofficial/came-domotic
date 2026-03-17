@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 
-from aiocamedomotic.models import AnalogSensor, AnalogSensorType, ThermoZone
+from aiocamedomotic.models import AnalogIn, AnalogSensor, AnalogSensorType, ThermoZone
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -104,6 +104,61 @@ def _get_analog_sensor_description(
     )
 
 
+@dataclass(frozen=True, kw_only=True)
+class CameDomoticAnalogInputDescription(SensorEntityDescription):
+    """Describes a CAME Domotic analog input entity."""
+
+    value_fn: Callable[[AnalogIn], float | None]
+
+
+ANALOG_INPUT_DESCRIPTIONS: dict[str, CameDomoticAnalogInputDescription] = {
+    "C": CameDomoticAnalogInputDescription(
+        key="analog_input_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda ai: ai.value,
+    ),
+    "%": CameDomoticAnalogInputDescription(
+        key="analog_input_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda ai: ai.value,
+    ),
+    "hPa": CameDomoticAnalogInputDescription(
+        key="analog_input_pressure",
+        device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.HPA,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda ai: ai.value,
+    ),
+}
+
+
+def _get_analog_input_description(
+    analog_input: AnalogIn,
+) -> CameDomoticAnalogInputDescription:
+    """Return the entity description for an analog input based on its unit.
+
+    Known units ('C', '%', 'hPa') are mapped to HA device classes for
+    proper rendering. Unknown units fall back to a generic description
+    that preserves the raw unit string.
+    """
+    known = ANALOG_INPUT_DESCRIPTIONS.get(analog_input.unit)
+    if known is not None:
+        return known
+    return CameDomoticAnalogInputDescription(
+        key="analog_input_generic",
+        native_unit_of_measurement=analog_input.unit or None,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda ai: ai.value,
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: CameDomoticConfigEntry,
@@ -114,10 +169,13 @@ async def async_setup_entry(
     ping_coordinator = entry.runtime_data.ping_coordinator
     zones = coordinator.data.thermo_zones
     analog_sensors = coordinator.data.analog_sensors
+    analog_inputs = coordinator.data.analog_inputs
     _LOGGER.debug(
-        "Setting up %d thermo zone sensor(s) and %d analog sensor(s)",
+        "Setting up %d thermo zone sensor(s), %d analog sensor(s), "
+        "and %d analog input(s)",
         len(zones),
         len(analog_sensors),
+        len(analog_inputs),
     )
     async_add_entities(
         [
@@ -142,6 +200,15 @@ async def async_setup_entry(
                     _get_analog_sensor_description(sensor),
                 )
                 for act_id, sensor in analog_sensors.items()
+            ),
+            *(
+                CameDomoticAnalogInputEntity(
+                    coordinator,
+                    act_id,
+                    analog_input.name,
+                    _get_analog_input_description(analog_input),
+                )
+                for act_id, analog_input in analog_inputs.items()
             ),
         ]
     )
@@ -252,3 +319,38 @@ class CameDomoticAnalogSensorEntity(CameDomoticDeviceEntity, SensorEntity):
         if sensor is None:
             return None
         return self.entity_description.value_fn(sensor)
+
+
+class CameDomoticAnalogInputEntity(CameDomoticDeviceEntity, SensorEntity):
+    """Sensor entity for a CAME Domotic standalone analog input."""
+
+    entity_description: CameDomoticAnalogInputDescription
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        act_id: int,
+        input_name: str,
+        description: CameDomoticAnalogInputDescription,
+    ) -> None:
+        """Initialize the analog input entity."""
+        super().__init__(
+            coordinator,
+            entity_key=f"analog_input_{act_id}_{description.key}",
+            device_name=input_name,
+            device_id=f"analog_input_{act_id}",
+            floor_ind=None,
+            room_ind=None,
+        )
+        self.entity_description = description
+        self._act_id = act_id
+        self._attr_has_entity_name = False
+        self._attr_name = input_name
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value of the analog input."""
+        analog_input = self.coordinator.data.analog_inputs.get(self._act_id)
+        if analog_input is None:
+            return None
+        return self.entity_description.value_fn(analog_input)

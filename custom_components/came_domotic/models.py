@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from aiocamedomotic.models import (
+    AnalogIn,
     AnalogSensor,
     Camera,
     DigitalInput,
@@ -43,6 +44,7 @@ class CameDomoticServerData:
     lights: dict[int, Light] = field(default_factory=dict)
     digital_inputs: dict[int, DigitalInput] = field(default_factory=dict)
     analog_sensors: dict[int, AnalogSensor] = field(default_factory=dict)
+    analog_inputs: dict[int, AnalogIn] = field(default_factory=dict)
     relays: dict[int, Relay] = field(default_factory=dict)
     cameras: dict[int, Camera] = field(default_factory=dict)
     maps: dict[int, MapPage] = field(default_factory=dict)

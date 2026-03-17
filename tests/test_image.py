@@ -58,6 +58,7 @@ async def _setup_entry(hass, mock_maps):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_cameras", return_value=[]),
         patch(
@@ -135,7 +136,7 @@ async def test_image_entity_name(hass):
     maps = [_mock_map_page(0, "Ground Floor")]
     await _setup_entry(hass, maps)
 
-    state = hass.states.get("image.came_eti_domo_server_192_168_1_100_ground_floor")
+    state = hass.states.get("image.ground_floor")
     assert state is not None
 
 
@@ -157,9 +158,7 @@ async def test_async_image_success(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -186,9 +185,7 @@ async def test_async_image_url_construction(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -208,9 +205,7 @@ async def test_async_image_no_background(hass):
     maps = [_mock_map_page(0, "Empty Map", background="")]
     await _setup_entry(hass, maps)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_empty_map"
-    )
+    entity = _get_image_entity(hass, "image.empty_map")
     assert entity is not None
     result = await entity.async_image()
     assert result is None
@@ -224,9 +219,7 @@ async def test_async_image_timeout(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(side_effect=TimeoutError)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -246,9 +239,7 @@ async def test_async_image_client_error(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(side_effect=aiohttp.ClientError)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -272,9 +263,7 @@ async def test_async_image_non_200(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -298,9 +287,7 @@ async def test_async_image_bad_content_type(hass):
     mock_session = MagicMock()
     mock_session.get = _mock_aiohttp_get(resp=mock_resp)
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
 
     with patch(
@@ -365,7 +352,7 @@ async def test_extra_state_attributes(hass):
     maps = [_mock_map_page(0, "Ground Floor", page_scale=1024, elements=elements)]
     await _setup_entry(hass, maps)
 
-    state = hass.states.get("image.came_eti_domo_server_192_168_1_100_ground_floor")
+    state = hass.states.get("image.ground_floor")
     assert state is not None
     assert state.attributes["page_id"] == 0
     assert state.attributes["page_scale"] == 1024
@@ -391,7 +378,7 @@ async def test_extra_state_attributes_map_missing(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("image.came_eti_domo_server_192_168_1_100_ground_floor")
+    state = hass.states.get("image.ground_floor")
     assert state is not None
     assert "page_id" not in state.attributes
     assert "page_scale" not in state.attributes
@@ -420,9 +407,7 @@ async def test_map_disappeared_from_coordinator(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    entity = _get_image_entity(
-        hass, "image.came_eti_domo_server_192_168_1_100_ground_floor"
-    )
+    entity = _get_image_entity(hass, "image.ground_floor")
     assert entity is not None
     result = await entity.async_image()
     assert result is None

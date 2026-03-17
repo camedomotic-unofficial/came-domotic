@@ -90,6 +90,7 @@ class CameDomoticMapImage(CameDomoticEntity, ImageEntity):
         """
         CameDomoticEntity.__init__(self, coordinator, entity_key=f"map_{page_id}")
         ImageEntity.__init__(self, coordinator.hass)
+        self._attr_has_entity_name = False
         self._page_id = page_id
         self._attr_name = page_label
 

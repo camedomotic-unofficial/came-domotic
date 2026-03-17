@@ -6,7 +6,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 from aiocamedomotic.auth import Auth
-from aiocamedomotic.models import DigitalInput, Light, Relay, ThermoZone
+from aiocamedomotic.models import AnalogIn, DigitalInput, Light, Relay, ThermoZone
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
@@ -145,6 +145,7 @@ async def test_coordinator_skips_unsupported_features(hass):
             f"{_API_CLIENT}.async_get_analog_sensors",
             return_value=[],
         ) as mock_analog,
+        patch(f"{_API_CLIENT}.async_get_analog_inputs") as mock_analog_inputs,
         patch(f"{_API_CLIENT}.async_get_relays") as mock_relays,
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -169,6 +170,7 @@ async def test_coordinator_skips_unsupported_features(hass):
     mock_openings.assert_not_awaited()
     mock_lights.assert_not_awaited()
     mock_digital.assert_not_awaited()
+    mock_analog_inputs.assert_not_awaited()
     mock_relays.assert_not_awaited()
 
     # Data should have empty dicts for unsupported features
@@ -176,6 +178,7 @@ async def test_coordinator_skips_unsupported_features(hass):
     assert len(coordinator.data.openings) == 0
     assert len(coordinator.data.lights) == 0
     assert len(coordinator.data.digital_inputs) == 0
+    assert len(coordinator.data.analog_inputs) == 0
     assert len(coordinator.data.relays) == 0
 
 
@@ -199,6 +202,7 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
         patch(f"{_API_CLIENT}.async_get_lights") as mock_lights,
         patch(f"{_API_CLIENT}.async_get_digital_inputs") as mock_digital,
         patch(f"{_API_CLIENT}.async_get_analog_sensors") as mock_analog,
+        patch(f"{_API_CLIENT}.async_get_analog_inputs") as mock_analog_inputs,
         patch(f"{_API_CLIENT}.async_get_relays") as mock_relays,
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -220,6 +224,7 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
     mock_lights.assert_not_awaited()
     mock_digital.assert_not_awaited()
     mock_analog.assert_not_awaited()
+    mock_analog_inputs.assert_not_awaited()
     mock_relays.assert_not_awaited()
 
     # All device collections should be empty
@@ -229,6 +234,7 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
     assert len(coordinator.data.lights) == 0
     assert len(coordinator.data.digital_inputs) == 0
     assert len(coordinator.data.analog_sensors) == 0
+    assert len(coordinator.data.analog_inputs) == 0
     assert len(coordinator.data.relays) == 0
 
 
@@ -425,6 +431,7 @@ async def test_start_and_stop_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -468,6 +475,7 @@ async def test_start_long_poll_already_running(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -531,6 +539,7 @@ async def test_long_poll_loop_incremental_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -851,6 +860,7 @@ async def test_stop_long_poll_cancels_running_task(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -900,6 +910,7 @@ async def test_merge_updates_known_zone(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -952,6 +963,7 @@ async def test_merge_updates_unknown_zone_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -999,6 +1011,7 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1061,6 +1074,7 @@ async def test_merge_updates_known_scenario(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1119,6 +1133,7 @@ async def test_merge_updates_unknown_scenario_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1462,6 +1477,7 @@ async def test_merge_updates_known_opening(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1511,6 +1527,7 @@ async def test_merge_updates_unknown_opening_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1555,6 +1572,7 @@ async def test_merge_updates_preserves_opening_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1640,6 +1658,7 @@ async def test_merge_updates_known_light(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1689,6 +1708,7 @@ async def test_merge_updates_unknown_light_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1733,6 +1753,7 @@ async def test_merge_updates_preserves_light_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=real_lts),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1816,6 +1837,7 @@ async def test_merge_updates_known_digital_input(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1864,6 +1886,7 @@ async def test_merge_updates_unknown_digital_input_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -1908,6 +1931,7 @@ async def test_merge_updates_preserves_digital_input_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=real_dis),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2018,6 +2042,7 @@ async def test_attach_ping_coordinator_disconnect_stops_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2067,6 +2092,7 @@ async def test_attach_ping_coordinator_reconnect_resumes_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2123,6 +2149,7 @@ async def test_reconnect_refresh_auth_error_triggers_reauth(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2181,6 +2208,7 @@ async def test_reconnect_refresh_comm_error_resumes_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2241,6 +2269,7 @@ async def test_reconnect_skips_long_poll_if_server_went_unavailable(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2407,6 +2436,7 @@ async def test_merge_updates_known_relay(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2456,6 +2486,7 @@ async def test_merge_updates_unknown_relay_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2500,6 +2531,7 @@ async def test_merge_updates_preserves_relay_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(
             f"{_API_CLIENT}.async_get_topology",
@@ -2528,3 +2560,171 @@ async def test_merge_updates_preserves_relay_fields_not_in_update(hass):
     assert relay.status.value == 1  # ON
     assert relay.name == "Heating Relay"  # preserved
     assert relay.floor_ind == 0  # preserved
+
+
+# --- _merge_updates (analog inputs) ---
+
+
+def _real_analog_input(act_id, name, value=100, unit="C"):
+    """Create a real AnalogIn object (for merge tests)."""
+    return AnalogIn(
+        raw_data={"act_id": act_id, "name": name, "value": value, "unit": unit}
+    )
+
+
+def _real_analog_inputs():
+    """Return a list of real AnalogIn objects for testing."""
+    return [
+        _real_analog_input(800, "Garden Thermometer", value=225, unit="C"),
+        _real_analog_input(801, "Basement Hygrometer", value=65, unit="%"),
+    ]
+
+
+async def test_merge_updates_known_analog_input(hass):
+    """Test incremental update merges into a known analog input."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_ais = _real_analog_inputs()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
+        patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Verify initial state (value 225 -> 22.5 °C after library conversion)
+    assert coordinator.data.analog_inputs[800].value == 22.5
+
+    # Simulate an incremental update changing the value
+    mock_update = MagicMock()
+    mock_update.act_id = 800
+    mock_update.name = "Garden Thermometer"
+    mock_update.raw_data = {"act_id": 800, "value": 250}  # 25.0 °C
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    # Value should now reflect the update (250 / 10 = 25.0)
+    assert coordinator.data.analog_inputs[800].value == 25.0
+
+
+async def test_merge_updates_unknown_analog_input_ignored(hass):
+    """Test update for unknown analog input act_id is silently ignored."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_ais = _real_analog_inputs()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
+        patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Update for an act_id that doesn't exist in our data
+    mock_update = MagicMock()
+    mock_update.act_id = 999
+    mock_update.name = "Unknown Sensor"
+    mock_update.raw_data = {"act_id": 999, "value": 50}
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    # Original data should be unchanged
+    assert 999 not in coordinator.data.analog_inputs
+    assert coordinator.data.analog_inputs[800].value == 22.5
+
+
+async def test_merge_updates_preserves_analog_input_fields_not_in_update(hass):
+    """Test partial update only overwrites supplied keys, preserving others."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    real_ais = _real_analog_inputs()
+
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
+        patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Update only contains value — everything else should be preserved
+    mock_update = MagicMock()
+    mock_update.act_id = 801
+    mock_update.name = "Basement Hygrometer"
+    mock_update.raw_data = {"act_id": 801, "value": 70}
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+    ai = coordinator.data.analog_inputs[801]
+
+    assert ai.value == 70.0  # updated
+    assert ai.name == "Basement Hygrometer"  # preserved
+    assert ai.unit == "%"  # preserved
