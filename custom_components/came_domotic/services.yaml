@@ -79,3 +79,29 @@ force_refresh:
       selector:
         config_entry:
           integration: came_domotic
+
+set_timer_timetable:
+  target:
+    entity:
+      integration: came_domotic
+      domain: switch
+  fields:
+    days:
+      required: false
+      example: '["monday", "wednesday", "friday"]'
+      selector:
+        select:
+          multiple: true
+          options:
+            - "monday"
+            - "tuesday"
+            - "wednesday"
+            - "thursday"
+            - "friday"
+            - "saturday"
+            - "sunday"
+    slots:
+      required: false
+      example: '[{"start": "08:00", "stop": "12:00"}, {"start": "14:00", "stop": "18:00"}]'
+      selector:
+        object:

@@ -158,6 +158,20 @@
           "description": "The CAME Domotic server to refresh."
         }
       }
+    },
+    "set_timer_timetable": {
+      "name": "Set timer timetable",
+      "description": "Configure the schedule for a CAME Domotic timer, including active days and time slots.",
+      "fields": {
+        "days": {
+          "name": "Days",
+          "description": "Days of the week the timer should be active. Unlisted days will be disabled."
+        },
+        "slots": {
+          "name": "Time slots",
+          "description": "Up to 4 time slots with start and optional stop times (HH:MM or HH:MM:SS format). Slots beyond those provided are cleared."
+        }
+      }
     }
   },
   "exceptions": {

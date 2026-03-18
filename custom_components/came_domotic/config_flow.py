@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -26,7 +27,14 @@ from .api import (
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
 )
-from .const import CONF_SERVER_INFO, CONF_TOPOLOGY_IMPORTED, DOMAIN, hash_keycode
+from .const import (
+    CONF_SERVER_INFO,
+    CONF_TOPOLOGY_IMPORTED,
+    DEFAULT_CANDIDATE_HOSTS,
+    DISCOVERY_PROBE_TIMEOUT,
+    DOMAIN,
+    hash_keycode,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,6 +86,56 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    async def _async_probe_candidate_hosts(self) -> str | None:
+        """Probe known candidate IPs and return the first CAME server found.
+
+        Checks factory-default IPs and the .3 address on HA's own subnet,
+        skipping hosts that are already configured.
+        Returns the host IP if found, or None.
+        """
+        candidates: set[str] = set(DEFAULT_CANDIDATE_HOSTS)
+
+        try:
+            from homeassistant.components.network import (  # noqa: PLC0415
+                async_get_source_ip,
+            )
+
+            source_ip = await async_get_source_ip(self.hass)
+            prefix = source_ip.rsplit(".", 1)[0]
+            candidates.add(f"{prefix}.3")
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("Could not determine local IP for subnet-based discovery")
+
+        configured_hosts = {
+            entry.data[CONF_HOST]
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
+            if CONF_HOST in entry.data
+        }
+        candidates -= configured_hosts
+
+        if not candidates:
+            return None
+
+        _LOGGER.debug("User flow: probing candidates %s", candidates)
+        session = async_get_clientsession(self.hass)
+
+        async def _probe(host: str) -> str | None:
+            try:
+                if await async_is_came_endpoint(
+                    host, websession=session, timeout=DISCOVERY_PROBE_TIMEOUT
+                ):
+                    return host
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("User flow: probe failed for %s", host)
+            return None
+
+        results = await asyncio.gather(*[_probe(ip) for ip in candidates])
+        for host in results:
+            if host is not None:
+                _LOGGER.debug("User flow: CAME server found at %s", host)
+                return host
+        return None
+
     async def async_step_user(
         self,
         user_input: dict[str, Any] | None = None,
@@ -116,6 +174,15 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                     title=f"CAME ETI/Domo server ({user_input[CONF_HOST]})",
                     data={**user_input, CONF_SERVER_INFO: server_info_dict},
                 )
+
+        # On initial form display, auto-probe for a CAME server on the network.
+        # If found, skip the host field and jump straight to credential entry.
+        if not errors:
+            discovered_host = await self._async_probe_candidate_hosts()
+            if discovered_host is not None:
+                self._discovered_host = discovered_host
+                self.context["title_placeholders"] = {"host": discovered_host}
+                return await self.async_step_dhcp_confirm()
 
         return self.async_show_form(
             step_id="user",

@@ -17,6 +17,7 @@ from aiocamedomotic.models import (
     Scenario,
     ServerInfo,
     ThermoZone,
+    Timer,
 )
 
 
@@ -46,6 +47,7 @@ class CameDomoticServerData:
     analog_sensors: dict[int, AnalogSensor] = field(default_factory=dict)
     analog_inputs: dict[int, AnalogIn] = field(default_factory=dict)
     relays: dict[int, Relay] = field(default_factory=dict)
+    timers: dict[int, Timer] = field(default_factory=dict)
     cameras: dict[int, Camera] = field(default_factory=dict)
     maps: dict[int, MapPage] = field(default_factory=dict)
     topology: PlantTopology | None = None

@@ -2112,3 +2112,355 @@ async def test_async_set_thermo_zone_fan_speed_not_initialized(hass):
 
     with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_set_thermo_zone_fan_speed(zone, ThermoZoneFanSpeed.AUTO)
+
+
+# --- async_get_timers ---
+
+
+async def test_async_get_timers_success(hass):
+    """Test successful timers retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_timers = [MagicMock(), MagicMock()]
+    mock_api.async_get_timers.return_value = mock_timers
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_timers()
+    assert result is mock_timers
+
+
+async def test_async_get_timers_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_timers.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_timers()
+
+
+async def test_async_get_timers_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_timers.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_timers()
+
+
+async def test_async_get_timers_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_timers.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_timers()
+
+
+async def test_async_get_timers_not_initialized(hass):
+    """Test async_get_timers raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_timers()
+
+
+# --- async_enable_timer ---
+
+
+def _mock_timer():
+    """Create a mock Timer object for API tests."""
+    timer = MagicMock()
+    timer.name = "Morning Timer"
+    timer.id = 900
+    timer.async_enable = AsyncMock()
+    timer.async_disable = AsyncMock()
+    timer.async_enable_day = AsyncMock()
+    timer.async_disable_day = AsyncMock()
+    timer.async_set_timetable = AsyncMock()
+    return timer
+
+
+async def test_async_enable_timer_success(hass):
+    """Test successful timer enable."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_enable_timer(timer)
+    timer.async_enable.assert_awaited_once()
+
+
+async def test_async_enable_timer_auth_error(hass):
+    """Test CameDomoticAuthError during enable raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_enable.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_enable_timer(timer)
+
+
+async def test_async_enable_timer_server_error(hass):
+    """Test CameDomoticServerError during enable raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_enable.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_enable_timer(timer)
+
+
+async def test_async_enable_timer_generic_error(hass):
+    """Test CameDomoticError during enable raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_enable.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_enable_timer(timer)
+
+
+async def test_async_enable_timer_not_initialized(hass):
+    """Test async_enable_timer raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_enable_timer(_mock_timer())
+
+
+# --- async_disable_timer ---
+
+
+async def test_async_disable_timer_success(hass):
+    """Test successful timer disable."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_disable_timer(timer)
+    timer.async_disable.assert_awaited_once()
+
+
+async def test_async_disable_timer_auth_error(hass):
+    """Test CameDomoticAuthError during disable raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_disable.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_disable_timer(timer)
+
+
+async def test_async_disable_timer_server_error(hass):
+    """Test CameDomoticServerError during disable raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_disable.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_disable_timer(timer)
+
+
+async def test_async_disable_timer_generic_error(hass):
+    """Test CameDomoticError during disable raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_disable.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_disable_timer(timer)
+
+
+async def test_async_disable_timer_not_initialized(hass):
+    """Test async_disable_timer raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_disable_timer(_mock_timer())
+
+
+# --- async_enable_timer_day ---
+
+
+async def test_async_enable_timer_day_success(hass):
+    """Test successful day enable."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_enable_timer_day(timer, 2)
+    timer.async_enable_day.assert_awaited_once_with(2)
+
+
+async def test_async_enable_timer_day_auth_error(hass):
+    """Test CameDomoticAuthError during day enable raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_enable_day.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_enable_timer_day(timer, 0)
+
+
+async def test_async_enable_timer_day_not_initialized(hass):
+    """Test async_enable_timer_day raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_enable_timer_day(_mock_timer(), 0)
+
+
+# --- async_disable_timer_day ---
+
+
+async def test_async_disable_timer_day_success(hass):
+    """Test successful day disable."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_disable_timer_day(timer, 5)
+    timer.async_disable_day.assert_awaited_once_with(5)
+
+
+async def test_async_disable_timer_day_auth_error(hass):
+    """Test CameDomoticAuthError during day disable raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_disable_day.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_disable_timer_day(timer, 0)
+
+
+async def test_async_disable_timer_day_not_initialized(hass):
+    """Test async_disable_timer_day raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_disable_timer_day(_mock_timer(), 0)
+
+
+# --- async_set_timer_timetable ---
+
+
+async def test_async_set_timer_timetable_success(hass):
+    """Test successful timetable setting."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    slots = [(8, 0, 0), (12, 0, 0), None, None]
+    await client.async_set_timer_timetable(timer, slots)
+    timer.async_set_timetable.assert_awaited_once_with(slots)
+
+
+async def test_async_set_timer_timetable_auth_error(hass):
+    """Test CameDomoticAuthError during timetable set raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_set_timetable.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_set_timer_timetable(timer, [None, None, None, None])
+
+
+async def test_async_set_timer_timetable_server_error(hass):
+    """Test CameDomoticServerError during timetable set raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_set_timetable.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_set_timer_timetable(timer, [None, None, None, None])
+
+
+async def test_async_set_timer_timetable_generic_error(hass):
+    """Test CameDomoticError during timetable set raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    timer = _mock_timer()
+    timer.async_set_timetable.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_timer_timetable(timer, [None, None, None, None])
+
+
+async def test_async_set_timer_timetable_not_initialized(hass):
+    """Test async_set_timer_timetable raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_timer_timetable(_mock_timer(), [None, None, None, None])

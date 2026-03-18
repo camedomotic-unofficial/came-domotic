@@ -59,25 +59,33 @@ Uses **ruff** (formatter + linter), **mypy** (type checking), **bandit** (securi
 1. User configures via UI (`config_flow.py` -> `CameDomoticFlowHandler`)
 2. `__init__.py:async_setup_entry` creates the API client and coordinator, stores them in `entry.runtime_data`
 3. Coordinator performs an initial full fetch (`_async_update_data()`), then a background long-poll task (`_async_long_poll_loop()`) receives incremental updates from the server and pushes them to entities via `async_set_updated_data()`
-4. Platforms (`binary_sensor.py`, `sensor.py`, `switch.py`) register entities that read from `coordinator.data`
+4. Platforms register entities that read from `coordinator.data`
+
+### Platforms (10)
+
+`binary_sensor`, `camera`, `climate`, `cover`, `image`, `light`, `scene`, `select`, `sensor`, `switch`
 
 ### Key modules (`custom_components/came_domotic/`)
 
-- **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `ApiClientError` -> `CommunicationError` / `AuthenticationError`. Includes `async_get_updates()` for long-polling.
-- **coordinator.py** - Contains two coordinators: (1) `CameDomoticDataUpdateCoordinator` — push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch, `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `zone.raw_data.update(update.raw_data)`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`. (2) `CameDomoticPingCoordinator` — polling-based coordinator that monitors server reachability via `async_ping()`, adjusting its interval between connected (`PING_UPDATE_INTERVAL`) and disconnected (`PING_UPDATE_INTERVAL_DISCONNECTED`) cadences. Drives the long-poll lifecycle (stop on disconnect, restart on recovery).
-- **entity.py** - Base `CoordinatorEntity` subclass setting common attributes (attribution, device info, unique_id)
+- **api.py** - Client wrapping the `aiocamedomotic` library to talk to the local CAME Domotic server. Custom exception hierarchy: `CameDomoticApiClientError` -> `CameDomoticApiClientCommunicationError` / `CameDomoticApiClientAuthenticationError`. Includes `async_get_updates()` for long-polling.
+- **coordinator.py** - `CameDomoticDataUpdateCoordinator` — push-based `DataUpdateCoordinator` subclass (no `update_interval`). `_async_update_data()` for initial/full fetch (feature-gated), `_async_long_poll_loop()` for incremental updates via background task. Merges partial updates via `_merge_updates()`. Translates API errors to `ConfigEntryAuthFailed` / `UpdateFailed`. Recycles the API session after `SESSION_RECYCLE_THRESHOLD` long-poll calls to reset the cseq counter.
+- **ping_coordinator.py** - `CameDomoticPingCoordinator` — polling-based coordinator that monitors server reachability via `async_ping()`, adjusting its interval between connected (`PING_UPDATE_INTERVAL`) and disconnected (`PING_UPDATE_INTERVAL_DISCONNECTED`) cadences. Drives the long-poll lifecycle (stop on disconnect, restart on recovery).
+- **entity.py** - Two base `CoordinatorEntity` subclasses: `CameDomoticEntity` (gateway-level, common attributes) and `CameDomoticDeviceEntity` (per-device, with floor/room topology area resolution via `_get_suggested_area()`). Both check `coordinator.server_available` in their `available` property.
+- **models.py** - Data models: `CameDomoticServerData` (holds all device data dicts fetched from the server), `PingResult` (connected + latency).
+- **services.py** - Service actions for user management (add/delete user, change password) exposed to the HA service registry.
 - **config_flow.py** - Setup flow (user step, DHCP discovery, reconfigure, reauth)
-- **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`), and ping constants (`PING_UPDATE_INTERVAL`, `PING_UPDATE_INTERVAL_DISCONNECTED`)
+- **const.py** - Domain name, defaults, long-poll constants (`DEFAULT_LONG_POLL_TIMEOUT`, `RECONNECT_DELAY`, `UPDATE_THROTTLE_DELAY`), session recycling (`SESSION_RECYCLE_THRESHOLD`), ping constants (`PING_UPDATE_INTERVAL`, `PING_UPDATE_INTERVAL_DISCONNECTED`), and `hash_keycode()` helper.
 
 ### Adding a new device type platform
 
-Pattern for adding future platforms (e.g., lights, openings):
+Pattern for adding new platforms:
 
-1. Add `async_get_<device_type>()` method to `api.py` (same exception-translation pattern)
-2. Include it in `api.async_get_data()` for initial fetch
-3. Handle `DeviceType.<TYPE>` in `coordinator._merge_updates()` using `device.raw_data.update(update.raw_data)`
-4. Create platform file (e.g., `light.py`) with entities reading from `coordinator.data["<key>"]`
-5. Add platform to `PLATFORMS` list in `__init__.py`
+1. Add `async_get_<device_type>()` method to `api.py` (same `_translate_errors` decorator pattern)
+2. Add a field to `CameDomoticServerData` in `models.py`
+3. Include the fetch in `coordinator._async_update_data()` (feature-gated via `server_info.features`)
+4. Handle `DeviceType.<TYPE>` in `coordinator._merge_updates()`
+5. Create platform file with entities reading from `coordinator.data`
+6. Add platform to `PLATFORMS` list in `__init__.py`
 
 ### Type alias
 

@@ -80,6 +80,7 @@ async def _setup_entry(
             return_value=mock_analog_inputs,
         ),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),

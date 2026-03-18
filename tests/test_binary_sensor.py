@@ -43,6 +43,7 @@ async def _setup_entry(hass, mock_digital_inputs, ping_return=10.0):
         patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),

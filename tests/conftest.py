@@ -378,6 +378,95 @@ MOCK_RELAYS = [
 ]
 
 
+def _mock_timer_time_slot(
+    index,
+    start_hour=8,
+    start_min=0,
+    start_sec=0,
+    stop_hour=12,
+    stop_min=0,
+    stop_sec=0,
+    active=True,
+):
+    """Create a mock TimerTimeSlot object."""
+    slot = MagicMock()
+    slot.index = index
+    slot.start_hour = start_hour
+    slot.start_min = start_min
+    slot.start_sec = start_sec
+    slot.stop_hour = stop_hour
+    slot.stop_min = stop_min
+    slot.stop_sec = stop_sec
+    slot.active = active
+    return slot
+
+
+def _mock_timer(
+    timer_id,
+    name,
+    enabled=True,
+    days=0b0011111,
+    bars=1,
+    timetable=None,
+    active_days=None,
+):
+    """Create a mock Timer object with all required attributes.
+
+    Includes a raw_data dict so that coordinator merge logic
+    (raw_data.update) works correctly in tests.
+    """
+    day_names = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
+    if active_days is None:
+        active_days = [day_names[i] for i in range(7) if days & (1 << i)]
+    timer = MagicMock()
+    timer.id = timer_id
+    timer.name = name
+    timer.enabled = enabled
+    timer.days = days
+    timer.active_days = active_days
+    timer.bars = bars
+    timer.timetable = timetable or []
+    timer.raw_data = {
+        "id": timer_id,
+        "name": name,
+        "enabled": int(enabled),
+        "days": days,
+        "bars": bars,
+    }
+    return timer
+
+
+MOCK_TIMERS = [
+    _mock_timer(
+        900,
+        "Morning Timer",
+        enabled=True,
+        days=0b0011111,
+        bars=1,
+        timetable=[_mock_timer_time_slot(0, 8, 0, 0, 12, 0, 0)],
+    ),
+    _mock_timer(
+        901,
+        "Weekend Timer",
+        enabled=False,
+        days=0b1100000,
+        bars=2,
+        timetable=[
+            _mock_timer_time_slot(0, 9, 0, 0, 13, 0, 0),
+            _mock_timer_time_slot(1, 15, 30, 0, 18, 0, 0),
+        ],
+    ),
+]
+
+
 def _mock_camera(
     camera_id,
     name,
@@ -500,6 +589,7 @@ def _mock_server_info(
             "digitalin",
             "analogin",
             "relays",
+            "timers",
         ]
     info = MagicMock()
     info.keycode = MOCK_KEYCODE
@@ -523,6 +613,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     analog_sensors={s.act_id: s for s in MOCK_ANALOG_SENSORS},
     analog_inputs={ai.act_id: ai for ai in MOCK_ANALOG_INPUTS},
     relays={r.act_id: r for r in MOCK_RELAYS},
+    timers={t.id: t for t in MOCK_TIMERS},
     cameras={c.id: c for c in MOCK_CAMERAS},
     maps={p.page_id: p for p in MOCK_MAP_PAGES},
     topology=MOCK_TOPOLOGY,
@@ -575,6 +666,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_relays",
             return_value=list(MOCK_RELAYS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_timers",
+            return_value=list(MOCK_TIMERS),
         ),
         patch(
             f"{_API_CLIENT}.async_get_cameras",

@@ -208,6 +208,10 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             relays: list = []
             if "relays" in features:
                 relays = await self.api.async_get_relays()
+
+            timers: list = []
+            if "timers" in features:
+                timers = await self.api.async_get_timers()
         except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -260,7 +264,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
             "%d digital input(s), %d analog sensor(s), %d analog input(s), "
-            "%d relay(s), %d camera(s), %d map page(s), topology=%s",
+            "%d relay(s), %d timer(s), %d camera(s), %d map page(s), topology=%s",
             features,
             len(thermo_zones),
             len(scenarios),
@@ -270,6 +274,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(analog_sensors),
             len(analog_inputs),
             len(relays),
+            len(timers),
             len(cameras),
             len(maps_pages),
             f"{len(topology.floors)} floor(s)" if topology else "unavailable",
@@ -284,6 +289,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             analog_sensors={s.act_id: s for s in analog_sensors},
             analog_inputs={ai.act_id: ai for ai in analog_inputs},
             relays={r.act_id: r for r in relays},
+            timers={t.id: t for t in timers},
             cameras={c.id: c for c in cameras},
             maps={p.page_id: p for p in maps_pages},
             topology=topology,
@@ -595,4 +601,26 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 _LOGGER.debug(
                     "Received update for unknown analog input act_id=%d, ignoring",
                     update.act_id,
+                )
+
+        # Merge timer updates
+        timer_updates = update_list.get_typed_by_device_type(DeviceType.TIMER)
+        if timer_updates:
+            _LOGGER.debug(
+                "Merging incremental updates: %d timer update(s)",
+                len(timer_updates),
+            )
+        for update in timer_updates:
+            timer = self.data.timers.get(update.id)
+            if timer is not None:
+                timer.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to timer '%s' (id=%d)",
+                    update.name,
+                    update.id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown timer id=%d, ignoring",
+                    update.id,
                 )

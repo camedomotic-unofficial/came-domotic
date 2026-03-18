@@ -35,6 +35,10 @@ SESSION_RECYCLE_THRESHOLD = 900  # recycle API session after this many long-poll
 PING_UPDATE_INTERVAL: timedelta = timedelta(seconds=60)
 PING_UPDATE_INTERVAL_DISCONNECTED: timedelta = timedelta(seconds=10)
 
+# Active discovery: factory-default IP addresses for CAME ETI/Domo servers
+DEFAULT_CANDIDATE_HOSTS: tuple[str, ...] = ("192.168.1.3", "192.168.0.3")
+DISCOVERY_PROBE_TIMEOUT = 2  # seconds — local servers respond in ms
+
 
 def hash_keycode(keycode: str) -> str:
     """Return the SHA-256 hex digest of a server keycode."""

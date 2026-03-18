@@ -35,6 +35,7 @@ from aiocamedomotic.models import (
     ThermoZoneFanSpeed,
     ThermoZoneMode,
     ThermoZoneSeason,
+    Timer,
     UpdateList,
     User,
 )
@@ -255,6 +256,84 @@ class CameDomoticApiClient:
             status.name,
         )
         await relay.async_set_status(status)
+
+    @_translate_errors
+    async def async_get_timers(self) -> list[Timer]:
+        """Fetch timers from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching timers from %s", self._host)
+        timers = await self._api.async_get_timers()
+        _LOGGER.debug("Fetched %d timer(s)", len(timers))
+        return timers
+
+    @_translate_errors
+    async def async_enable_timer(self, timer: Timer) -> None:
+        """Enable a timer globally.
+
+        Args:
+            timer: The Timer object to enable.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Enabling timer '%s' (id=%d)", timer.name, timer.id)
+        await timer.async_enable()
+
+    @_translate_errors
+    async def async_disable_timer(self, timer: Timer) -> None:
+        """Disable a timer globally.
+
+        Args:
+            timer: The Timer object to disable.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Disabling timer '%s' (id=%d)", timer.name, timer.id)
+        await timer.async_disable()
+
+    @_translate_errors
+    async def async_enable_timer_day(self, timer: Timer, day: int) -> None:
+        """Enable a timer for a specific day of the week.
+
+        Args:
+            timer: The Timer object to modify.
+            day: Day index (0=Monday through 6=Sunday).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Enabling day %d for timer '%s' (id=%d)", day, timer.name, timer.id
+        )
+        await timer.async_enable_day(day)
+
+    @_translate_errors
+    async def async_disable_timer_day(self, timer: Timer, day: int) -> None:
+        """Disable a timer for a specific day of the week.
+
+        Args:
+            timer: The Timer object to modify.
+            day: Day index (0=Monday through 6=Sunday).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Disabling day %d for timer '%s' (id=%d)", day, timer.name, timer.id
+        )
+        await timer.async_disable_day(day)
+
+    @_translate_errors
+    async def async_set_timer_timetable(
+        self, timer: Timer, slots: list[tuple[int, int, int] | None]
+    ) -> None:
+        """Set the timetable slots for a timer.
+
+        Args:
+            timer: The Timer object to modify.
+            slots: Exactly 4 entries — each a (hour, min, sec) tuple or None.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting timetable for timer '%s' (id=%d): %s",
+            timer.name,
+            timer.id,
+            slots,
+        )
+        await timer.async_set_timetable(slots)
 
     @_translate_errors
     async def async_set_light_status(
