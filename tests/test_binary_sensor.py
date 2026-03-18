@@ -207,8 +207,8 @@ async def test_binary_sensor_extra_attributes(hass):
     state = hass.states.get("binary_sensor.front_door_sensor")
     assert state is not None
     assert state.attributes["addr"] == 0
-    assert state.attributes["input_type"] == "STATUS"
-    assert state.attributes["timestamp"] == "2023-11-14T14:13:20-08:00"
+    assert "input_type" not in state.attributes
+    assert state.attributes["last_triggered"] == "2023-11-14T14:13:20-08:00"
 
 
 async def test_binary_sensor_extra_attributes_not_found(hass):
@@ -232,7 +232,8 @@ async def test_binary_sensor_extra_attributes_not_found(hass):
     state = hass.states.get("binary_sensor.front_door_sensor")
     assert state is not None
     # Extra attributes should not contain digital-input-specific keys
-    assert "input_type" not in state.attributes
+    assert "addr" not in state.attributes
+    assert "last_triggered" not in state.attributes
 
 
 # --- Server connectivity sensor ---

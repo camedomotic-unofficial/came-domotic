@@ -16,9 +16,11 @@ from custom_components.came_domotic.models import CameDomoticServerData, PingRes
 from .conftest import (
     MOCK_ANALOG_INPUTS,
     MOCK_ANALOG_SENSORS,
+    MOCK_SCENARIOS,
     MOCK_THERMO_ZONES,
     _mock_analog_input,
     _mock_analog_sensor,
+    _mock_scenario,
     _mock_server_info,
     _mock_thermo_zone,
     _mock_topology,
@@ -37,6 +39,7 @@ async def _setup_entry(
     mock_zones=None,
     mock_analog_sensors=None,
     mock_analog_inputs=None,
+    mock_scenarios=None,
     ping_return=10.0,
 ):
     """Set up a config entry with the given mock device lists."""
@@ -46,6 +49,8 @@ async def _setup_entry(
         mock_analog_sensors = list(MOCK_ANALOG_SENSORS)
     if mock_analog_inputs is None:
         mock_analog_inputs = list(MOCK_ANALOG_INPUTS)
+    if mock_scenarios is None:
+        mock_scenarios = []
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -59,7 +64,10 @@ async def _setup_entry(
             f"{_API_CLIENT}.async_get_thermo_zones",
             return_value=mock_zones,
         ),
-        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_scenarios",
+            return_value=mock_scenarios,
+        ),
         patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
@@ -103,8 +111,9 @@ async def test_thermo_zone_sensors_created(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     ]
-    # 2 thermo zones + 1 latency + 2 analog sensors + 2 analog inputs = 7
-    assert len(entries) == 7
+    # 2 thermo zones + 1 latency + 2 analog sensors + 2 analog inputs
+    # + 2 scenario status = 9
+    assert len(entries) == 9
 
 
 async def test_thermo_zone_sensor_state(hass, bypass_get_data):
@@ -160,6 +169,8 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
         "test_analog_sensor_501_analog_humidity",
         "test_analog_input_800_analog_input_temperature",
         "test_analog_input_801_analog_input_humidity",
+        "test_scenario_status_10",
+        "test_scenario_status_20",
     }
 
 
@@ -545,3 +556,160 @@ async def test_analog_input_pressure(hass):
     assert state.state == "1013.25"
     assert state.attributes["device_class"] == SensorDeviceClass.ATMOSPHERIC_PRESSURE
     assert state.attributes["unit_of_measurement"] == UnitOfPressure.HPA
+
+
+# --- Scenario status sensor tests ---
+
+
+async def test_scenario_status_sensor_created(hass):
+    """Test scenario status sensor entities are created."""
+    scenarios = list(MOCK_SCENARIOS)
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    registry = er.async_get(hass)
+    entries = [
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id
+        and "scenario_status" in e.unique_id
+    ]
+    assert len(entries) == 2
+
+
+async def test_scenario_status_sensor_state(hass):
+    """Test scenario status sensor state reflects scenario_status."""
+    scenarios = [_mock_scenario(10, "Good Morning", scenario_status="OFF")]
+    await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    state = hass.states.get("sensor.good_morning_status")
+    assert state is not None
+    assert state.state == "OFF"
+
+
+async def test_scenario_status_sensor_attributes(hass):
+    """Test scenario status sensor exposes allowed_values and last_triggered."""
+    scenarios = [_mock_scenario(10, "Good Morning", scenario_status="OFF")]
+    await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    state = hass.states.get("sensor.good_morning_status")
+    assert state is not None
+    assert state.attributes["allowed_values"] == ["OFF", "TRIGGERED", "ACTIVE"]
+    assert state.attributes["last_triggered"] is None
+
+
+async def test_scenario_status_sensor_unique_id(hass):
+    """Test scenario status sensor unique IDs follow the expected pattern."""
+    scenarios = list(MOCK_SCENARIOS)
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    registry = er.async_get(hass)
+    unique_ids = {
+        e.unique_id
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id
+        and "scenario_status" in e.unique_id
+    }
+    assert unique_ids == {
+        "test_scenario_status_10",
+        "test_scenario_status_20",
+    }
+
+
+async def test_scenario_status_sensor_disappears(hass):
+    """Test scenario status sensor returns unknown when scenario disappears."""
+    scenarios = [_mock_scenario(10, "Good Morning")]
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    coordinator = config_entry.runtime_data.coordinator
+    empty_data = CameDomoticServerData(server_info=_mock_server_info())
+
+    with patch.object(coordinator, "_async_update_data", return_value=empty_data):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.good_morning_status")
+    assert state is not None
+    assert state.state == "unknown"
+    assert "allowed_values" not in state.attributes
+
+
+async def test_scenario_status_sensor_last_triggered_on_transition(hass):
+    """Test last_triggered updates when status transitions to TRIGGERED."""
+    scenarios = [_mock_scenario(10, "Good Morning", scenario_status="OFF")]
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=scenarios,
+    )
+
+    # Verify initially None
+    state = hass.states.get("sensor.good_morning_status")
+    assert state.attributes["last_triggered"] is None
+
+    # Simulate status change to TRIGGERED
+    coordinator = config_entry.runtime_data.coordinator
+    triggered_scenario = _mock_scenario(10, "Good Morning", scenario_status="TRIGGERED")
+    updated_data = CameDomoticServerData(
+        server_info=_mock_server_info(),
+        scenarios={triggered_scenario.id: triggered_scenario},
+    )
+
+    with patch.object(coordinator, "_async_update_data", return_value=updated_data):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.good_morning_status")
+    assert state.state == "TRIGGERED"
+    assert state.attributes["last_triggered"] is not None
+
+
+async def test_no_scenario_status_sensors(hass):
+    """Test no scenario status sensors created when there are no scenarios."""
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_scenarios=[],
+    )
+
+    registry = er.async_get(hass)
+    entries = [
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id
+        and "scenario_status" in e.unique_id
+    ]
+    assert len(entries) == 0

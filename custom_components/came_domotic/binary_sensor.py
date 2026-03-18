@@ -102,8 +102,7 @@ class CameDomoticDigitalInput(CameDomoticDeviceEntity, BinarySensorEntity):
             return None
         return {
             "addr": digital_input.addr,
-            "input_type": digital_input.type.name,
-            "timestamp": dt_util.utc_from_timestamp(digital_input.utc_time)
+            "last_triggered": dt_util.utc_from_timestamp(digital_input.utc_time)
             .astimezone(dt_util.DEFAULT_TIME_ZONE)
             .isoformat(),
         }

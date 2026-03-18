@@ -2,7 +2,7 @@
 
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
-from custom_components.came_domotic.const import CONF_SERVER_INFO
+from custom_components.came_domotic.const import CONF_SERVER_INFO, hash_keycode
 
 MOCK_CONFIG = {
     CONF_HOST: "192.168.1.100",
@@ -11,6 +11,7 @@ MOCK_CONFIG = {
 }
 
 MOCK_KEYCODE = "AA:BB:CC:DD:EE:FF"
+MOCK_KEYCODE_HASH = hash_keycode(MOCK_KEYCODE)
 
 MOCK_SERVER_INFO_DICT = {
     "board": "board_v1",

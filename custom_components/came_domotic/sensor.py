@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 import logging
+from typing import Any
 
 from aiocamedomotic.models import AnalogIn, AnalogSensor, AnalogSensorType, ThermoZone
 from homeassistant.components.sensor import (
@@ -20,15 +22,16 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import CameDomoticConfigEntry
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import CameDomoticDataUpdateCoordinator
-from .entity import CameDomoticDeviceEntity
+from .entity import CameDomoticDeviceEntity, CameDomoticEntity
 from .ping_coordinator import CameDomoticPingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -190,12 +193,14 @@ async def async_setup_entry(
     zones = coordinator.data.thermo_zones
     analog_sensors = coordinator.data.analog_sensors
     analog_inputs = coordinator.data.analog_inputs
+    scenarios = coordinator.data.scenarios
     _LOGGER.debug(
         "Setting up %d thermo zone sensor(s), %d analog sensor(s), "
-        "and %d analog input(s)",
+        "%d analog input(s), and %d scenario status sensor(s)",
         len(zones),
         len(analog_sensors),
         len(analog_inputs),
+        len(scenarios),
     )
     async_add_entities(
         [
@@ -229,6 +234,10 @@ async def async_setup_entry(
                     _get_analog_input_description(analog_input),
                 )
                 for act_id, analog_input in analog_inputs.items()
+            ),
+            *(
+                CameDomoticScenarioStatusSensor(coordinator, scenario_id, scenario.name)
+                for scenario_id, scenario in scenarios.items()
             ),
         ]
     )
@@ -374,3 +383,58 @@ class CameDomoticAnalogInputEntity(CameDomoticDeviceEntity, SensorEntity):
         if analog_input is None:
             return None
         return self.entity_description.value_fn(analog_input)
+
+
+_SCENARIO_STATUS_VALUES = ["OFF", "TRIGGERED", "ACTIVE"]
+
+
+class CameDomoticScenarioStatusSensor(CameDomoticEntity, SensorEntity):
+    """Sensor reporting the status of a CAME Domotic scenario.
+
+    Exposes the scenario's current status (OFF, TRIGGERED, ACTIVE) and
+    tracks when it was last triggered.
+    """
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        scenario_id: int,
+        scenario_name: str,
+    ) -> None:
+        """Initialize the scenario status sensor."""
+        super().__init__(coordinator, entity_key=f"scenario_status_{scenario_id}")
+        self._scenario_id = scenario_id
+        self._attr_has_entity_name = False
+        self._attr_name = f"{scenario_name} status"
+        self._last_triggered: datetime | None = None
+        self._previous_status: str | None = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Track status transitions to update last_triggered."""
+        scenario = self.coordinator.data.scenarios.get(self._scenario_id)
+        if scenario is not None:
+            current_status = scenario.scenario_status.name
+            if current_status == "TRIGGERED" and self._previous_status != "TRIGGERED":
+                self._last_triggered = dt_util.utcnow()
+            self._previous_status = current_status
+        super()._handle_coordinator_update()
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the current scenario status."""
+        scenario = self.coordinator.data.scenarios.get(self._scenario_id)
+        if scenario is None:
+            return None
+        return scenario.scenario_status.name
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return scenario status attributes."""
+        scenario = self.coordinator.data.scenarios.get(self._scenario_id)
+        if scenario is None:
+            return None
+        return {
+            "allowed_values": _SCENARIO_STATUS_VALUES,
+            "last_triggered": self._last_triggered,
+        }

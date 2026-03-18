@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import CameDomoticConfigEntry
 from .coordinator import CameDomoticDataUpdateCoordinator
-from .entity import CameDomoticDeviceEntity
+from .entity import CameDomoticEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ async def async_setup_entry(
     )
 
 
-class CameDomoticScene(CameDomoticDeviceEntity, Scene):
+class CameDomoticScene(CameDomoticEntity, Scene):
     """Scene entity for a CAME Domotic scenario."""
 
     def __init__(
@@ -41,12 +41,7 @@ class CameDomoticScene(CameDomoticDeviceEntity, Scene):
         scenario_name: str,
     ) -> None:
         """Initialize the scenario scene."""
-        super().__init__(
-            coordinator,
-            entity_key=f"scenario_{scenario_id}",
-            device_name=scenario_name,
-            device_id=f"scenario_{scenario_id}",
-        )
+        super().__init__(coordinator, entity_key=f"scenario_{scenario_id}")
         self._scenario_id = scenario_id
         self._attr_has_entity_name = False
         self._attr_name = scenario_name
@@ -69,6 +64,5 @@ class CameDomoticScene(CameDomoticDeviceEntity, Scene):
         if scenario is None:
             return None
         return {
-            "scenario_status": scenario.scenario_status.name,
             "user_defined": bool(scenario.user_defined),
         }

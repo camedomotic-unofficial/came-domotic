@@ -118,7 +118,7 @@ async def test_scenario_scene_extra_attributes(hass, bypass_get_data):
     # User-defined scenario
     state = hass.states.get("scene.good_morning")
     assert state is not None
-    assert state.attributes["scenario_status"] == "OFF"
+    assert "scenario_status" not in state.attributes
     assert state.attributes["user_defined"] is True
 
     # System-defined scenario
@@ -204,4 +204,4 @@ async def test_scenario_scene_zone_not_found_attributes(hass):
     state = hass.states.get("scene.good_morning")
     assert state is not None
     # Extra attributes should not contain scenario-specific keys
-    assert "scenario_status" not in state.attributes
+    assert "user_defined" not in state.attributes

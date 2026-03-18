@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import hashlib
 
 # Base component constants
 NAME = "CAME Domotic"
@@ -33,3 +34,8 @@ SESSION_RECYCLE_THRESHOLD = 900  # recycle API session after this many long-poll
 # A shorter interval is used when the server is unreachable so we recover faster.
 PING_UPDATE_INTERVAL: timedelta = timedelta(seconds=60)
 PING_UPDATE_INTERVAL_DISCONNECTED: timedelta = timedelta(seconds=10)
+
+
+def hash_keycode(keycode: str) -> str:
+    """Return the SHA-256 hex digest of a server keycode."""
+    return hashlib.sha256(keycode.encode()).hexdigest()

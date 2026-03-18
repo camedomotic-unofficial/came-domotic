@@ -22,7 +22,11 @@ from custom_components.came_domotic.api import (
 )
 from custom_components.came_domotic.const import DOMAIN
 
-from .const import MOCK_CONFIG, MOCK_CONFIG_WITH_SERVER_INFO, MOCK_KEYCODE
+from .const import (
+    MOCK_CONFIG,
+    MOCK_CONFIG_WITH_SERVER_INFO,
+    MOCK_KEYCODE_HASH,
+)
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
 
@@ -119,7 +123,9 @@ async def test_config_flow_unknown_error(hass):
 
 async def test_config_flow_duplicate_server_abort(hass, bypass_test_credentials):
     """Test that configuring the same server (same unique_id) is aborted."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
@@ -173,7 +179,7 @@ async def test_reauth_flow_success(hass, bypass_test_credentials):
     entry = MockConfigEntry(
         domain=DOMAIN,
         data=MOCK_CONFIG,
-        unique_id=MOCK_KEYCODE,
+        unique_id=MOCK_KEYCODE_HASH,
     )
     entry.add_to_hass(hass)
 
@@ -192,7 +198,9 @@ async def test_reauth_flow_success(hass, bypass_test_credentials):
 
 async def test_reauth_flow_invalid_auth(hass):
     """Test reauth flow with auth error shows invalid_auth."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reauth_flow(hass, entry)
 
@@ -215,7 +223,9 @@ async def test_reauth_flow_invalid_auth(hass):
 
 async def test_reauth_flow_cannot_connect(hass):
     """Test reauth flow with connection error shows cannot_connect."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reauth_flow(hass, entry)
 
@@ -234,7 +244,9 @@ async def test_reauth_flow_cannot_connect(hass):
 
 async def test_reauth_flow_unknown_error(hass):
     """Test reauth flow with unexpected error shows unknown."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reauth_flow(hass, entry)
 
@@ -272,7 +284,7 @@ async def test_reconfigure_flow_success(hass, bypass_test_credentials):
     entry = MockConfigEntry(
         domain=DOMAIN,
         data=MOCK_CONFIG,
-        unique_id=MOCK_KEYCODE,
+        unique_id=MOCK_KEYCODE_HASH,
     )
     entry.add_to_hass(hass)
 
@@ -297,7 +309,9 @@ async def test_reconfigure_flow_success(hass, bypass_test_credentials):
 
 async def test_reconfigure_flow_cannot_connect(hass):
     """Test reconfigure flow with connection error shows cannot_connect."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 
@@ -315,7 +329,9 @@ async def test_reconfigure_flow_cannot_connect(hass):
 
 async def test_reconfigure_flow_invalid_auth(hass):
     """Test reconfigure flow with auth error shows invalid_auth."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 
@@ -337,7 +353,9 @@ async def test_reconfigure_flow_invalid_auth(hass):
 
 async def test_reconfigure_flow_unknown_error(hass):
     """Test reconfigure flow with unexpected error shows unknown."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
     result = await _init_reconfigure_flow(hass, entry)
 
@@ -387,7 +405,7 @@ async def test_dhcp_discovery_new_device(hass, bypass_test_credentials):
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == f"CAME ETI/Domo server ({MOCK_CONFIG[CONF_HOST]})"
     assert result["data"] == MOCK_CONFIG_WITH_SERVER_INFO
-    assert result["result"].unique_id == MOCK_KEYCODE
+    assert result["result"].unique_id == MOCK_KEYCODE_HASH
 
 
 async def test_dhcp_discovery_not_came_endpoint(hass):
@@ -405,7 +423,9 @@ async def test_dhcp_discovery_not_came_endpoint(hass):
 
 async def test_dhcp_discovery_already_configured_by_host(hass):
     """Test DHCP discovery aborts when host is already configured."""
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE)
+    entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_CONFIG, unique_id=MOCK_KEYCODE_HASH
+    )
     entry.add_to_hass(hass)
 
     with patch(_IS_CAME_ENDPOINT, return_value=True):
@@ -426,7 +446,7 @@ async def test_dhcp_discovery_already_configured_by_keycode(
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={**MOCK_CONFIG, CONF_HOST: "192.168.1.200"},
-        unique_id=MOCK_KEYCODE,
+        unique_id=MOCK_KEYCODE_HASH,
     )
     entry.add_to_hass(hass)
 

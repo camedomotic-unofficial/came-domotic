@@ -26,7 +26,7 @@ from .api import (
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
 )
-from .const import CONF_SERVER_INFO, CONF_TOPOLOGY_IMPORTED, DOMAIN
+from .const import CONF_SERVER_INFO, CONF_TOPOLOGY_IMPORTED, DOMAIN, hash_keycode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ async def _async_test_credentials(
     try:
         await client.async_connect()
         server_info = await client.async_get_server_info()
-        _LOGGER.debug("Credentials validated, server keycode: %s", server_info.keycode)
+        _LOGGER.debug("Credentials validated for host %s", host)
         return server_info.keycode, {
             "board": server_info.board,
             "type": server_info.type,
@@ -107,7 +107,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                await self.async_set_unique_id(keycode)
+                await self.async_set_unique_id(hash_keycode(keycode))
                 self._abort_if_unique_id_configured()
                 _LOGGER.info(
                     "Configuration entry created for %s", user_input[CONF_HOST]
@@ -178,7 +178,7 @@ class CameDomoticFlowHandler(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception during DHCP setup")
                 errors["base"] = "unknown"
             else:
-                await self.async_set_unique_id(keycode)
+                await self.async_set_unique_id(hash_keycode(keycode))
                 self._abort_if_unique_id_configured()
                 _LOGGER.info(
                     "DHCP: configuration entry created for %s", self._discovered_host
