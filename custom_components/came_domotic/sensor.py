@@ -8,7 +8,13 @@ from datetime import datetime
 import logging
 from typing import Any
 
-from aiocamedomotic.models import AnalogIn, AnalogSensor, AnalogSensorType, ThermoZone
+from aiocamedomotic.models import (
+    AnalogIn,
+    AnalogSensor,
+    AnalogSensorType,
+    ScenarioStatus,
+    ThermoZone,
+)
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -385,7 +391,7 @@ class CameDomoticAnalogInputEntity(CameDomoticDeviceEntity, SensorEntity):
         return self.entity_description.value_fn(analog_input)
 
 
-_SCENARIO_STATUS_VALUES = ["OFF", "TRIGGERED", "ACTIVE"]
+_SCENARIO_STATUS_VALUES = [s.name for s in ScenarioStatus]
 
 
 class CameDomoticScenarioStatusSensor(CameDomoticEntity, SensorEntity):

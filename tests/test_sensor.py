@@ -611,7 +611,12 @@ async def test_scenario_status_sensor_attributes(hass):
 
     state = hass.states.get("sensor.good_morning_status")
     assert state is not None
-    assert state.attributes["allowed_values"] == ["OFF", "TRIGGERED", "ACTIVE"]
+    assert state.attributes["allowed_values"] == [
+        "OFF",
+        "TRIGGERED",
+        "ACTIVE",
+        "UNKNOWN",
+    ]
     assert state.attributes["last_triggered"] is None
 
 

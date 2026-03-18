@@ -180,7 +180,7 @@ async def test_scenario_scene_activate_not_found(hass):
     )
 
 
-async def test_scenario_scene_zone_not_found_attributes(hass):
+async def test_scenario_scene_disappears_no_extra_attributes(hass):
     """Test scene returns no extra attributes when scenario disappears."""
     scenarios = [_mock_scenario(10, "Good Morning")]
     config_entry = await _setup_entry(hass, scenarios)

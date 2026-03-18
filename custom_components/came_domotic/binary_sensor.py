@@ -100,11 +100,16 @@ class CameDomoticDigitalInput(CameDomoticDeviceEntity, BinarySensorEntity):
         digital_input = self.coordinator.data.digital_inputs.get(self._act_id)
         if digital_input is None:
             return None
+        last_triggered = None
+        if digital_input.utc_time:
+            last_triggered = (
+                dt_util.utc_from_timestamp(digital_input.utc_time)
+                .astimezone(dt_util.DEFAULT_TIME_ZONE)
+                .isoformat()
+            )
         return {
             "addr": digital_input.addr,
-            "last_triggered": dt_util.utc_from_timestamp(digital_input.utc_time)
-            .astimezone(dt_util.DEFAULT_TIME_ZONE)
-            .isoformat(),
+            "last_triggered": last_triggered,
         }
 
 
