@@ -2,59 +2,44 @@
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]][license]
 
-[![hacs][hacsbadge]][hacs]
-[![Project Maintenance][maintenance-shield]][user_profile]
-[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
+A Home Assistant custom integration for [CAME](https://www.came.com/) Domotic home automation systems. Communicates locally with your CAME ETI/Domo server — no cloud connection required.
 
-[![Discord][discord-shield]][discord]
-[![Community Forum][forum-shield]][forum]
+## Supported features
 
-**This component will set up the following platforms.**
+- **Lights** - On/off, dimmers, and RGB
+- **Covers** - Shutters with tilt control
+- **Climate** - Thermoregulation zones (heating, cooling, fan speed)
+- **Scenes** - Predefined scenarios
+- **Switches** - Relays and timers with scheduling
+- **Sensors** - Temperature, humidity, pressure, digital inputs, connectivity
+- **Cameras** - RTSP streaming and JPEG snapshots
+- **Images** - Floor plan map pages
 
-| Platform        | Description                         |
-| --------------- | ----------------------------------- |
-| `binary_sensor` | Show something `True` or `False`.   |
-| `sensor`        | Show info from API.                 |
-| `switch`        | Switch something `True` or `False`. |
-
-![example][exampleimg]
+The integration auto-discovers available device types and uses push-based updates (long-polling) for near-instant state synchronization.
 
 {% if not installed %}
 
 ## Installation
 
-1. Click install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "CAME Domotic".
+1. In HACS, go to **Integrations** and click the three-dot menu > **Custom repositories**.
+2. Add `https://github.com/camedomotic-unofficial/came-domotic` as an **Integration**.
+3. Click **Download**, then restart Home Assistant.
 
 {% endif %}
 
-## Configuration is done in the UI
+## Setup
 
-<!---->
+1. Go to **Settings** > **Devices & services** > **Add integration**.
+2. Search for **CAME Domotic**.
+3. Enter your server's IP address and credentials.
 
-## Credits
-
-This project was generated from [@oncleben31](https://github.com/oncleben31)'s [Home Assistant Custom Component Cookiecutter](https://github.com/oncleben31/cookiecutter-homeassistant-custom-component) template.
-
-Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template
+For full documentation, see the [integration docs](https://github.com/camedomotic-unofficial/came-domotic/blob/main/docs/came_domotic.markdown).
 
 ---
 
-[integration_blueprint]: https://github.com/custom-components/integration_blueprint
-[buymecoffee]: https://www.buymeacoffee.com/ludeeus
-[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
 [commits-shield]: https://img.shields.io/github/commit-activity/y/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
 [commits]: https://github.com/camedomotic-unofficial/came-domotic/commits/main
-[hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[discord]: https://discord.gg/Qa5fW2R
-[discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
-[exampleimg]: example.png
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
-[forum]: https://community.home-assistant.io/
 [license]: https://github.com/camedomotic-unofficial/came-domotic/blob/main/LICENSE
 [license-shield]: https://img.shields.io/github/license/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-%40camedomotic-unofficial-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
 [releases]: https://github.com/camedomotic-unofficial/came-domotic/releases
-[user_profile]: https://github.com/camedomotic-unofficial
