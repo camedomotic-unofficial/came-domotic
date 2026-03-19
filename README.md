@@ -2,88 +2,91 @@
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
-[![License][license-shield]](LICENSE)
-
+[![License][license-shield]][license]
 [![pre-commit][pre-commit-shield]][pre-commit]
-[![Black][black-shield]][black]
-
-[![hacs][hacsbadge]][hacs]
 [![Project Maintenance][maintenance-shield]][user_profile]
 
-[![Discord][discord-shield]][discord]
-[![Community Forum][forum-shield]][forum]
+A [Home Assistant](https://www.home-assistant.io/) custom integration for [CAME](https://www.came.com/) Domotic home automation systems. It communicates locally with your CAME ETI/Domo server over your home network — no cloud connection required.
 
-**This component will set up the following platforms.**
+Built on top of the [aiocamedomotic](https://github.com/camedomotic-unofficial/aiocamedomotic) library.
 
-| Platform        | Description                         |
-| --------------- | ----------------------------------- |
-| `binary_sensor` | Show something `True` or `False`.   |
-| `sensor`        | Show info from CAME Domotic API.    |
-| `switch`        | Switch something `True` or `False`. |
+## Supported features
 
-![example][exampleimg]
+| Platform          | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| **Light**         | On/off switches, dimmers, and RGB lights                       |
+| **Cover**         | Shutters and motorized openings with tilt control              |
+| **Climate**       | Thermoregulation zones (heating, cooling, fan speed)           |
+| **Scene**         | Predefined scenarios                                           |
+| **Switch**        | Relays and timers with timetable scheduling                    |
+| **Binary sensor** | Digital inputs, server connectivity                            |
+| **Sensor**        | Temperature, humidity, pressure, scenario status, ping latency |
+| **Camera**        | TVCC/IP cameras with RTSP streaming and JPEG snapshots         |
+| **Image**         | Floor plan map pages                                           |
+| **Select**        | Plant-level thermoregulation season (Winter/Summer/Off)        |
+
+The integration automatically discovers which device types are available based on your server's configuration. It uses a push-based update mechanism (long-polling) for near-instant state updates.
 
 ## Installation
 
-1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-2. If you do not have a `custom_components` directory (folder) there, you need to create it.
-3. In the `custom_components` directory (folder) create a new folder called `came_domotic`.
-4. Download _all_ the files from the `custom_components/came_domotic/` directory (folder) in this repository.
-5. Place the files you downloaded in the new directory (folder) you created.
-6. Restart Home Assistant
-7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "CAME Domotic"
+### HACS (recommended)
 
-Using your HA configuration directory (folder) as a starting point you should now also have this:
+This integration is not yet in the default HACS repository. You can install it as a **custom repository**:
+
+1. Make sure [HACS](https://hacs.xyz/) is installed in your Home Assistant instance.
+2. In the Home Assistant UI, go to **HACS** > **Integrations**.
+3. Click the three-dot menu in the top right corner and select **Custom repositories**.
+4. Enter the repository URL: `https://github.com/camedomotic-unofficial/came-domotic`
+5. Select **Integration** as the category and click **Add**.
+6. The integration will now appear in the HACS store. Click **Download** to install it.
+7. Restart Home Assistant.
+
+### Manual installation
+
+1. Download the latest release from the [releases page][releases].
+2. Extract (or copy) the `custom_components/came_domotic` folder into your Home Assistant `custom_components` directory.
+3. Restart Home Assistant.
+
+Your directory structure should look like this:
 
 ```text
-custom_components/came_domotic/translations/en.json
-custom_components/came_domotic/translations/fr.json
-custom_components/came_domotic/translations/nb.json
-custom_components/came_domotic/translations/sensor.en.json
-custom_components/came_domotic/translations/sensor.fr.json
-custom_components/came_domotic/translations/sensor.nb.json
-custom_components/came_domotic/translations/sensor.nb.json
-custom_components/came_domotic/__init__.py
-custom_components/came_domotic/api.py
-custom_components/came_domotic/binary_sensor.py
-custom_components/came_domotic/config_flow.py
-custom_components/came_domotic/const.py
-custom_components/came_domotic/manifest.json
-custom_components/came_domotic/sensor.py
-custom_components/came_domotic/switch.py
+config/
+  custom_components/
+    came_domotic/
+      __init__.py
+      manifest.json
+      ...
 ```
 
-## Configuration is done in the UI
+## Setup
 
-<!---->
+After installation and restart:
 
-## Contributions are welcome!
+1. Go to **Settings** > **Devices & services**.
+2. Click **Add integration** and search for **CAME Domotic**.
+3. The integration will attempt to auto-discover a CAME server on your network. If found, you will only need to enter your credentials. Otherwise, enter the server's IP address (factory default: `192.168.1.3`) along with your username and password.
 
-If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
+DHCP discovery is also supported — if a CAME device joins your network, Home Assistant will prompt you to set it up.
 
-## Credits
+## Documentation
 
-This project was generated from [@oncleben31](https://github.com/oncleben31)'s [Home Assistant Custom Component Cookiecutter](https://github.com/oncleben31/cookiecutter-homeassistant-custom-component) template.
+For full documentation including entity details, service actions, troubleshooting, and debug logging, see the [integration documentation](docs/came_domotic.markdown).
 
-Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template
+## Contributing
+
+Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) before getting started.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
-[integration_blueprint]: https://github.com/custom-components/integration_blueprint
-[black]: https://github.com/psf/black
-[black-shield]: https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge
-[buymecoffee]: https://www.buymeacoffee.com/camedomotic-unofficial
 [commits-shield]: https://img.shields.io/github/commit-activity/y/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
 [commits]: https://github.com/camedomotic-unofficial/came-domotic/commits/main
-[hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[discord]: https://discord.gg/Qa5fW2R
-[discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
-[exampleimg]: example.png
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
-[forum]: https://community.home-assistant.io/
+[license]: https://github.com/camedomotic-unofficial/came-domotic/blob/main/LICENSE
 [license-shield]: https://img.shields.io/github/license/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-%40camedomotic-unofficial-blue.svg?style=for-the-badge
+[maintenance-shield]: https://img.shields.io/badge/maintainer-%40camedomotic--unofficial-blue.svg?style=for-the-badge
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [pre-commit-shield]: https://img.shields.io/badge/pre--commit-enabled-brightgreen?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/camedomotic-unofficial/came-domotic.svg?style=for-the-badge
