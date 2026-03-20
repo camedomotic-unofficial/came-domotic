@@ -308,6 +308,142 @@ data:
       stop: "18:00"
 ```
 
+## Automation examples
+
+One of the greatest advantages of integrating your CAME Domotic system with Home Assistant is the ability to combine it with every other device and service in your smart home. Your CAME lights, covers, climate zones, and scenarios are no longer isolated — they can react to presence detection, weather forecasts, time of day, and any other {% term trigger %} that Home Assistant supports. The following examples show how a few lines of YAML can unlock powerful cross-system automations that would be impossible within the CAME ecosystem alone.
+
+{% tip %}
+The entity IDs used in these examples are illustrative. Replace them with the actual entity IDs from your installation, which you can find in {% my entities title="**Settings** > **Devices & services** > **Entities**" %}.
+{% endtip %}
+
+### Night routine: scenario triggers light shutdown
+
+When the "Close all covers" scenario becomes active (e.g., triggered from a CAME wall button or schedule), automatically turn off all terrace lights.
+
+```yaml
+automation:
+  - alias: "Turn off terrace lights on night scenario"
+    trigger:
+      - platform: state
+        entity_id: sensor.close_all_covers_status
+        to: "Active"
+    action:
+      - action: light.turn_off
+        target:
+          area_id: terrace
+```
+
+### Leaving home: full shutdown
+
+When everyone leaves the house, turn off all lights, close all covers, and switch off the thermoregulation plant to save energy. This combines Home Assistant's person tracking with CAME lights, covers, and climate controls.
+
+```yaml
+automation:
+  - alias: "Shut down house when everyone leaves"
+    trigger:
+      - platform: state
+        entity_id: zone.home
+        to: "0"
+    action:
+      - action: light.turn_off
+        target:
+          entity_id: all
+      - action: cover.close_cover
+        target:
+          entity_id: all
+      - action: select.select_option
+        target:
+          entity_id: select.thermo_season
+        data:
+          option: "Plant off"
+```
+
+### Movie mode: wall buttons trigger ambiance
+
+When two digital input buttons in the living room are both pressed (both report Active), dim the ambient light to 30% and turn on the TV via a media player entity. This turns CAME wall buttons into a multi-press smart trigger.
+
+```yaml
+automation:
+  - alias: "Movie mode when both buttons pressed"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_room_button_left
+        to: "on"
+      - platform: state
+        entity_id: binary_sensor.living_room_button_right
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.living_room_button_left
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.living_room_button_right
+        state: "on"
+    action:
+      - action: light.turn_on
+        target:
+          entity_id: light.living_room_ambient
+        data:
+          brightness: 77
+      - action: media_player.turn_on
+        target:
+          entity_id: media_player.living_room_tv
+```
+
+### Timer override: disable irrigation on rain
+
+When your weather integration reports rain, automatically disable the garden irrigation timer on the CAME server. When the weather clears, re-enable it. This prevents overwatering and saves water without manual intervention.
+
+```yaml
+automation:
+  - alias: "Disable irrigation when raining"
+    trigger:
+      - platform: state
+        entity_id: weather.home
+    condition:
+      - condition: template
+        value_template: >
+          {{ "rainy" in state_attr('weather.home', 'forecast')[0]['condition'] }}
+    action:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.garden_irrigation_timer
+
+  - alias: "Re-enable irrigation when weather clears"
+    trigger:
+      - platform: state
+        entity_id: weather.home
+    condition:
+      - condition: template
+        value_template: >
+          {{ "rainy" not in state_attr('weather.home', 'forecast')[0]['condition'] }}
+    action:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.garden_irrigation_timer
+```
+
+### Sunrise: natural light and energy saving
+
+At sunrise, automatically open the living room and bathroom covers to let natural light in and turn off the garden lights. This simple automation replaces manual morning routines and reduces energy waste.
+
+```yaml
+automation:
+  - alias: "Open covers and turn off garden lights at sunrise"
+    trigger:
+      - platform: sun
+        event: sunrise
+    action:
+      - action: cover.open_cover
+        target:
+          entity_id:
+            - cover.living_room_shutter
+            - cover.bathroom_shutter
+      - action: light.turn_off
+        target:
+          entity_id: light.garden_lights
+```
+
 ## Known limitations
 
 - **Cover position**: The CAME API does not report cover position as a percentage. Only the motor direction (opening, closing, stopped) is available.

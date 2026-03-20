@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Scratch / Output Directory
+
+`tmp/` is gitignored and available as a working directory for temporary/ephemeral files or persistent outputs not worth tracking with git (e.g., analysis results, profiling data, scratch scripts).
+
 ## Project Overview
 
 A Home Assistant custom integration for CAME Domotic devices. Distributed via HACS (Home Assistant Community Store). Built from the `integration_blueprint` / cookiecutter template.
