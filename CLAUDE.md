@@ -127,6 +127,10 @@ PR titles become the release changelog — write them from a **user's perspectiv
 - **Bad**: "Fix #123"
 - **Bad**: "Refactor coordinator merge logic" → OK only if labeled `refactoring` (excluded from changelog)
 
+### Attribution
+
+NEVER mention Claude, Claude Code, Anthropic, or AI assistance in commit messages, PR titles, PR descriptions, PR comments, or any other git/GitHub content. No `Co-Authored-By` lines, no "Generated with Claude Code" footers, no AI references of any kind.
+
 ### PR labels
 
 Every PR must have exactly one of these labels (used by `.github/release.yml` to categorize changelog entries):
