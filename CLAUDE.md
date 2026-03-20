@@ -131,19 +131,16 @@ PR titles become the release changelog — write them from a **user's perspectiv
 
 Every PR must have exactly one of these labels (used by `.github/release.yml` to categorize changelog entries):
 
-| Label                    | When to use             | Shown in changelog?      |
-| ------------------------ | ----------------------- | ------------------------ |
-| `enhancement`            | New user-facing feature | Yes — "New Features"     |
-| `bug`                    | Bug fix                 | Yes — "Bug Fixes"        |
-| `breaking`               | Breaking change         | Yes — "Breaking Changes" |
-| `removal`                | Deprecation or removal  | Yes — "Breaking Changes" |
-| `performance`            | Performance improvement | Yes — "Performance"      |
-| `dependencies` / `build` | Dependency bumps        | Yes — "Dependencies"     |
-| `documentation`          | Docs changes            | Yes — "Documentation"    |
-| `refactoring`            | Internal refactor       | Yes — "Other Changes"    |
-| `ci`                     | CI/workflow changes     | No (excluded)            |
-| `testing`                | Test-only changes       | No (excluded)            |
-| `style`                  | Formatting-only changes | No (excluded)            |
+| Label           | When to use                        | Shown in changelog?      |
+| --------------- | ---------------------------------- | ------------------------ |
+| `enhancement`   | New user-facing feature            | Yes — "New Features"     |
+| `bug`           | Bug fix                            | Yes — "Bug Fixes"        |
+| `breaking`      | Breaking change or removal         | Yes — "Breaking Changes" |
+| `performance`   | Performance improvement            | Yes — "Performance"      |
+| `dependencies`  | Dependency bumps                   | Yes — "Dependencies"     |
+| `documentation` | Docs changes                       | Yes — "Documentation"    |
+| `refactoring`   | Internal refactor, tests, or style | Yes — "Other Changes"    |
+| `ci`            | CI/workflow changes                | No (excluded)            |
 
 ### Creating a release
 

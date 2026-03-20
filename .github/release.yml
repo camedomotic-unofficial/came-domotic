@@ -2,17 +2,10 @@ changelog:
   exclude:
     labels:
       - ci
-      - style
-      - testing
-      - duplicate
-      - invalid
-      - wontfix
-      - question
   categories:
     - title: Breaking Changes
       labels:
         - breaking
-        - removal
     - title: New Features
       labels:
         - enhancement
@@ -25,12 +18,9 @@ changelog:
     - title: Dependencies
       labels:
         - dependencies
-        - build
     - title: Documentation
       labels:
         - documentation
     - title: Other Changes
       labels:
         - refactoring
-        - github_actions
-        - python
