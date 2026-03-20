@@ -71,6 +71,17 @@ jobs:
 
           gh pr merge "$branch" --squash --auto --delete-branch
 
+      - name: Cleanup branch on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch="release/v${{ steps.version.outputs.next }}"
+          # Close PR if it was created
+          gh pr close "$branch" --delete-branch 2>/dev/null || true
+          # Delete remote branch if it exists
+          git push origin --delete "$branch" 2>/dev/null || true
+
       - name: Wait for PR merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
