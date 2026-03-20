@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  MANIFEST: custom_components/came_domotic/manifest.json
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+
+      - name: Compute next version
+        id: version
+        run: |
+          current=$(jq -r '.version' "$MANIFEST")
+          IFS='.' read -r major minor patch <<< "$current"
+
+          case "${{ inputs.bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          next="${major}.${minor}.${patch}"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "Bumping $current → $next (${{ inputs.bump }})"
+
+      - name: Update manifest.json
+        run: |
+          jq --arg v "${{ steps.version.outputs.next }}" '.version = $v' \
+            "$MANIFEST" > manifest.tmp && mv manifest.tmp "$MANIFEST"
+
+      - name: Create version bump PR and merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          next="${{ steps.version.outputs.next }}"
+          branch="release/v${next}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add "$MANIFEST"
+          git commit -m "Bump version to ${next}"
+          git push -u origin "$branch"
+
+          gh pr create \
+            --title "Bump version to ${next}" \
+            --body "Automated version bump: ${{ steps.version.outputs.current }} → ${next} (${{ inputs.bump }})" \
+            --base main \
+            --head "$branch"
+
+          gh pr merge "$branch" --squash --auto --delete-branch
+
+      - name: Wait for PR merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch="release/v${{ steps.version.outputs.next }}"
+          echo "Waiting for PR on $branch to merge..."
+          for i in $(seq 1 60); do
+            state=$(gh pr view "$branch" --json state -q '.state')
+            if [ "$state" = "MERGED" ]; then
+              echo "PR merged."
+              break
+            fi
+            if [ "$state" = "CLOSED" ]; then
+              echo "::error::PR was closed without merging."
+              exit 1
+            fi
+            echo "  state=$state, waiting... (${i}/60)"
+            sleep 10
+          done
+          if [ "$state" != "MERGED" ]; then
+            echo "::error::Timed out waiting for PR merge (10 min)."
+            exit 1
+          fi
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          next="${{ steps.version.outputs.next }}"
+          tag="v${next}"
+
+          # Re-fetch main with the merged commit
+          git fetch origin main
+          merge_sha=$(git rev-parse origin/main)
+
+          git tag "$tag" "$merge_sha"
+          git push origin "$tag"
+
+          gh release create "$tag" \
+            --title "$tag" \
+            --generate-notes \
+            --latest
