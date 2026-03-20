@@ -13,7 +13,7 @@ import contextlib
 import logging
 from typing import TYPE_CHECKING
 
-from aiocamedomotic.models import DeviceType
+from aiocamedomotic.models import DeviceType, ServerFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -181,36 +181,36 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
 
             thermo_zones: list = []
             analog_sensors: list = []
-            if "thermoregulation" in features:
+            if ServerFeature.THERMOREGULATION in features:
                 thermo_zones = await self.api.async_get_thermo_zones()
                 analog_sensors = await self.api.async_get_analog_sensors()
 
             scenarios: list = []
-            if "scenarios" in features:
+            if ServerFeature.SCENARIOS in features:
                 scenarios = await self.api.async_get_scenarios()
 
             openings: list = []
-            if "openings" in features:
+            if ServerFeature.OPENINGS in features:
                 openings = await self.api.async_get_openings()
 
             lights: list = []
-            if "lights" in features:
+            if ServerFeature.LIGHTS in features:
                 lights = await self.api.async_get_lights()
 
             digital_inputs: list = []
-            if "digitalin" in features:
+            if ServerFeature.DIGITALIN in features:
                 digital_inputs = await self.api.async_get_digital_inputs()
 
             analog_inputs: list = []
-            if "analogin" in features:
+            if ServerFeature.ANALOGIN in features:
                 analog_inputs = await self.api.async_get_analog_inputs()
 
             relays: list = []
-            if "relays" in features:
+            if ServerFeature.RELAYS in features:
                 relays = await self.api.async_get_relays()
 
             timers: list = []
-            if "timers" in features:
+            if ServerFeature.TIMERS in features:
                 timers = await self.api.async_get_timers()
         except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
