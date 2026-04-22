@@ -2,6 +2,6 @@ homeassistant
 aiocamedomotic==1.10.2
 PyTurboJPEG
 ruff
-mypy
+mypy==1.19.1
 bandit
 codespell
