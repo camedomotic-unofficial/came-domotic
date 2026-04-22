@@ -46,8 +46,7 @@ jobs:
 
       - name: Update manifest.json
         run: |
-          jq --arg v "${{ steps.version.outputs.next }}" '.version = $v' \
-            "$MANIFEST" > manifest.tmp && mv manifest.tmp "$MANIFEST"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${{ steps.version.outputs.next }}\"/" "$MANIFEST"
 
       - name: Create version bump PR and merge
         env:
