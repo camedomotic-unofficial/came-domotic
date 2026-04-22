@@ -25,6 +25,16 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
+          cache: "pip"
+          cache-dependency-path: requirements_test.txt
+
+      - name: Cache pre-commit hook environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-py${{ env.DEFAULT_PYTHON }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-py${{ env.DEFAULT_PYTHON }}-
 
       - name: Install Python modules
         run: |
@@ -68,6 +78,8 @@ jobs:
         uses: "actions/setup-python@v6"
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
+          cache: "pip"
+          cache-dependency-path: requirements_test.txt
       - name: Install requirements
         run: |
           pip install -r requirements_test.txt
