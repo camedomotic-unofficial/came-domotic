@@ -8,7 +8,7 @@ on:
       - dev
   pull_request:
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: "0 10 * * 6"
   workflow_dispatch:
 
 env:
