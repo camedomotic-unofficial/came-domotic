@@ -101,12 +101,10 @@ async def test_scenario_scene_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    good_morning = hass.states.get(
-        "scene.came_eti_domo_server_192_168_1_100_good_morning"
-    )
+    good_morning = hass.states.get("scene.came_server_good_morning")
     assert good_morning is not None
 
-    good_night = hass.states.get("scene.came_eti_domo_server_192_168_1_100_good_night")
+    good_night = hass.states.get("scene.came_server_good_night")
     assert good_night is not None
 
 
@@ -119,13 +117,13 @@ async def test_scenario_scene_extra_attributes(hass, bypass_get_data):
     await hass.async_block_till_done()
 
     # User-defined scenario
-    state = hass.states.get("scene.came_eti_domo_server_192_168_1_100_good_morning")
+    state = hass.states.get("scene.came_server_good_morning")
     assert state is not None
     assert "scenario_status" not in state.attributes
     assert state.attributes["user_defined"] is True
 
     # System-defined scenario
-    state = hass.states.get("scene.came_eti_domo_server_192_168_1_100_good_night")
+    state = hass.states.get("scene.came_server_good_night")
     assert state is not None
     assert state.attributes["user_defined"] is False
 
@@ -155,7 +153,7 @@ async def test_scenario_scene_activate(hass):
         await hass.services.async_call(
             "scene",
             "turn_on",
-            {"entity_id": "scene.came_eti_domo_server_192_168_1_100_good_morning"},
+            {"entity_id": "scene.came_server_good_morning"},
             blocking=True,
         )
 
@@ -178,7 +176,7 @@ async def test_scenario_scene_activate_not_found(hass):
     await hass.services.async_call(
         "scene",
         "turn_on",
-        {"entity_id": "scene.came_eti_domo_server_192_168_1_100_good_morning"},
+        {"entity_id": "scene.came_server_good_morning"},
         blocking=True,
     )
 
@@ -204,7 +202,7 @@ async def test_scenario_scene_disappears_no_extra_attributes(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("scene.came_eti_domo_server_192_168_1_100_good_morning")
+    state = hass.states.get("scene.came_server_good_morning")
     assert state is not None
     # Extra attributes should not contain scenario-specific keys
     assert "user_defined" not in state.attributes

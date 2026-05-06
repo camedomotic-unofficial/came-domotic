@@ -594,9 +594,7 @@ async def test_scenario_status_sensor_state(hass):
         mock_scenarios=scenarios,
     )
 
-    state = hass.states.get(
-        "sensor.came_eti_domo_server_192_168_1_100_good_morning_status"
-    )
+    state = hass.states.get("sensor.came_server_good_morning_status")
     assert state is not None
     assert state.state == "OFF"
 
@@ -612,9 +610,7 @@ async def test_scenario_status_sensor_attributes(hass):
         mock_scenarios=scenarios,
     )
 
-    state = hass.states.get(
-        "sensor.came_eti_domo_server_192_168_1_100_good_morning_status"
-    )
+    state = hass.states.get("sensor.came_server_good_morning_status")
     assert state is not None
     assert state.attributes["allowed_values"] == [
         "OFF",
@@ -667,9 +663,7 @@ async def test_scenario_status_sensor_disappears(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get(
-        "sensor.came_eti_domo_server_192_168_1_100_good_morning_status"
-    )
+    state = hass.states.get("sensor.came_server_good_morning_status")
     assert state is not None
     assert state.state == "unknown"
     assert "allowed_values" not in state.attributes
@@ -687,9 +681,7 @@ async def test_scenario_status_sensor_last_triggered_on_transition(hass):
     )
 
     # Verify initially None
-    state = hass.states.get(
-        "sensor.came_eti_domo_server_192_168_1_100_good_morning_status"
-    )
+    state = hass.states.get("sensor.came_server_good_morning_status")
     assert state.attributes["last_triggered"] is None
 
     # Simulate status change to TRIGGERED
@@ -704,9 +696,7 @@ async def test_scenario_status_sensor_last_triggered_on_transition(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get(
-        "sensor.came_eti_domo_server_192_168_1_100_good_morning_status"
-    )
+    state = hass.states.get("sensor.came_server_good_morning_status")
     assert state.state == "TRIGGERED"
     assert state.attributes["last_triggered"] is not None
 

@@ -1,0 +1,205 @@
+{
+  "title": "CAME Domotic",
+  "config": {
+    "flow_title": "CAME ETI/Domo su {host}",
+    "step": {
+      "user": {
+        "title": "CAME Domotic",
+        "description": "Per assistenza nella configurazione consulta: {documentation_url}",
+        "data": {
+          "host": "Host",
+          "username": "Nome utente",
+          "password": "Password"
+        }
+      },
+      "dhcp_confirm": {
+        "title": "Server CAME Domotic rilevato",
+        "description": "È stato trovato un server CAME Domotic all'indirizzo **{host}**.\nInserisci le credenziali per completare la configurazione.",
+        "data": {
+          "username": "Nome utente",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nuova autenticazione",
+        "description": "Inserisci nuovamente le credenziali.",
+        "data": {
+          "username": "Nome utente",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "username": "Nome utente",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Connessione non riuscita",
+      "invalid_auth": "Autenticazione non valida",
+      "unknown": "Errore imprevisto"
+    },
+    "abort": {
+      "already_configured": "Il dispositivo è già configurato",
+      "not_came_device": "Il dispositivo rilevato non è un server CAME Domotic.",
+      "reauth_successful": "Nuova autenticazione completata",
+      "reconfigure_successful": "Riconfigurazione completata"
+    }
+  },
+  "device": {
+    "came_server_device_friendly_name": {
+      "name": "Server CAME"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "server_connectivity": {
+        "name": "Connettività"
+      }
+    },
+    "select": {
+      "thermo_season": {
+        "name": "Stagione termica",
+        "state": {
+          "winter": "Inverno",
+          "summer": "Estate",
+          "plant_off": "Impianto spento"
+        }
+      }
+    },
+    "sensor": {
+      "ping_latency": {
+        "name": "Latenza ping"
+      }
+    }
+  },
+  "services": {
+    "create_user": {
+      "name": "Crea utente",
+      "description": "Crea un nuovo utente sul server CAME Domotic.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic su cui creare l'utente."
+        },
+        "username": {
+          "name": "Nome utente",
+          "description": "Il nome utente per il nuovo utente."
+        },
+        "password": {
+          "name": "Password",
+          "description": "La password per il nuovo utente."
+        },
+        "group": {
+          "name": "Gruppo",
+          "description": "Il gruppo terminale per l'utente. Usa '*' per tutti i gruppi."
+        }
+      }
+    },
+    "delete_user": {
+      "name": "Elimina utente",
+      "description": "Elimina un utente dal server CAME Domotic. Non è possibile eliminare l'utente attualmente autenticato.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic da cui eliminare l'utente."
+        },
+        "username": {
+          "name": "Nome utente",
+          "description": "Il nome dell'utente da eliminare."
+        }
+      }
+    },
+    "change_password": {
+      "name": "Cambia password",
+      "description": "Cambia la password di un utente sul server CAME Domotic. Se viene cambiata la password dell'utente autenticato, le credenziali dell'integrazione vengono aggiornate automaticamente.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic."
+        },
+        "username": {
+          "name": "Nome utente",
+          "description": "L'utente di cui cambiare la password."
+        },
+        "current_password": {
+          "name": "Password attuale",
+          "description": "La password attuale dell'utente."
+        },
+        "new_password": {
+          "name": "Nuova password",
+          "description": "La nuova password desiderata."
+        }
+      }
+    },
+    "get_terminal_groups": {
+      "name": "Ottieni gruppi terminale",
+      "description": "Elenca i gruppi terminale disponibili sul server CAME Domotic. Esegui questa azione prima di creare un utente per scoprire i nomi di gruppo validi.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic da interrogare."
+        }
+      }
+    },
+    "get_users": {
+      "name": "Ottieni utenti",
+      "description": "Elenca gli utenti configurati sul server CAME Domotic.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic da interrogare."
+        }
+      }
+    },
+    "force_refresh": {
+      "name": "Forza aggiornamento",
+      "description": "Forza un aggiornamento completo dei dati di tutti i dispositivi dal server CAME Domotic.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic da aggiornare."
+        }
+      }
+    },
+    "set_timer_timetable": {
+      "name": "Imposta programmazione timer",
+      "description": "Configura la programmazione di un timer CAME Domotic, inclusi i giorni attivi e le fasce orarie.",
+      "fields": {
+        "days": {
+          "name": "Giorni",
+          "description": "Giorni della settimana in cui il timer deve essere attivo. I giorni non elencati saranno disabilitati."
+        },
+        "slots": {
+          "name": "Fasce orarie",
+          "description": "Fino a 4 fasce orarie con orario di inizio e di fine opzionale (formato HH:MM o HH:MM:SS). Le fasce oltre quelle indicate vengono azzerate."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "config_entry_not_found": {
+      "message": "Voce di configurazione non trovata: {config_entry_id}"
+    },
+    "config_entry_not_loaded": {
+      "message": "La voce di configurazione non è caricata: {config_entry_id}"
+    },
+    "user_not_found": {
+      "message": "Utente {username} non trovato sul server CAME."
+    },
+    "cannot_delete_current_user": {
+      "message": "Impossibile eliminare l'utente attualmente autenticato {username}."
+    },
+    "group_not_found": {
+      "message": "Gruppo terminale {group} non trovato sul server CAME. Usa l'azione get_terminal_groups per elencare i gruppi disponibili."
+    },
+    "service_comm_error": {
+      "message": "Errore di comunicazione con il server CAME: {error}"
+    },
+    "service_auth_error": {
+      "message": "Errore di autenticazione con il server CAME: {error}"
+    }
+  }
+}
