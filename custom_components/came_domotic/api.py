@@ -60,13 +60,13 @@ class CameDomoticApiClientAuthenticationError(
     """Exception for authentication errors."""
 
 
-def _translate_errors[_T](
-    func: Callable[..., Coroutine[Any, Any, _T]],
-) -> Callable[..., Coroutine[Any, Any, _T]]:
+def _translate_errors[T](
+    func: Callable[..., Coroutine[Any, Any, T]],
+) -> Callable[..., Coroutine[Any, Any, T]]:
     """Translate aiocamedomotic errors to integration errors."""
 
     @functools.wraps(func)
-    async def wrapper(self: CameDomoticApiClient, *args: Any, **kwargs: Any) -> _T:
+    async def wrapper(self: CameDomoticApiClient, *args: Any, **kwargs: Any) -> T:
         if self._api is None:
             raise CameDomoticApiClientError("Not initialized")
         try:
