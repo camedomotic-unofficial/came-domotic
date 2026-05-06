@@ -616,7 +616,7 @@ async def test_timer_is_on(hass):
     timers = [_mock_timer(900, "Morning Timer", enabled=True)]
     await _setup_entry(hass, [], mock_timers=timers)
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state is not None
     assert state.state == "on"
 
@@ -626,7 +626,7 @@ async def test_timer_is_off(hass):
     timers = [_mock_timer(900, "Morning Timer", enabled=False)]
     await _setup_entry(hass, [], mock_timers=timers)
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state is not None
     assert state.state == "off"
 
@@ -644,7 +644,7 @@ async def test_timer_is_on_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state is not None
 
 
@@ -666,7 +666,7 @@ async def test_timer_extra_attributes(hass):
     ]
     await _setup_entry(hass, [], mock_timers=timers)
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state is not None
     assert state.attributes["days"] == ["monday", "wednesday"]
     assert state.attributes["bars"] == 2
@@ -693,7 +693,7 @@ async def test_timer_extra_attributes_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state is not None
 
 
@@ -712,7 +712,7 @@ async def test_timer_turn_on(hass):
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+            {"entity_id": "switch.came_server_morning_timer"},
             blocking=True,
         )
 
@@ -733,7 +733,7 @@ async def test_timer_turn_off(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+            {"entity_id": "switch.came_server_morning_timer"},
             blocking=True,
         )
 
@@ -753,7 +753,7 @@ async def test_timer_turn_on_not_found(hass):
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+        {"entity_id": "switch.came_server_morning_timer"},
         blocking=True,
     )
 
@@ -769,7 +769,7 @@ async def test_timer_turn_off_not_found(hass):
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+        {"entity_id": "switch.came_server_morning_timer"},
         blocking=True,
     )
 
@@ -791,15 +791,11 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state is not None
         assert state.state == "on"
 
@@ -814,15 +810,11 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_off",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state is not None
         assert state.state == "off"
 
@@ -837,15 +829,11 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "on"
 
         # Server catches up: enabled changes to True
@@ -858,9 +846,7 @@ class TestTimerOptimisticState:
         coordinator.async_set_updated_data(coordinator.data)
         await hass.async_block_till_done()
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "off"
 
     async def test_timer_optimistic_preserved_when_data_unchanged(self, hass):
@@ -874,9 +860,7 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
@@ -884,9 +868,7 @@ class TestTimerOptimisticState:
         coordinator.async_set_updated_data(coordinator.data)
         await hass.async_block_till_done()
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "on"
 
     async def test_timer_optimistic_timeout_clears_state(self, hass):
@@ -900,23 +882,17 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "on"
 
         async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=8))
         await hass.async_block_till_done()
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "off"
 
     async def test_timer_optimistic_timeout_cancelled_on_removal(self, hass):
@@ -930,9 +906,7 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
@@ -953,15 +927,11 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state.state == "on"
 
         empty_data = CameDomoticServerData(server_info=_mock_server_info())
@@ -969,9 +939,7 @@ class TestTimerOptimisticState:
             await coordinator.async_refresh()
             await hass.async_block_till_done()
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state is not None
 
     async def test_timer_turn_on_api_error_no_optimistic(self, hass):
@@ -992,15 +960,11 @@ class TestTimerOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {
-                    "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-                },
+                {"entity_id": "switch.came_server_morning_timer"},
                 blocking=True,
             )
 
-        state = hass.states.get(
-            "switch.came_eti_domo_server_192_168_1_100_morning_timer"
-        )
+        state = hass.states.get("switch.came_server_morning_timer")
         assert state is not None
         assert state.state == "off"
 
@@ -1027,7 +991,7 @@ async def test_set_timer_timetable_days_only(hass):
             DOMAIN,
             "set_timer_timetable",
             {
-                "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer",
+                "entity_id": "switch.came_server_morning_timer",
                 "days": ["monday", "friday"],
             },
             blocking=True,
@@ -1053,7 +1017,7 @@ async def test_set_timer_timetable_slots_only(hass):
             DOMAIN,
             "set_timer_timetable",
             {
-                "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer",
+                "entity_id": "switch.came_server_morning_timer",
                 "slots": [
                     {"start": "08:00"},
                     {"start": "14:30:15", "stop": "18:00"},
@@ -1090,7 +1054,7 @@ async def test_set_timer_timetable_both(hass):
             DOMAIN,
             "set_timer_timetable",
             {
-                "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer",
+                "entity_id": "switch.came_server_morning_timer",
                 "days": ["saturday", "sunday"],
                 "slots": [{"start": "09:00", "stop": "13:00"}],
             },
@@ -1167,7 +1131,7 @@ async def test_set_timer_timetable_invalid_stop_format(hass):
             DOMAIN,
             "set_timer_timetable",
             {
-                "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer",
+                "entity_id": "switch.came_server_morning_timer",
                 "slots": [{"start": "08:00", "stop": "bad:time"}],
             },
             blocking=True,
@@ -1190,23 +1154,23 @@ async def test_timer_optimistic_timeout_resets_on_rapid_commands(hass):
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+            {"entity_id": "switch.came_server_morning_timer"},
             blocking=True,
         )
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer"},
+            {"entity_id": "switch.came_server_morning_timer"},
             blocking=True,
         )
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state.state == "off"
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=8))
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.came_eti_domo_server_192_168_1_100_morning_timer")
+    state = hass.states.get("switch.came_server_morning_timer")
     assert state.state == "off"
 
 
@@ -1223,7 +1187,7 @@ async def test_set_timer_timetable_not_found(hass):
         DOMAIN,
         "set_timer_timetable",
         {
-            "entity_id": "switch.came_eti_domo_server_192_168_1_100_morning_timer",
+            "entity_id": "switch.came_server_morning_timer",
             "days": ["monday"],
         },
         blocking=True,

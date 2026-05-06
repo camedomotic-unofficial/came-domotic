@@ -48,6 +48,11 @@
       "reconfigure_successful": "Reconfiguration was successful"
     }
   },
+  "device": {
+    "came_server_device_friendly_name": {
+      "name": "CAME server"
+    }
+  },
   "entity": {
     "binary_sensor": {
       "server_connectivity": {

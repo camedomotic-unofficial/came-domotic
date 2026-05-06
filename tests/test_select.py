@@ -25,7 +25,7 @@ _COORDINATOR = (
     "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
-_ENTITY_ID = "select.came_eti_domo_server_192_168_1_100_thermo_season"
+_ENTITY_ID = "select.came_server_thermo_season"
 
 
 async def _setup_entry(hass, mock_zones=None):
