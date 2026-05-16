@@ -214,6 +214,12 @@ async def async_unload_entry(
     # Stop long-poll task before unloading platforms
     await entry.runtime_data.coordinator.stop_long_poll()
 
+    # Shut down the ping coordinator's interval timer. HA only runs the
+    # async_on_unload callbacks (which include the coordinator's own shutdown)
+    # when unload succeeds; doing it here ensures the timer is cancelled even
+    # if platform unload fails.
+    await entry.runtime_data.ping_coordinator.async_shutdown()
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         await entry.runtime_data.client.async_dispose()
