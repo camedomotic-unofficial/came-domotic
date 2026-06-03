@@ -110,10 +110,10 @@ async def test_cover_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    living_room = hass.states.get("cover.living_room_shutter")
+    living_room = hass.states.get("cover.living_room_living_room_shutter")
     assert living_room is not None
 
-    bedroom = hass.states.get("cover.bedroom_shutter")
+    bedroom = hass.states.get("cover.bedroom_bedroom_shutter")
     assert bedroom is not None
 
 
@@ -138,7 +138,7 @@ async def test_cover_is_closed_returns_none(hass):
     openings = [_mock_opening(100, 101, "Living Room Shutter")]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     # HA maps is_closed=None to "unknown" state
     # The entity exists and has no definitive closed/open state
@@ -151,7 +151,7 @@ async def test_cover_is_opening(hass):
     ]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state == "opening"
 
@@ -163,7 +163,7 @@ async def test_cover_is_closing(hass):
     ]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state == "closing"
 
@@ -175,7 +175,7 @@ async def test_cover_is_not_opening_when_stopped(hass):
     ]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "opening"
     assert state.state != "closing"
@@ -201,7 +201,7 @@ async def test_cover_is_opening_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "opening"
 
@@ -223,7 +223,7 @@ async def test_cover_is_closing_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "closing"
 
@@ -243,7 +243,7 @@ async def test_cover_open(hass):
         await hass.services.async_call(
             "cover",
             "open_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -266,7 +266,7 @@ async def test_cover_close(hass):
         await hass.services.async_call(
             "cover",
             "close_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -287,7 +287,7 @@ async def test_cover_stop(hass):
         await hass.services.async_call(
             "cover",
             "stop_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -308,7 +308,7 @@ async def test_cover_open_tilt(hass):
         await hass.services.async_call(
             "cover",
             "open_cover_tilt",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -329,7 +329,7 @@ async def test_cover_close_tilt(hass):
         await hass.services.async_call(
             "cover",
             "close_cover_tilt",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -350,7 +350,7 @@ async def test_cover_stop_tilt(hass):
         await hass.services.async_call(
             "cover",
             "stop_cover_tilt",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
@@ -374,7 +374,7 @@ async def test_cover_open_not_found(hass):
     await hass.services.async_call(
         "cover",
         "open_cover",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -390,7 +390,7 @@ async def test_cover_close_not_found(hass):
     await hass.services.async_call(
         "cover",
         "close_cover",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -406,7 +406,7 @@ async def test_cover_stop_not_found(hass):
     await hass.services.async_call(
         "cover",
         "stop_cover",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -422,7 +422,7 @@ async def test_cover_open_tilt_not_found(hass):
     await hass.services.async_call(
         "cover",
         "open_cover_tilt",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -438,7 +438,7 @@ async def test_cover_close_tilt_not_found(hass):
     await hass.services.async_call(
         "cover",
         "close_cover_tilt",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -454,7 +454,7 @@ async def test_cover_stop_tilt_not_found(hass):
     await hass.services.async_call(
         "cover",
         "stop_cover_tilt",
-        {"entity_id": "cover.living_room_shutter"},
+        {"entity_id": "cover.living_room_living_room_shutter"},
         blocking=True,
     )
 
@@ -467,7 +467,7 @@ async def test_cover_extra_attributes(hass):
     openings = [_mock_opening(100, 101, "Living Room Shutter")]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.attributes["status"] == "STOPPED"
     assert state.attributes["opening_type"] == "SHUTTER"
@@ -492,7 +492,7 @@ async def test_cover_extra_attributes_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     # Extra attributes should not contain opening-specific keys
     assert "status" not in state.attributes
@@ -506,7 +506,7 @@ async def test_cover_device_class_shutter(hass):
     openings = [_mock_opening(100, 101, "Living Room Shutter")]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.attributes.get("device_class") == CoverDeviceClass.SHUTTER
 
@@ -518,7 +518,7 @@ async def test_cover_device_class_unknown_type(hass):
     ]
     await _setup_entry(hass, openings)
 
-    state = hass.states.get("cover.mystery_opening")
+    state = hass.states.get("cover.living_room_mystery_opening")
     assert state is not None
     assert "device_class" not in state.attributes
 
@@ -539,11 +539,11 @@ async def test_cover_open_optimistic_state(hass):
         await hass.services.async_call(
             "cover",
             "open_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state == "opening"
 
@@ -561,11 +561,11 @@ async def test_cover_close_optimistic_state(hass):
         await hass.services.async_call(
             "cover",
             "close_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state == "closing"
 
@@ -583,11 +583,11 @@ async def test_cover_stop_optimistic_state(hass):
         await hass.services.async_call(
             "cover",
             "stop_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "opening"
     assert state.state != "closing"
@@ -607,18 +607,18 @@ async def test_cover_optimistic_cleared_on_coordinator_update(hass):
         await hass.services.async_call(
             "cover",
             "open_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state.state == "opening"
 
     # Coordinator update should clear optimistic state, reverting to STOPPED
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state.state != "opening"
 
 
@@ -641,10 +641,10 @@ async def test_cover_open_api_error_no_optimistic(hass):
         await hass.services.async_call(
             "cover",
             "open_cover",
-            {"entity_id": "cover.living_room_shutter"},
+            {"entity_id": "cover.living_room_living_room_shutter"},
             blocking=True,
         )
 
-    state = hass.states.get("cover.living_room_shutter")
+    state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "opening"

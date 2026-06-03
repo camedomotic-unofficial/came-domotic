@@ -116,13 +116,13 @@ async def test_light_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    hallway = hass.states.get("light.hallway_light")
+    hallway = hass.states.get("light.living_room_hallway_light")
     assert hallway is not None
 
-    dimmer = hass.states.get("light.living_room_dimmer")
+    dimmer = hass.states.get("light.living_room_living_room_dimmer")
     assert dimmer is not None
 
-    rgb = hass.states.get("light.bedroom_rgb")
+    rgb = hass.states.get("light.living_room_bedroom_rgb")
     assert rgb is not None
 
 
@@ -149,7 +149,7 @@ async def test_light_is_on(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert state.state == "on"
 
@@ -161,7 +161,7 @@ async def test_light_is_off(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert state.state == "off"
 
@@ -185,7 +185,7 @@ async def test_light_is_on_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
 
 
@@ -202,7 +202,7 @@ async def test_light_brightness_dimmer(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     # round(75 * 255 / 100) = 191
     assert state.attributes[ATTR_BRIGHTNESS] == 191
@@ -215,7 +215,7 @@ async def test_light_brightness_none_for_step_step(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert ATTR_BRIGHTNESS not in state.attributes
 
@@ -244,7 +244,7 @@ async def test_light_brightness_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     assert state.attributes.get(ATTR_BRIGHTNESS) is None
 
@@ -262,7 +262,7 @@ async def test_light_brightness_none_when_perc_is_none(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     assert state.attributes.get(ATTR_BRIGHTNESS) is None
 
@@ -281,7 +281,7 @@ async def test_light_rgb_color(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.bedroom_rgb")
+    state = hass.states.get("light.living_room_bedroom_rgb")
     assert state is not None
     assert state.attributes[ATTR_RGB_COLOR] == (255, 128, 0)
 
@@ -300,7 +300,7 @@ async def test_light_rgb_color_none_when_rgb_is_none(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.bedroom_rgb")
+    state = hass.states.get("light.living_room_bedroom_rgb")
     assert state is not None
     assert state.attributes.get(ATTR_RGB_COLOR) is None
 
@@ -318,7 +318,7 @@ async def test_light_rgb_color_none_for_dimmer(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     assert ATTR_RGB_COLOR not in state.attributes
 
@@ -348,7 +348,7 @@ async def test_light_rgb_color_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("light.bedroom_rgb")
+    state = hass.states.get("light.living_room_bedroom_rgb")
     assert state is not None
     assert state.attributes.get(ATTR_RGB_COLOR) is None
 
@@ -363,7 +363,7 @@ async def test_light_color_mode_onoff(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert state.attributes["color_mode"] == ColorMode.ONOFF
 
@@ -381,7 +381,7 @@ async def test_light_color_mode_brightness(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     assert state.attributes["color_mode"] == ColorMode.BRIGHTNESS
 
@@ -400,7 +400,7 @@ async def test_light_color_mode_rgb(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.bedroom_rgb")
+    state = hass.states.get("light.living_room_bedroom_rgb")
     assert state is not None
     assert state.attributes["color_mode"] == ColorMode.RGB
 
@@ -427,13 +427,13 @@ async def test_light_supported_color_modes(hass):
     ]
     await _setup_entry(hass, lights)
 
-    hallway = hass.states.get("light.hallway_light")
+    hallway = hass.states.get("light.living_room_hallway_light")
     assert hallway.attributes["supported_color_modes"] == [ColorMode.ONOFF]
 
-    dimmer = hass.states.get("light.living_room_dimmer")
+    dimmer = hass.states.get("light.living_room_living_room_dimmer")
     assert dimmer.attributes["supported_color_modes"] == [ColorMode.BRIGHTNESS]
 
-    rgb = hass.states.get("light.bedroom_rgb")
+    rgb = hass.states.get("light.living_room_bedroom_rgb")
     assert rgb.attributes["supported_color_modes"] == [ColorMode.RGB]
 
 
@@ -452,7 +452,7 @@ async def test_light_turn_on(hass):
         await hass.services.async_call(
             "light",
             "turn_on",
-            {"entity_id": "light.hallway_light"},
+            {"entity_id": "light.living_room_hallway_light"},
             blocking=True,
         )
 
@@ -485,7 +485,7 @@ async def test_light_turn_on_with_brightness(hass):
         await hass.services.async_call(
             "light",
             "turn_on",
-            {"entity_id": "light.living_room_dimmer", ATTR_BRIGHTNESS: 191},
+            {"entity_id": "light.living_room_living_room_dimmer", ATTR_BRIGHTNESS: 191},
             blocking=True,
         )
 
@@ -514,7 +514,10 @@ async def test_light_turn_on_with_rgb(hass):
         await hass.services.async_call(
             "light",
             "turn_on",
-            {"entity_id": "light.bedroom_rgb", ATTR_RGB_COLOR: (255, 128, 0)},
+            {
+                "entity_id": "light.living_room_bedroom_rgb",
+                ATTR_RGB_COLOR: (255, 128, 0),
+            },
             blocking=True,
         )
 
@@ -543,7 +546,7 @@ async def test_light_turn_on_with_brightness_and_rgb(hass):
             "light",
             "turn_on",
             {
-                "entity_id": "light.bedroom_rgb",
+                "entity_id": "light.living_room_bedroom_rgb",
                 ATTR_BRIGHTNESS: 128,
                 ATTR_RGB_COLOR: (255, 0, 0),
             },
@@ -568,7 +571,7 @@ async def test_light_turn_off(hass):
         await hass.services.async_call(
             "light",
             "turn_off",
-            {"entity_id": "light.hallway_light"},
+            {"entity_id": "light.living_room_hallway_light"},
             blocking=True,
         )
 
@@ -592,7 +595,7 @@ async def test_light_turn_on_not_found(hass):
     await hass.services.async_call(
         "light",
         "turn_on",
-        {"entity_id": "light.hallway_light"},
+        {"entity_id": "light.living_room_hallway_light"},
         blocking=True,
     )
 
@@ -608,7 +611,7 @@ async def test_light_turn_off_not_found(hass):
     await hass.services.async_call(
         "light",
         "turn_off",
-        {"entity_id": "light.hallway_light"},
+        {"entity_id": "light.living_room_hallway_light"},
         blocking=True,
     )
 
@@ -621,7 +624,7 @@ async def test_light_extra_attributes(hass):
     lights = [_mock_light(300, "Hallway Light", status=LightStatus.ON)]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert state.attributes["light_type"] == "STEP_STEP"
 
@@ -639,7 +642,7 @@ async def test_light_extra_attributes_dimmer(hass):
     ]
     await _setup_entry(hass, lights)
 
-    state = hass.states.get("light.living_room_dimmer")
+    state = hass.states.get("light.living_room_living_room_dimmer")
     assert state is not None
     assert state.attributes["light_type"] == "DIMMER"
 
@@ -662,7 +665,7 @@ async def test_light_extra_attributes_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("light.hallway_light")
+    state = hass.states.get("light.living_room_hallway_light")
     assert state is not None
     assert "light_type" not in state.attributes
 
@@ -684,11 +687,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state is not None
         assert state.state == "on"
 
@@ -703,11 +706,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_off",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state is not None
         assert state.state == "off"
 
@@ -730,11 +733,14 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.living_room_dimmer", ATTR_BRIGHTNESS: 191},
+                {
+                    "entity_id": "light.living_room_living_room_dimmer",
+                    ATTR_BRIGHTNESS: 191,
+                },
                 blocking=True,
             )
 
-        state = hass.states.get("light.living_room_dimmer")
+        state = hass.states.get("light.living_room_living_room_dimmer")
         assert state is not None
         assert state.state == "on"
         assert state.attributes[ATTR_BRIGHTNESS] == 191
@@ -759,11 +765,14 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.bedroom_rgb", ATTR_RGB_COLOR: (255, 128, 0)},
+                {
+                    "entity_id": "light.living_room_bedroom_rgb",
+                    ATTR_RGB_COLOR: (255, 128, 0),
+                },
                 blocking=True,
             )
 
-        state = hass.states.get("light.bedroom_rgb")
+        state = hass.states.get("light.living_room_bedroom_rgb")
         assert state is not None
         assert state.state == "on"
         assert state.attributes[ATTR_RGB_COLOR] == (255, 128, 0)
@@ -780,11 +789,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "on"
 
         # Simulate server catching up: light status changes to ON
@@ -793,7 +802,7 @@ class TestLightOptimisticState:
         await hass.async_block_till_done()
 
         # State still "on" from real data, but optimistic is cleared
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "on"
 
         # Push light back to OFF to prove optimistic was truly cleared
@@ -801,7 +810,7 @@ class TestLightOptimisticState:
         coordinator.async_set_updated_data(coordinator.data)
         await hass.async_block_till_done()
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "off"
 
     async def test_light_turn_on_api_error_no_optimistic(self, hass):
@@ -821,11 +830,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state is not None
         assert state.state == "off"
 
@@ -846,11 +855,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_off",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state is not None
         assert state.state == "on"
 
@@ -866,18 +875,18 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
             # Second command: turn off (cancels first timer, starts new one)
             await hass.services.async_call(
                 "light",
                 "turn_off",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "off"
 
         # Advance past timeout — timer from turn_off fires
@@ -886,7 +895,7 @@ class TestLightOptimisticState:
 
         # Optimistic cleared; entity reads coordinator data (OFF, since
         # the mock API didn't actually mutate the light object)
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "off"
 
     async def test_light_optimistic_timeout_clears_state(self, hass):
@@ -905,11 +914,11 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "on"
 
         # Advance time past the optimistic timeout (7 seconds)
@@ -917,7 +926,7 @@ class TestLightOptimisticState:
         await hass.async_block_till_done()
 
         # Optimistic state cleared; entity reads coordinator data (OFF)
-        state = hass.states.get("light.hallway_light")
+        state = hass.states.get("light.living_room_hallway_light")
         assert state.state == "off"
 
     async def test_light_optimistic_timeout_cancelled_on_removal(self, hass):
@@ -931,7 +940,7 @@ class TestLightOptimisticState:
             await hass.services.async_call(
                 "light",
                 "turn_on",
-                {"entity_id": "light.hallway_light"},
+                {"entity_id": "light.living_room_hallway_light"},
                 blocking=True,
             )
 
