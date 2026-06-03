@@ -125,11 +125,11 @@ async def test_thermo_zone_sensor_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    living_room = hass.states.get("sensor.living_room")
+    living_room = hass.states.get("sensor.living_room_living_room")
     assert living_room is not None
     assert living_room.state == "20.0"
 
-    bedroom = hass.states.get("sensor.bedroom")
+    bedroom = hass.states.get("sensor.bedroom_bedroom")
     assert bedroom is not None
     assert bedroom.state == "19.5"
 
@@ -142,7 +142,7 @@ async def test_thermo_zone_sensor_attributes(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.living_room")
+    state = hass.states.get("sensor.living_room_living_room")
     assert state.attributes["device_class"] == SensorDeviceClass.TEMPERATURE
     assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
     assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
@@ -213,7 +213,7 @@ async def test_thermo_zone_sensor_zone_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.living_room")
+    state = hass.states.get("sensor.living_room_living_room")
     assert state is not None
     assert state.state == "unknown"
 

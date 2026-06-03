@@ -133,10 +133,10 @@ async def test_relay_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    pump = hass.states.get("switch.pump_control")
+    pump = hass.states.get("switch.living_room_pump_control")
     assert pump is not None
 
-    heating = hass.states.get("switch.heating_relay")
+    heating = hass.states.get("switch.bedroom_heating_relay")
     assert heating is not None
 
 
@@ -163,7 +163,7 @@ async def test_relay_is_on(hass):
     ]
     await _setup_entry(hass, relays)
 
-    state = hass.states.get("switch.pump_control")
+    state = hass.states.get("switch.living_room_pump_control")
     assert state is not None
     assert state.state == "on"
 
@@ -175,7 +175,7 @@ async def test_relay_is_off(hass):
     ]
     await _setup_entry(hass, relays)
 
-    state = hass.states.get("switch.pump_control")
+    state = hass.states.get("switch.living_room_pump_control")
     assert state is not None
     assert state.state == "off"
 
@@ -187,7 +187,7 @@ async def test_relay_unknown_status(hass):
     ]
     await _setup_entry(hass, relays)
 
-    state = hass.states.get("switch.pump_control")
+    state = hass.states.get("switch.living_room_pump_control")
     assert state is not None
     assert state.state == "unknown"
 
@@ -211,7 +211,7 @@ async def test_relay_is_on_not_found(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("switch.pump_control")
+    state = hass.states.get("switch.living_room_pump_control")
     assert state is not None
 
 
@@ -230,7 +230,7 @@ async def test_relay_turn_on(hass):
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.pump_control"},
+            {"entity_id": "switch.living_room_pump_control"},
             blocking=True,
         )
 
@@ -253,7 +253,7 @@ async def test_relay_turn_off(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.pump_control"},
+            {"entity_id": "switch.living_room_pump_control"},
             blocking=True,
         )
 
@@ -277,7 +277,7 @@ async def test_relay_turn_on_not_found(hass):
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.pump_control"},
+        {"entity_id": "switch.living_room_pump_control"},
         blocking=True,
     )
 
@@ -293,7 +293,7 @@ async def test_relay_turn_off_not_found(hass):
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.pump_control"},
+        {"entity_id": "switch.living_room_pump_control"},
         blocking=True,
     )
 
@@ -315,11 +315,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state is not None
         assert state.state == "on"
 
@@ -334,11 +334,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_off",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state is not None
         assert state.state == "off"
 
@@ -354,11 +354,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "on"
 
         # Simulate server catching up: relay status changes to ON
@@ -367,7 +367,7 @@ class TestRelayOptimisticState:
         await hass.async_block_till_done()
 
         # State still "on" from real data, but optimistic is cleared
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "on"
 
         # Push relay back to OFF to prove optimistic was truly cleared
@@ -375,7 +375,7 @@ class TestRelayOptimisticState:
         coordinator.async_set_updated_data(coordinator.data)
         await hass.async_block_till_done()
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "off"
 
     async def test_relay_optimistic_preserved_when_data_unchanged(self, hass):
@@ -389,7 +389,7 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
@@ -398,7 +398,7 @@ class TestRelayOptimisticState:
         await hass.async_block_till_done()
 
         # Optimistic state should still show "on"
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "on"
 
     async def test_relay_turn_on_api_error_no_optimistic(self, hass):
@@ -418,11 +418,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state is not None
         assert state.state == "off"
 
@@ -443,11 +443,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_off",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state is not None
         assert state.state == "on"
 
@@ -463,18 +463,18 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
             # Second command: turn off (cancels first timer, starts new one)
             await hass.services.async_call(
                 "switch",
                 "turn_off",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "off"
 
         # Advance past timeout — timer from turn_off fires
@@ -483,7 +483,7 @@ class TestRelayOptimisticState:
 
         # Optimistic cleared; entity reads coordinator data (OFF, since
         # the mock API didn't actually mutate the relay object)
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "off"
 
     async def test_relay_optimistic_timeout_clears_state(self, hass):
@@ -502,11 +502,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "on"
 
         # Advance time past the optimistic timeout (7 seconds)
@@ -514,7 +514,7 @@ class TestRelayOptimisticState:
         await hass.async_block_till_done()
 
         # Optimistic state cleared; entity reads coordinator data (OFF)
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "off"
 
     async def test_relay_optimistic_timeout_cancelled_on_removal(self, hass):
@@ -528,7 +528,7 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
@@ -551,11 +551,11 @@ class TestRelayOptimisticState:
             await hass.services.async_call(
                 "switch",
                 "turn_on",
-                {"entity_id": "switch.pump_control"},
+                {"entity_id": "switch.living_room_pump_control"},
                 blocking=True,
             )
 
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state.state == "on"
 
         # Relay disappears from coordinator data
@@ -571,7 +571,7 @@ class TestRelayOptimisticState:
             await hass.async_block_till_done()
 
         # Optimistic state should be cleared
-        state = hass.states.get("switch.pump_control")
+        state = hass.states.get("switch.living_room_pump_control")
         assert state is not None
 
 

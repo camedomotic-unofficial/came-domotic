@@ -43,9 +43,11 @@ _COORDINATOR = (
     "custom_components.came_domotic.coordinator.CameDomoticDataUpdateCoordinator"
 )
 
-# Entity IDs are generated from zone name by HA: "climate.<slugified_name>"
-_ENTITY_LIVING_ROOM = "climate.living_room"
-_ENTITY_BEDROOM = "climate.bedroom"
+# HA 2026.6+ prefixes the resolved area name to the entity ID, so the IDs are
+# "climate.<slugified_area>_<slugified_zone_name>". The default mock zones are
+# named after their areas ("Living Room", "Bedroom"), hence the doubled slug.
+_ENTITY_LIVING_ROOM = "climate.living_room_living_room"
+_ENTITY_BEDROOM = "climate.bedroom_bedroom"
 
 
 async def _setup_entry(hass, mock_zones=None):
@@ -200,7 +202,7 @@ async def test_hvac_mode_off_when_zone_mode_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.OFF
 
@@ -218,7 +220,7 @@ async def test_hvac_mode_off_when_plant_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.OFF
 
@@ -236,7 +238,7 @@ async def test_hvac_mode_heat_in_winter_manual(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.HEAT
 
@@ -254,7 +256,7 @@ async def test_hvac_mode_cool_in_summer_manual(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.COOL
 
@@ -266,7 +268,7 @@ async def test_hvac_mode_auto_in_auto_mode(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.AUTO
 
@@ -278,7 +280,7 @@ async def test_hvac_mode_auto_in_jolly_mode(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == HVACMode.AUTO
 
@@ -290,7 +292,7 @@ async def test_hvac_mode_none_for_unknown_mode(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == "unknown"
 
@@ -305,7 +307,7 @@ async def test_hvac_modes_winter(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert set(state.attributes["hvac_modes"]) == {
         HVACMode.OFF,
@@ -321,7 +323,7 @@ async def test_hvac_modes_summer(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert set(state.attributes["hvac_modes"]) == {
         HVACMode.OFF,
@@ -337,7 +339,7 @@ async def test_hvac_modes_plant_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.attributes["hvac_modes"] == [HVACMode.OFF]
 
@@ -359,7 +361,7 @@ async def test_hvac_action_heating(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["hvac_action"] == HVACAction.HEATING
 
 
@@ -377,7 +379,7 @@ async def test_hvac_action_cooling(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["hvac_action"] == HVACAction.COOLING
 
 
@@ -395,7 +397,7 @@ async def test_hvac_action_idle(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["hvac_action"] == HVACAction.IDLE
 
 
@@ -406,7 +408,7 @@ async def test_hvac_action_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["hvac_action"] == HVACAction.OFF
 
 
@@ -424,7 +426,7 @@ async def test_hvac_action_off_when_plant_off(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["hvac_action"] == HVACAction.OFF
 
 
@@ -436,7 +438,7 @@ async def test_current_temperature(hass):
     zones = [_mock_thermo_zone(1, "Zone A", 22.5)]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["current_temperature"] == 22.5
 
 
@@ -445,7 +447,7 @@ async def test_target_temperature(hass):
     zones = [_mock_thermo_zone(1, "Zone A", 20.0, set_point=23.0)]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["temperature"] == 23.0
 
 
@@ -461,7 +463,7 @@ async def test_temperature_none_when_zone_missing(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     assert state.state == "unknown"
 
@@ -486,7 +488,7 @@ async def test_fan_mode_mapping(hass, fan_speed, expected_mode):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["fan_mode"] == expected_mode
 
 
@@ -508,7 +510,7 @@ async def test_fan_mode_not_exposed_when_unknown(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     features = state.attributes["supported_features"]
     assert not features & ClimateEntityFeature.FAN_MODE
@@ -522,7 +524,7 @@ async def test_fan_mode_exposed_when_supported(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     features = state.attributes["supported_features"]
     assert features & ClimateEntityFeature.FAN_MODE
@@ -540,7 +542,7 @@ async def test_preset_mode_jolly(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["preset_mode"] == "Jolly"
 
 
@@ -551,7 +553,7 @@ async def test_preset_mode_none(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["preset_mode"] == PRESET_NONE
 
 
@@ -575,7 +577,7 @@ async def test_extra_state_attributes(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state.attributes["dehumidifier_enabled"] is True
     assert state.attributes["dehumidifier_setpoint"] == 55.0
     assert state.attributes["antifreeze"] == 5.0
@@ -596,7 +598,7 @@ async def test_extra_state_attributes_none_when_zone_missing(hass):
         await coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     assert state is not None
     # When zone is missing, extra attributes should not be present
     assert "dehumidifier_enabled" not in state.attributes
@@ -612,7 +614,7 @@ async def test_supported_features_with_fan(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     expected = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.PRESET_MODE
@@ -630,7 +632,7 @@ async def test_supported_features_without_fan(hass):
     ]
     await _setup_entry(hass, mock_zones=zones)
 
-    state = hass.states.get("climate.zone_a")
+    state = hass.states.get("climate.living_room_zone_a")
     expected = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.PRESET_MODE
@@ -694,7 +696,7 @@ async def test_set_hvac_mode_cool(hass):
     await hass.services.async_call(
         "climate",
         "set_hvac_mode",
-        {"entity_id": "climate.zone_a", ATTR_HVAC_MODE: HVACMode.COOL},
+        {"entity_id": "climate.living_room_zone_a", ATTR_HVAC_MODE: HVACMode.COOL},
         blocking=True,
     )
 
@@ -792,7 +794,7 @@ async def test_set_temperature_switches_to_manual_from_auto(hass):
     await hass.services.async_call(
         "climate",
         "set_temperature",
-        {"entity_id": "climate.zone_a", ATTR_TEMPERATURE: 25.0},
+        {"entity_id": "climate.living_room_zone_a", ATTR_TEMPERATURE: 25.0},
         blocking=True,
     )
 
@@ -925,7 +927,7 @@ async def test_set_preset_none_from_jolly(hass):
     await hass.services.async_call(
         "climate",
         "set_preset_mode",
-        {"entity_id": "climate.zone_a", ATTR_PRESET_MODE: PRESET_NONE},
+        {"entity_id": "climate.living_room_zone_a", ATTR_PRESET_MODE: PRESET_NONE},
         blocking=True,
     )
 
@@ -947,7 +949,7 @@ async def test_set_preset_none_when_not_jolly(hass):
     await hass.services.async_call(
         "climate",
         "set_preset_mode",
-        {"entity_id": "climate.zone_a", ATTR_PRESET_MODE: PRESET_NONE},
+        {"entity_id": "climate.living_room_zone_a", ATTR_PRESET_MODE: PRESET_NONE},
         blocking=True,
     )
 
@@ -987,7 +989,7 @@ async def test_turn_on(hass):
     await hass.services.async_call(
         "climate",
         "turn_on",
-        {"entity_id": "climate.zone_a"},
+        {"entity_id": "climate.living_room_zone_a"},
         blocking=True,
     )
 
