@@ -1,5 +1,5 @@
 homeassistant
-aiocamedomotic==1.10.4
+aiocamedomotic==1.10.5
 PyTurboJPEG
 ruff
 mypy==2.1.0
