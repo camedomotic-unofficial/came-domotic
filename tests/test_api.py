@@ -503,6 +503,223 @@ async def test_async_get_energy_meters_not_initialized(hass):
         await client.async_get_energy_meters()
 
 
+# --- async_get_loadsctrl_meters ---
+
+
+async def test_async_get_loadsctrl_meters_success(hass):
+    """Test successful loads controller fetch returns the controller list."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_controllers = [MagicMock()]
+    mock_api.async_get_loadsctrl_meters.return_value = mock_controllers
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_loadsctrl_meters()
+    assert result == mock_controllers
+
+
+async def test_async_get_loadsctrl_meters_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_loadsctrl_meters.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_loadsctrl_meters()
+
+
+async def test_async_get_loadsctrl_meters_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_loadsctrl_meters.side_effect = CameDomoticServerError("err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_loadsctrl_meters()
+
+
+async def test_async_get_loadsctrl_meters_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_loadsctrl_meters.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_loadsctrl_meters()
+
+
+async def test_async_get_loadsctrl_meters_not_initialized(hass):
+    """Test async_get_loadsctrl_meters raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_loadsctrl_meters()
+
+
+# --- async_get_loadsctrl_relays ---
+
+
+def _mock_controller():
+    """Create a mock LoadsCtrlMeter with an async relay getter."""
+    controller = MagicMock()
+    controller.id = 100
+    controller.name = "Load Controller"
+    controller.async_get_relays = AsyncMock(return_value=[MagicMock(), MagicMock()])
+    return controller
+
+
+async def test_async_get_loadsctrl_relays_success(hass):
+    """Test successful loads fetch delegates to the controller."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    controller = _mock_controller()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_loadsctrl_relays(controller)
+    assert len(result) == 2
+    controller.async_get_relays.assert_awaited_once()
+
+
+async def test_async_get_loadsctrl_relays_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    controller = _mock_controller()
+    controller.async_get_relays.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_loadsctrl_relays(controller)
+
+
+async def test_async_get_loadsctrl_relays_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    controller = _mock_controller()
+    controller.async_get_relays.side_effect = CameDomoticServerError("err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_loadsctrl_relays(controller)
+
+
+async def test_async_get_loadsctrl_relays_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    controller = _mock_controller()
+    controller.async_get_relays.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_loadsctrl_relays(controller)
+
+
+async def test_async_get_loadsctrl_relays_not_initialized(hass):
+    """Test async_get_loadsctrl_relays raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_loadsctrl_relays(_mock_controller())
+
+
+# --- async_set_loadsctrl_relay_enabled ---
+
+
+def _mock_loadsctrl_relay_obj():
+    """Create a mock LoadsCtrlRelay with an async enabled setter."""
+    relay = MagicMock()
+    relay.id = 201
+    relay.name = "Oven"
+    relay.async_set_enabled = AsyncMock()
+    return relay
+
+
+async def test_async_set_loadsctrl_relay_enabled_success(hass):
+    """Test setting shedding participation delegates to the relay."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    relay = _mock_loadsctrl_relay_obj()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_set_loadsctrl_relay_enabled(relay, enabled=False)
+    relay.async_set_enabled.assert_awaited_once_with(False)
+
+
+async def test_async_set_loadsctrl_relay_enabled_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    relay = _mock_loadsctrl_relay_obj()
+    relay.async_set_enabled.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_set_loadsctrl_relay_enabled(relay, enabled=True)
+
+
+async def test_async_set_loadsctrl_relay_enabled_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    relay = _mock_loadsctrl_relay_obj()
+    relay.async_set_enabled.side_effect = CameDomoticServerError("err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_set_loadsctrl_relay_enabled(relay, enabled=True)
+
+
+async def test_async_set_loadsctrl_relay_enabled_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    relay = _mock_loadsctrl_relay_obj()
+    relay.async_set_enabled.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_set_loadsctrl_relay_enabled(relay, enabled=True)
+
+
+async def test_async_set_loadsctrl_relay_enabled_not_initialized(hass):
+    """Test setter raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_set_loadsctrl_relay_enabled(
+            _mock_loadsctrl_relay_obj(), enabled=True
+        )
+
+
 # --- async_dispose ---
 
 

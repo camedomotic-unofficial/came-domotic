@@ -11,7 +11,13 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData, PingResult
 
-from .conftest import _mock_digital_input, _mock_server_info, _mock_topology
+from .conftest import (
+    _mock_digital_input,
+    _mock_loadsctrl_meter,
+    _mock_loadsctrl_relay,
+    _mock_server_info,
+    _mock_topology,
+)
 from .const import MOCK_CONFIG
 
 _API_CLIENT = "custom_components.came_domotic.api.CameDomoticApiClient"
@@ -21,8 +27,18 @@ _COORDINATOR = (
 )
 
 
-async def _setup_entry(hass, mock_digital_inputs, ping_return=10.0):
+async def _setup_entry(
+    hass,
+    mock_digital_inputs,
+    ping_return=10.0,
+    mock_loadsctrl_meters=None,
+    mock_loadsctrl_relays=None,
+):
     """Set up a config entry with the given mock digital inputs list."""
+    if mock_loadsctrl_meters is None:
+        mock_loadsctrl_meters = []
+    if mock_loadsctrl_relays is None:
+        mock_loadsctrl_relays = []
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -45,6 +61,14 @@ async def _setup_entry(hass, mock_digital_inputs, ping_return=10.0):
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_meters",
+            return_value=mock_loadsctrl_meters,
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_relays",
+            return_value=mock_loadsctrl_relays,
+        ),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -76,7 +100,8 @@ async def test_binary_sensor_entities_created(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "binary_sensor"
     ]
-    assert len(entries) == 3
+    # 2 digital inputs + 1 connectivity + 2 load shed sensors = 5
+    assert len(entries) == 5
 
 
 async def test_binary_sensor_unique_id(hass, bypass_get_data):
@@ -97,6 +122,8 @@ async def test_binary_sensor_unique_id(hass, bypass_get_data):
         "test_digital_input_400",
         "test_digital_input_401",
         "test_server_connectivity",
+        "test_loadsctrl_relay_201_detached",
+        "test_loadsctrl_relay_202_detached",
     }
 
 
@@ -303,3 +330,64 @@ async def test_server_connectivity_sensor_off(hass):
     state = hass.states.get(entry.entity_id)
     assert state is not None
     assert state.state == "off"
+
+
+# --- Load shed (detached) sensors ---
+
+
+async def test_load_detached_sensor_states(hass, bypass_get_data):
+    """Test detached sensors report the load shedding state."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    oven = hass.states.get("binary_sensor.load_controller_oven_detached")
+    assert oven is not None
+    assert oven.state == "off"
+    assert oven.attributes["device_class"] == "problem"
+    assert oven.attributes["priority"] == 1
+    assert oven.attributes["status"] == "on"
+
+    heat_pump = hass.states.get("binary_sensor.load_controller_heat_pump_detached")
+    assert heat_pump is not None
+    assert heat_pump.state == "on"
+    assert heat_pump.attributes["priority"] == 2
+    assert heat_pump.attributes["status"] == "off"
+
+
+async def test_load_detached_sensor_push_update(hass):
+    """Test a pushed shed event is reflected in the detached sensor."""
+    config_entry = await _setup_entry(
+        hass,
+        [],
+        mock_loadsctrl_meters=[_mock_loadsctrl_meter(100, "Load Controller")],
+        mock_loadsctrl_relays=[_mock_loadsctrl_relay(201, "Oven")],
+    )
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.data.loadsctrl_relays[201].detached = True
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("binary_sensor.load_controller_oven_detached")
+    assert state.state == "on"
+
+
+async def test_load_detached_sensor_load_not_found(hass, bypass_get_data):
+    """Test detached sensor returns unknown when the load disappears."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.data.loadsctrl_relays.clear()
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("binary_sensor.load_controller_oven_detached")
+    assert state.state == "unknown"
+    assert "priority" not in state.attributes

@@ -65,6 +65,7 @@ async def _setup_entry(hass, mock_cameras):
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_loadsctrl_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_cameras",
             return_value=mock_cameras,
@@ -540,6 +541,7 @@ async def test_cameras_not_fetched_on_api_error(hass):
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_loadsctrl_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_cameras",
             side_effect=CameDomoticApiClientCommunicationError("Not supported"),

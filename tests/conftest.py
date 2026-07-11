@@ -11,6 +11,7 @@ from aiocamedomotic.models import (
     EnergyMeterType,
     LightStatus,
     LightType,
+    LoadsCtrlRelayStatus,
     OpeningStatus,
     OpeningType,
     RelayStatus,
@@ -390,6 +391,90 @@ MOCK_ENERGY_METERS = [
 ]
 
 
+def _mock_loadsctrl_meter(
+    controller_id,
+    name,
+    power=1200,
+    max_power=3300,
+    hysteresis=200,
+    meter_id=1,
+):
+    """Create a mock LoadsCtrlMeter (load shedding controller).
+
+    Note: controller_id is the controller's own id, distinct from the
+    associated energy meter's meter_id. Includes a raw_data dict so that
+    coordinator merge logic works correctly in tests.
+    """
+    controller = MagicMock()
+    controller.id = controller_id
+    controller.name = name
+    controller.power = power
+    controller.max_power = max_power
+    controller.hysteresis = hysteresis
+    controller.meter_id = meter_id
+    controller.raw_data = {
+        "id": controller_id,
+        "name": name,
+        "power": power,
+        "max_power": max_power,
+        "hysteresis": hysteresis,
+        "meter_id": meter_id,
+    }
+    return controller
+
+
+def _mock_loadsctrl_relay(
+    relay_id,
+    name,
+    act_id=None,
+    enabled=True,
+    detached=False,
+    priority=1,
+    status=LoadsCtrlRelayStatus.ON,
+):
+    """Create a mock LoadsCtrlRelay (load managed by a controller).
+
+    Note: loadsctrl relays are keyed by relay_id (their id), NOT act_id.
+    Includes a raw_data dict so that coordinator merge logic works
+    correctly in tests.
+    """
+    relay = MagicMock()
+    relay.id = relay_id
+    relay.act_id = act_id if act_id is not None else relay_id + 1000
+    relay.name = name
+    relay.enabled = enabled
+    relay.detached = detached
+    relay.priority = priority
+    relay.status = status
+    relay.raw_data = {
+        "id": relay_id,
+        "act_id": relay.act_id,
+        "name": name,
+        "enabled": int(enabled),
+        "detached": int(detached),
+        "priority": priority,
+        "status": status.value,
+    }
+    return relay
+
+
+MOCK_LOADSCTRL_METERS = [
+    _mock_loadsctrl_meter(100, "Load Controller", power=1200, meter_id=1),
+]
+
+MOCK_LOADSCTRL_RELAYS = [
+    _mock_loadsctrl_relay(201, "Oven", enabled=True, detached=False, priority=1),
+    _mock_loadsctrl_relay(
+        202,
+        "Heat Pump",
+        enabled=False,
+        detached=True,
+        priority=2,
+        status=LoadsCtrlRelayStatus.OFF,
+    ),
+]
+
+
 def _mock_relay(
     act_id,
     name,
@@ -637,6 +722,7 @@ def _mock_server_info(
             "relays",
             "timers",
             "energy",
+            "loadsctrl",
         ]
     info = MagicMock()
     info.keycode = MOCK_KEYCODE
@@ -664,6 +750,9 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     cameras={c.id: c for c in MOCK_CAMERAS},
     maps={p.page_id: p for p in MOCK_MAP_PAGES},
     energy_meters={m.id: m for m in MOCK_ENERGY_METERS},
+    loadsctrl_meters={c.id: c for c in MOCK_LOADSCTRL_METERS},
+    loadsctrl_relays={r.id: r for r in MOCK_LOADSCTRL_RELAYS},
+    loadsctrl_relay_owner={r.id: 100 for r in MOCK_LOADSCTRL_RELAYS},
     topology=MOCK_TOPOLOGY,
 )
 
@@ -722,6 +811,14 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_energy_meters",
             return_value=list(MOCK_ENERGY_METERS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_meters",
+            return_value=list(MOCK_LOADSCTRL_METERS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_relays",
+            return_value=list(MOCK_LOADSCTRL_RELAYS),
         ),
         patch(
             f"{_API_CLIENT}.async_get_cameras",

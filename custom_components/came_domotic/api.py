@@ -24,6 +24,8 @@ from aiocamedomotic.models import (
     EnergyMeter,
     Light,
     LightStatus,
+    LoadsCtrlMeter,
+    LoadsCtrlRelay,
     MapPage,
     Opening,
     OpeningStatus,
@@ -246,6 +248,48 @@ class CameDomoticApiClient:
         meters = await self._api.async_get_energy_meters()
         _LOGGER.debug("Fetched %d energy meter(s)", len(meters))
         return meters
+
+    @_translate_errors
+    async def async_get_loadsctrl_meters(self) -> list[LoadsCtrlMeter]:
+        """Fetch load shedding controllers from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching loads control meters from %s", self._host)
+        controllers = await self._api.async_get_loadsctrl_meters()
+        _LOGGER.debug("Fetched %d loads control meter(s)", len(controllers))
+        return controllers
+
+    @_translate_errors
+    async def async_get_loadsctrl_relays(
+        self, controller: LoadsCtrlMeter
+    ) -> list[LoadsCtrlRelay]:
+        """Fetch the loads managed by a load shedding controller."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Fetching loads for controller '%s' (id=%d) from %s",
+            controller.name,
+            controller.id,
+            self._host,
+        )
+        relays = await controller.async_get_relays()
+        _LOGGER.debug("Fetched %d load(s)", len(relays))
+        return relays
+
+    @_translate_errors
+    async def async_set_loadsctrl_relay_enabled(
+        self, relay: LoadsCtrlRelay, *, enabled: bool
+    ) -> None:
+        """Set whether a load participates in load shedding.
+
+        Note: loadsctrl commands key on ``relay.id``, not ``act_id``.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Setting load '%s' (id=%d) shedding participation to %s",
+            relay.name,
+            relay.id,
+            enabled,
+        )
+        await relay.async_set_enabled(enabled)
 
     @_translate_errors
     async def async_get_cameras(self) -> list[Camera]:

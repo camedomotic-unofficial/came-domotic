@@ -55,6 +55,9 @@
   },
   "entity": {
     "binary_sensor": {
+      "load_detached": {
+        "name": "Distacco {load_name}"
+      },
       "server_connectivity": {
         "name": "Connettività"
       }
@@ -78,6 +81,11 @@
       },
       "ping_latency": {
         "name": "Latenza ping"
+      }
+    },
+    "switch": {
+      "load_shedding": {
+        "name": "Distacco carico {load_name}"
       }
     }
   },

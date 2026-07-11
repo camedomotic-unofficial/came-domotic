@@ -13,6 +13,7 @@ from aiocamedomotic.models import (
     AnalogSensor,
     AnalogSensorType,
     EnergyMeter,
+    LoadsCtrlMeter,
     ScenarioStatus,
     ThermoZone,
 )
@@ -245,15 +246,17 @@ async def async_setup_entry(
     analog_inputs = coordinator.data.analog_inputs
     scenarios = coordinator.data.scenarios
     energy_meters = coordinator.data.energy_meters
+    loadsctrl_meters = coordinator.data.loadsctrl_meters
     _LOGGER.debug(
         "Setting up %d thermo zone sensor(s), %d analog sensor(s), "
         "%d analog input(s), %d scenario status sensor(s), "
-        "and %d energy meter(s)",
+        "%d energy meter(s), and %d loads controller(s)",
         len(zones),
         len(analog_sensors),
         len(analog_inputs),
         len(scenarios),
         len(energy_meters),
+        len(loadsctrl_meters),
     )
     async_add_entities(
         [
@@ -300,6 +303,10 @@ async def async_setup_entry(
                 CameDomoticEnergyMeterDiagnosticSensor(coordinator, meter, description)
                 for meter in energy_meters.values()
                 for description in ENERGY_METER_DIAGNOSTIC_SENSORS
+            ),
+            *(
+                CameDomoticLoadsCtrlPowerSensor(coordinator, controller)
+                for controller in loadsctrl_meters.values()
             ),
         ]
     )
@@ -492,6 +499,55 @@ class CameDomoticEnergyMeterPowerSensor(CameDomoticDeviceEntity, SensorEntity):
         return {
             "meter_type": meter.meter_type.name.lower(),
             "produced": meter.produced,
+        }
+
+
+class CameDomoticLoadsCtrlPowerSensor(CameDomoticDeviceEntity, SensorEntity):
+    """Power sensor for a CAME Domotic load shedding controller.
+
+    Reports the current power measured by the controller's associated
+    energy meter. The overload threshold (max_power), hysteresis band,
+    and associated meter id are exposed as read-only attributes.
+    """
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_suggested_display_precision = 0
+    _attr_name = None
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        controller: LoadsCtrlMeter,
+    ) -> None:
+        """Initialize the loads controller power sensor."""
+        super().__init__(
+            coordinator,
+            entity_key=f"loadsctrl_{controller.id}_power",
+            device_name=controller.name,
+            device_id=f"loadsctrl_{controller.id}",
+        )
+        self._controller_id = controller.id
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current power reading."""
+        controller = self.coordinator.data.loadsctrl_meters.get(self._controller_id)
+        if controller is None:
+            return None
+        return controller.power
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the controller's read-only configuration."""
+        controller = self.coordinator.data.loadsctrl_meters.get(self._controller_id)
+        if controller is None:
+            return None
+        return {
+            "max_power": controller.max_power,
+            "hysteresis": controller.hysteresis,
+            "meter_id": controller.meter_id,
         }
 
 

@@ -217,6 +217,19 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             energy_meters: list = []
             if ServerFeature.ENERGY in features:
                 energy_meters = await self.api.async_get_energy_meters()
+
+            loadsctrl_meters: list = []
+            loadsctrl_relays: list = []
+            loadsctrl_relay_owner: dict[int, int] = {}
+            if ServerFeature.LOADSCTRL in features:
+                loadsctrl_meters = await self.api.async_get_loadsctrl_meters()
+                for controller in loadsctrl_meters:
+                    relays_of_controller = await self.api.async_get_loadsctrl_relays(
+                        controller
+                    )
+                    loadsctrl_relays.extend(relays_of_controller)
+                    for relay in relays_of_controller:
+                        loadsctrl_relay_owner[relay.id] = controller.id
         except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -269,7 +282,8 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
             "%d digital input(s), %d analog sensor(s), %d analog input(s), "
-            "%d relay(s), %d timer(s), %d energy meter(s), %d camera(s), "
+            "%d relay(s), %d timer(s), %d energy meter(s), "
+            "%d loads controller(s) with %d load(s), %d camera(s), "
             "%d map page(s), topology=%s",
             features,
             len(thermo_zones),
@@ -282,6 +296,8 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(relays),
             len(timers),
             len(energy_meters),
+            len(loadsctrl_meters),
+            len(loadsctrl_relays),
             len(cameras),
             len(maps_pages),
             f"{len(topology.floors)} floor(s)" if topology else "unavailable",
@@ -300,6 +316,9 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             cameras={c.id: c for c in cameras},
             maps={p.page_id: p for p in maps_pages},
             energy_meters={m.id: m for m in energy_meters},
+            loadsctrl_meters={c.id: c for c in loadsctrl_meters},
+            loadsctrl_relays={r.id: r for r in loadsctrl_relays},
+            loadsctrl_relay_owner=loadsctrl_relay_owner,
             topology=topology,
         )
 
@@ -663,5 +682,55 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             else:
                 _LOGGER.debug(
                     "Received update for unknown energy meter id=%s, ignoring",
+                    update.device_id,
+                )
+
+        # Merge loads controller updates (keyed by controller id; the server
+        # pushes a full snapshot after every accepted configuration write)
+        loadsctrl_meter_updates = update_list.get_typed_by_device_type(
+            DeviceType.LOADSCTRL_METER
+        )
+        if loadsctrl_meter_updates:
+            _LOGGER.debug(
+                "Merging incremental updates: %d loads controller update(s)",
+                len(loadsctrl_meter_updates),
+            )
+        for update in loadsctrl_meter_updates:
+            controller = self.data.loadsctrl_meters.get(update.device_id)
+            if controller is not None:
+                controller.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to loads controller '%s' (id=%s)",
+                    update.name,
+                    update.device_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown loads controller id=%s, ignoring",
+                    update.device_id,
+                )
+
+        # Merge load updates (keyed by relay.id, NOT act_id; the server pushes
+        # a full snapshot when a load is shed/reattached or its config changes)
+        loadsctrl_relay_updates = update_list.get_typed_by_device_type(
+            DeviceType.LOADSCTRL_RELAY
+        )
+        if loadsctrl_relay_updates:
+            _LOGGER.debug(
+                "Merging incremental updates: %d load update(s)",
+                len(loadsctrl_relay_updates),
+            )
+        for update in loadsctrl_relay_updates:
+            load = self.data.loadsctrl_relays.get(update.device_id)
+            if load is not None:
+                load.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to load '%s' (id=%s)",
+                    update.name,
+                    update.device_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown load id=%s, ignoring",
                     update.device_id,
                 )
