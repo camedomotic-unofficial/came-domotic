@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Compute next version
         id: version
@@ -123,3 +123,11 @@ jobs:
             --title "$tag" \
             --generate-notes \
             --latest
+
+      - name: Delete release branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Auto-delete on merge does not fire for PRs merged by GITHUB_TOKEN,
+          # so remove the head branch explicitly.
+          git push origin --delete "release/v${{ steps.version.outputs.next }}" || true
