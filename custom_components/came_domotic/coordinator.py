@@ -23,6 +23,7 @@ from .api import (
     CameDomoticApiClient,
     CameDomoticApiClientAuthenticationError,
     CameDomoticApiClientError,
+    CameDomoticApiClientTimeoutError,
 )
 from .const import (
     DEFAULT_LONG_POLL_TIMEOUT,
@@ -354,8 +355,10 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
 
         The loop handles errors as follows:
         - Auth errors: triggers reauth flow and exits the loop.
-        - Communication/server errors (including timeout): logs and retries
-          after RECONNECT_DELAY.
+        - Timeouts: expected on an idle plant (no updates within the
+          long-poll window); re-polls immediately without backoff.
+        - Communication/server errors: logs and retries after
+          RECONNECT_DELAY.
         - Cancellation: re-raises for clean shutdown.
 
         After processing each batch of updates, waits UPDATE_THROTTLE_DELAY
@@ -394,6 +397,12 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 )
                 self.config_entry.async_start_reauth(self.hass)
                 return
+            except CameDomoticApiClientTimeoutError:
+                # Idle plant: no updates within the long-poll window.
+                # Still a completed cseq call, so it counts toward recycling.
+                _LOGGER.debug("Long-poll timed out with no updates, re-polling")
+                self._long_poll_count += 1
+                continue
             except CameDomoticApiClientError as err:
                 _LOGGER.debug(
                     "Error in long-poll loop: %s. Retrying in %ds",

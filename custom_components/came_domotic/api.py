@@ -14,6 +14,7 @@ from aiocamedomotic.errors import (
     CameDomoticError,
     CameDomoticServerError,
     CameDomoticServerNotFoundError,
+    CameDomoticServerTimeoutError,
 )
 from aiocamedomotic.models import (
     AnalogIn,
@@ -60,6 +61,16 @@ class CameDomoticApiClientAuthenticationError(
     """Exception for authentication errors."""
 
 
+class CameDomoticApiClientTimeoutError(
+    CameDomoticApiClientCommunicationError,
+):
+    """Exception for request timeouts.
+
+    On an idle plant this is the normal outcome of a long-poll call
+    (no updates within the timeout window), not a server failure.
+    """
+
+
 def _translate_errors[T](
     func: Callable[..., Coroutine[Any, Any, T]],
 ) -> Callable[..., Coroutine[Any, Any, T]]:
@@ -74,6 +85,10 @@ def _translate_errors[T](
         except CameDomoticAuthError as err:
             raise CameDomoticApiClientAuthenticationError(
                 "Invalid credentials",
+            ) from err
+        except CameDomoticServerTimeoutError as err:
+            raise CameDomoticApiClientTimeoutError(
+                f"Request timed out: {err}",
             ) from err
         except CameDomoticServerError as err:
             raise CameDomoticApiClientCommunicationError(
@@ -552,8 +567,10 @@ class CameDomoticApiClient:
         """Long-poll the CAME server for device state changes.
 
         Blocks until the server reports one or more state changes or the
-        timeout expires. On timeout the server raises CameDomoticServerError
-        which is translated to CommunicationError by this wrapper.
+        timeout expires. On timeout the library raises
+        CameDomoticServerTimeoutError, translated to
+        CameDomoticApiClientTimeoutError by this wrapper: on an idle plant
+        this is the expected outcome, not a failure.
 
         Args:
             timeout: Maximum seconds to wait for updates from the server.

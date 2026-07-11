@@ -9,6 +9,7 @@ from aiocamedomotic.errors import (
     CameDomoticError,
     CameDomoticServerError,
     CameDomoticServerNotFoundError,
+    CameDomoticServerTimeoutError,
 )
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
@@ -18,6 +19,7 @@ from custom_components.came_domotic.api import (
     CameDomoticApiClientAuthenticationError,
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
+    CameDomoticApiClientTimeoutError,
 )
 
 _PATCH_ASYNC_CREATE = "custom_components.came_domotic.api.CameDomoticAPI.async_create"
@@ -393,6 +395,25 @@ async def test_async_get_updates_server_error(hass):
     with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
         await client.async_connect()
 
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_updates()
+
+
+async def test_async_get_updates_timeout_error(hass):
+    """Test CameDomoticServerTimeoutError raises TimeoutError subclass."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_updates.side_effect = CameDomoticServerTimeoutError("timeout")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientTimeoutError):
+        await client.async_get_updates()
+
+    # A timeout must still be catchable as a communication error, so the
+    # existing broad handlers (config flow, ping coordinator) keep working.
+    mock_api.async_get_updates.side_effect = CameDomoticServerTimeoutError("timeout")
     with pytest.raises(CameDomoticApiClientCommunicationError):
         await client.async_get_updates()
 
