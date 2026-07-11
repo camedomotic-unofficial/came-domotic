@@ -439,6 +439,70 @@ async def test_async_get_updates_not_initialized(hass):
         await client.async_get_updates()
 
 
+# --- async_get_energy_meters ---
+
+
+async def test_async_get_energy_meters_success(hass):
+    """Test successful energy meters fetch returns the meter list."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_meters = [MagicMock(), MagicMock()]
+    mock_api.async_get_energy_meters.return_value = mock_meters
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_energy_meters()
+    assert result == mock_meters
+
+
+async def test_async_get_energy_meters_auth_error(hass):
+    """Test CameDomoticAuthError raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_energy_meters.side_effect = CameDomoticAuthError("bad creds")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_energy_meters()
+
+
+async def test_async_get_energy_meters_server_error(hass):
+    """Test CameDomoticServerError raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_energy_meters.side_effect = CameDomoticServerError("server err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_energy_meters()
+
+
+async def test_async_get_energy_meters_generic_error(hass):
+    """Test CameDomoticError raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_energy_meters.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_get_energy_meters()
+
+
+async def test_async_get_energy_meters_not_initialized(hass):
+    """Test async_get_energy_meters raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_energy_meters()
+
+
 # --- async_dispose ---
 
 

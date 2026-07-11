@@ -6,7 +6,15 @@ from unittest.mock import MagicMock, patch
 
 from aiocamedomotic.models import AnalogSensorType
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import PERCENTAGE, UnitOfPressure, UnitOfTemperature
+from homeassistant.const import (
+    PERCENTAGE,
+    STATE_UNKNOWN,
+    EntityCategory,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfPressure,
+    UnitOfTemperature,
+)
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -20,6 +28,7 @@ from .conftest import (
     MOCK_THERMO_ZONES,
     _mock_analog_input,
     _mock_analog_sensor,
+    _mock_energy_meter,
     _mock_scenario,
     _mock_server_info,
     _mock_thermo_zone,
@@ -40,6 +49,7 @@ async def _setup_entry(
     mock_analog_sensors=None,
     mock_analog_inputs=None,
     mock_scenarios=None,
+    mock_energy_meters=None,
     ping_return=10.0,
 ):
     """Set up a config entry with the given mock device lists."""
@@ -51,6 +61,8 @@ async def _setup_entry(
         mock_analog_inputs = list(MOCK_ANALOG_INPUTS)
     if mock_scenarios is None:
         mock_scenarios = []
+    if mock_energy_meters is None:
+        mock_energy_meters = []
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -81,6 +93,10 @@ async def _setup_entry(
         ),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_energy_meters",
+            return_value=mock_energy_meters,
+        ),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -113,8 +129,8 @@ async def test_thermo_zone_sensors_created(hass, bypass_get_data):
         if e.config_entry_id == config_entry.entry_id and e.domain == "sensor"
     ]
     # 2 thermo zones + 1 latency + 2 analog sensors + 2 analog inputs
-    # + 2 scenario status = 9
-    assert len(entries) == 9
+    # + 2 scenario status + 6 energy meter (2 meters x 3 sensors) = 15
+    assert len(entries) == 15
 
 
 async def test_thermo_zone_sensor_state(hass, bypass_get_data):
@@ -172,6 +188,12 @@ async def test_thermo_zone_sensor_unique_id(hass, bypass_get_data):
         "test_analog_input_801_analog_input_humidity",
         "test_scenario_status_10",
         "test_scenario_status_20",
+        "test_energy_meter_1_power",
+        "test_energy_meter_1_energy_last_24h_avg",
+        "test_energy_meter_1_energy_last_month_avg",
+        "test_energy_meter_2_power",
+        "test_energy_meter_2_energy_last_24h_avg",
+        "test_energy_meter_2_energy_last_month_avg",
     }
 
 
@@ -719,3 +741,116 @@ async def test_no_scenario_status_sensors(hass):
         and "scenario_status" in e.unique_id
     ]
     assert len(entries) == 0
+
+
+# --- Energy meter sensors ---
+
+
+async def test_energy_meter_power_sensor_state(hass, bypass_get_data):
+    """Test power sensor state and attributes for energy meters."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.main_line")
+    assert state is not None
+    assert state.state == "1500"
+    assert state.attributes["device_class"] == SensorDeviceClass.POWER
+    assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
+    assert state.attributes["unit_of_measurement"] == UnitOfPower.WATT
+    assert state.attributes["meter_type"] == "power"
+    assert state.attributes["produced"] == 0
+
+    solar = hass.states.get("sensor.solar_line")
+    assert solar is not None
+    assert solar.state == "250"
+    assert solar.attributes["produced"] == 1
+
+
+async def test_energy_meter_diagnostic_sensors(hass, bypass_get_data):
+    """Test the rolling average diagnostic sensors for energy meters."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    last_24h = hass.states.get("sensor.main_line_energy_last_24h_avg")
+    assert last_24h is not None
+    assert last_24h.state == "350"
+    assert last_24h.attributes["unit_of_measurement"] == UnitOfEnergy.WATT_HOUR
+    assert last_24h.attributes["state_class"] == SensorStateClass.MEASUREMENT
+    assert "device_class" not in last_24h.attributes
+
+    last_month = hass.states.get("sensor.main_line_energy_last_month_avg")
+    assert last_month is not None
+    assert last_month.state == "420"
+
+    registry = er.async_get(hass)
+    entry = registry.async_get("sensor.main_line_energy_last_24h_avg")
+    assert entry is not None
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+
+async def test_energy_meter_unknown_units_passed_through(hass):
+    """Test that unrecognized meter units are passed through verbatim."""
+    config_entry = await _setup_entry(
+        hass,
+        mock_zones=[],
+        mock_analog_sensors=[],
+        mock_analog_inputs=[],
+        mock_energy_meters=[
+            _mock_energy_meter(3, "Weird Meter", unit="kW", energy_unit="kWh"),
+        ],
+    )
+    assert config_entry is not None
+
+    power = hass.states.get("sensor.weird_meter")
+    assert power is not None
+    assert power.attributes["unit_of_measurement"] == "kW"
+
+    avg = hass.states.get("sensor.weird_meter_energy_last_24h_avg")
+    assert avg is not None
+    assert avg.attributes["unit_of_measurement"] == "kWh"
+
+
+async def test_energy_meter_sensors_meter_not_found(hass, bypass_get_data):
+    """Test sensors return unknown when the meter disappears from data."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.data.energy_meters.clear()
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    power = hass.states.get("sensor.main_line")
+    assert power.state == STATE_UNKNOWN
+    assert "meter_type" not in power.attributes
+
+    avg = hass.states.get("sensor.main_line_energy_last_24h_avg")
+    assert avg.state == STATE_UNKNOWN
+
+
+async def test_energy_meter_push_update_refreshes_state(hass, bypass_get_data):
+    """Test that a pushed data update is reflected in the sensor states."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    meter = coordinator.data.energy_meters[1]
+    meter.instant_power = 1800
+    meter.last_24h_avg = 375
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.main_line").state == "1800"
+    assert hass.states.get("sensor.main_line_energy_last_24h_avg").state == "375"

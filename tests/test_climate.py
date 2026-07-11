@@ -75,6 +75,7 @@ async def _setup_entry(hass, mock_zones=None):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -168,6 +169,7 @@ async def test_suggested_area_none_when_topology_missing(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             side_effect=CameDomoticApiClientError("unavailable"),

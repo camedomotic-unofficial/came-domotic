@@ -9,6 +9,7 @@ from aiocamedomotic.auth import Auth
 from aiocamedomotic.models import (
     AnalogIn,
     DigitalInput,
+    EnergyMeter,
     Light,
     Relay,
     ThermoZone,
@@ -126,6 +127,12 @@ async def test_coordinator_update_success(hass, bypass_get_data):
     assert 400 in digital_inputs
     assert 401 in digital_inputs
 
+    energy_meters = coordinator.data.energy_meters
+    assert len(energy_meters) == 2
+    assert 1 in energy_meters
+    assert energy_meters[1].instant_power == 1500
+    assert 2 in energy_meters
+
 
 async def test_coordinator_skips_unsupported_features(hass):
     """Test coordinator skips fetch calls for features not in server_info."""
@@ -156,6 +163,7 @@ async def test_coordinator_skips_unsupported_features(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs") as mock_analog_inputs,
         patch(f"{_API_CLIENT}.async_get_relays") as mock_relays,
         patch(f"{_API_CLIENT}.async_get_timers") as mock_timers,
+        patch(f"{_API_CLIENT}.async_get_energy_meters") as mock_energy,
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -182,6 +190,7 @@ async def test_coordinator_skips_unsupported_features(hass):
     mock_analog_inputs.assert_not_awaited()
     mock_relays.assert_not_awaited()
     mock_timers.assert_not_awaited()
+    mock_energy.assert_not_awaited()
 
     # Data should have empty dicts for unsupported features
     assert len(coordinator.data.scenarios) == 0
@@ -191,6 +200,7 @@ async def test_coordinator_skips_unsupported_features(hass):
     assert len(coordinator.data.analog_inputs) == 0
     assert len(coordinator.data.relays) == 0
     assert len(coordinator.data.timers) == 0
+    assert len(coordinator.data.energy_meters) == 0
 
 
 async def test_coordinator_skips_all_features_when_none_supported(hass):
@@ -198,8 +208,8 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
-    # Server with no recognized features (e.g., energy-only server)
-    mock_info = _mock_server_info(features=["energy"])
+    # Server with no recognized features
+    mock_info = _mock_server_info(features=["unknown_future_feature"])
 
     with (
         patch(f"{_API_CLIENT}.async_connect"),
@@ -216,6 +226,7 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs") as mock_analog_inputs,
         patch(f"{_API_CLIENT}.async_get_relays") as mock_relays,
         patch(f"{_API_CLIENT}.async_get_timers") as mock_timers,
+        patch(f"{_API_CLIENT}.async_get_energy_meters") as mock_energy,
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -239,6 +250,7 @@ async def test_coordinator_skips_all_features_when_none_supported(hass):
     mock_analog_inputs.assert_not_awaited()
     mock_relays.assert_not_awaited()
     mock_timers.assert_not_awaited()
+    mock_energy.assert_not_awaited()
 
     # All device collections should be empty
     assert len(coordinator.data.thermo_zones) == 0
@@ -448,6 +460,7 @@ async def test_start_and_stop_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -493,6 +506,7 @@ async def test_start_long_poll_already_running(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -558,6 +572,7 @@ async def test_long_poll_loop_incremental_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -945,6 +960,7 @@ async def test_stop_long_poll_cancels_running_task(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -996,6 +1012,7 @@ async def test_merge_updates_known_zone(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1050,6 +1067,7 @@ async def test_merge_updates_unknown_zone_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1099,6 +1117,7 @@ async def test_merge_updates_preserves_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1163,6 +1182,7 @@ async def test_merge_updates_known_scenario(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1223,6 +1243,7 @@ async def test_merge_updates_unknown_scenario_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1568,6 +1589,7 @@ async def test_merge_updates_known_opening(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1619,6 +1641,7 @@ async def test_merge_updates_unknown_opening_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1665,6 +1688,7 @@ async def test_merge_updates_preserves_opening_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1752,6 +1776,7 @@ async def test_merge_updates_known_light(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1803,6 +1828,7 @@ async def test_merge_updates_unknown_light_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1849,6 +1875,7 @@ async def test_merge_updates_preserves_light_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1934,6 +1961,7 @@ async def test_merge_updates_known_digital_input(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -1984,6 +2012,7 @@ async def test_merge_updates_unknown_digital_input_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2030,6 +2059,7 @@ async def test_merge_updates_preserves_digital_input_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2142,6 +2172,7 @@ async def test_attach_ping_coordinator_disconnect_stops_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2193,6 +2224,7 @@ async def test_attach_ping_coordinator_reconnect_resumes_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2251,6 +2283,7 @@ async def test_reconnect_refresh_auth_error_triggers_reauth(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2311,6 +2344,7 @@ async def test_reconnect_refresh_comm_error_resumes_long_poll(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2373,6 +2407,7 @@ async def test_reconnect_skips_long_poll_if_server_went_unavailable(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2541,6 +2576,7 @@ async def test_merge_updates_known_relay(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2592,6 +2628,7 @@ async def test_merge_updates_unknown_relay_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2638,6 +2675,7 @@ async def test_merge_updates_preserves_relay_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=real_rls),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2707,6 +2745,7 @@ async def test_merge_updates_known_analog_input(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2759,6 +2798,7 @@ async def test_merge_updates_unknown_analog_input_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2809,6 +2849,7 @@ async def test_merge_updates_preserves_analog_input_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=real_ais),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2885,6 +2926,7 @@ async def test_merge_updates_known_timer(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=real_tms),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2936,6 +2978,7 @@ async def test_merge_updates_unknown_timer_ignored(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=real_tms),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -2987,6 +3030,7 @@ async def test_merge_updates_preserves_timer_fields_not_in_update(hass):
         patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
         patch(f"{_API_CLIENT}.async_get_timers", return_value=real_tms),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -3014,3 +3058,130 @@ async def test_merge_updates_preserves_timer_fields_not_in_update(hass):
     assert timer.enabled is True  # updated
     assert timer.name == "Weekend Timer"  # preserved
     assert timer.days == 0b1100000  # preserved
+
+
+# --- _merge_updates: energy meters ---
+
+
+def _real_energy_meters():
+    """Return a list of real EnergyMeter objects for testing."""
+    return [
+        EnergyMeter(
+            raw_data={
+                "id": 1,
+                "name": "Main Line",
+                "meter_type": 1,
+                "instant_power": 1500,
+                "unit": "W",
+                "energy_unit": "Wh",
+                "last_24h_avg": 350,
+                "last_month_avg": 420,
+                "produced": 0,
+            }
+        ),
+        EnergyMeter(
+            raw_data={
+                "id": 2,
+                "name": "Solar Line",
+                "meter_type": 1,
+                "instant_power": 250,
+                "unit": "W",
+                "energy_unit": "Wh",
+                "last_24h_avg": 100,
+                "last_month_avg": 90,
+                "produced": 1,
+            }
+        ),
+    ]
+
+
+async def _setup_entry_with_energy_meters(hass, config_entry):
+    """Set up a config entry with only real energy meters."""
+    with (
+        patch(f"{_API_CLIENT}.async_connect"),
+        patch(
+            f"{_API_CLIENT}.async_get_server_info",
+            return_value=_mock_server_info(),
+        ),
+        patch(f"{_API_CLIENT}.async_get_thermo_zones", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_scenarios", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_openings", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_lights", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_digital_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_sensors", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_analog_inputs", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_relays", return_value=[]),
+        patch(f"{_API_CLIENT}.async_get_timers", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_energy_meters",
+            return_value=_real_energy_meters(),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_topology",
+            return_value=_mock_topology(),
+        ),
+        patch(f"{_API_CLIENT}.async_dispose"),
+        patch.object(CameDomoticDataUpdateCoordinator, "start_long_poll"),
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+
+async def test_merge_updates_known_energy_meter(hass):
+    """Test merging an update for a known energy meter updates its raw_data."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await _setup_entry_with_energy_meters(hass, config_entry)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    # Full-snapshot update for meter 1 with new power and refreshed averages
+    mock_update = MagicMock()
+    mock_update.device_id = 1
+    mock_update.name = "Main Line"
+    mock_update.raw_data = {
+        "id": 1,
+        "name": "Main Line",
+        "instant_power": 2000,
+        "last_24h_avg": 400,
+        "last_month_avg": 430,
+    }
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    coordinator._merge_updates(mock_update_list)
+
+    meter = coordinator.data.energy_meters[1]
+    assert meter.instant_power == 2000
+    assert meter.last_24h_avg == 400
+    assert meter.last_month_avg == 430
+    # Fields not present in the update should be preserved
+    assert meter.unit == "W"
+    assert meter.name == "Main Line"
+
+
+async def test_merge_updates_unknown_energy_meter_ignored(hass):
+    """Test that updates for unknown energy meters are silently ignored."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await _setup_entry_with_energy_meters(hass, config_entry)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    mock_update = MagicMock()
+    mock_update.device_id = 999
+    mock_update.name = "Unknown Meter"
+    mock_update.raw_data = {"id": 999, "instant_power": 1}
+
+    mock_update_list = MagicMock()
+    mock_update_list.get_typed_by_device_type.return_value = [mock_update]
+
+    # Should not raise
+    coordinator._merge_updates(mock_update_list)
+
+    # Known meters remain unchanged
+    assert coordinator.data.energy_meters[1].instant_power == 1500
+    assert len(coordinator.data.energy_meters) == 2

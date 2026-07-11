@@ -21,6 +21,7 @@ from aiocamedomotic.models import (
     AnalogSensor,
     Camera,
     DigitalInput,
+    EnergyMeter,
     Light,
     LightStatus,
     MapPage,
@@ -236,6 +237,15 @@ class CameDomoticApiClient:
         relays = await self._api.async_get_relays()
         _LOGGER.debug("Fetched %d relay(s)", len(relays))
         return relays
+
+    @_translate_errors
+    async def async_get_energy_meters(self) -> list[EnergyMeter]:
+        """Fetch energy meters from the CAME Domotic server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching energy meters from %s", self._host)
+        meters = await self._api.async_get_energy_meters()
+        _LOGGER.debug("Fetched %d energy meter(s)", len(meters))
+        return meters
 
     @_translate_errors
     async def async_get_cameras(self) -> list[Camera]:
