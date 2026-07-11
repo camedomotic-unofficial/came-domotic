@@ -70,6 +70,12 @@
       }
     },
     "sensor": {
+      "energy_last_24h_avg": {
+        "name": "Energy last 24h (avg)"
+      },
+      "energy_last_month_avg": {
+        "name": "Energy last month (avg)"
+      },
       "ping_latency": {
         "name": "Ping latency"
       }

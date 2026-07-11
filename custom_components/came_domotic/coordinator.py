@@ -213,6 +213,10 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             timers: list = []
             if ServerFeature.TIMERS in features:
                 timers = await self.api.async_get_timers()
+
+            energy_meters: list = []
+            if ServerFeature.ENERGY in features:
+                energy_meters = await self.api.async_get_energy_meters()
         except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -265,7 +269,8 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             "Full data fetch complete (features=%s): %d thermo zone(s), "
             "%d scenario(s), %d opening(s), %d light(s), "
             "%d digital input(s), %d analog sensor(s), %d analog input(s), "
-            "%d relay(s), %d timer(s), %d camera(s), %d map page(s), topology=%s",
+            "%d relay(s), %d timer(s), %d energy meter(s), %d camera(s), "
+            "%d map page(s), topology=%s",
             features,
             len(thermo_zones),
             len(scenarios),
@@ -276,6 +281,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             len(analog_inputs),
             len(relays),
             len(timers),
+            len(energy_meters),
             len(cameras),
             len(maps_pages),
             f"{len(topology.floors)} floor(s)" if topology else "unavailable",
@@ -293,6 +299,7 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             timers={t.id: t for t in timers},
             cameras={c.id: c for c in cameras},
             maps={p.page_id: p for p in maps_pages},
+            energy_meters={m.id: m for m in energy_meters},
             topology=topology,
         )
 
@@ -632,4 +639,29 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                 _LOGGER.debug(
                     "Received update for unknown timer id=%d, ignoring",
                     update.id,
+                )
+
+        # Merge energy meter updates (keyed by meter id; payload is a full
+        # snapshot including refreshed 24h/month averages)
+        energy_meter_updates = update_list.get_typed_by_device_type(
+            DeviceType.ENERGY_SENSOR
+        )
+        if energy_meter_updates:
+            _LOGGER.debug(
+                "Merging incremental updates: %d energy meter update(s)",
+                len(energy_meter_updates),
+            )
+        for update in energy_meter_updates:
+            meter = self.data.energy_meters.get(update.device_id)
+            if meter is not None:
+                meter.raw_data.update(update.raw_data)
+                _LOGGER.debug(
+                    "Applied update to energy meter '%s' (id=%s)",
+                    update.name,
+                    update.device_id,
+                )
+            else:
+                _LOGGER.debug(
+                    "Received update for unknown energy meter id=%s, ignoring",
+                    update.device_id,
                 )

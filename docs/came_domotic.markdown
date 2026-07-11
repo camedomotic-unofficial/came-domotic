@@ -48,7 +48,7 @@ The integration works with CAME Domotic servers (ETI/Domo system). The following
 - **Scenes** - Predefined scenarios that can be activated
 - **Switches** - Relays (on/off control) and timers (enable/disable with scheduling)
 - **Binary sensors** - Digital inputs and server connectivity status
-- **Sensors** - Temperature, humidity, pressure sensors and scenario status
+- **Sensors** - Temperature, humidity, pressure sensors, energy meters, and scenario status
 - **Cameras** - TVCC/IP cameras with RTSP streaming and JPEG snapshots
 - **Images** - Floor plan map pages from the CAME server
 - **Select** - Plant-level thermoregulation season (Winter/Summer/Off)
@@ -157,13 +157,25 @@ Timer switches also support the **set_timer_timetable** entity service for confi
 
 ### Sensors
 
-| Sensor type      | Device class                       | Unit           | Description                                                          |
-| ---------------- | ---------------------------------- | -------------- | -------------------------------------------------------------------- |
-| Zone temperature | Temperature                        | &deg;C         | Current temperature from thermoregulation zones                      |
-| Analog sensor    | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Standalone analog sensors                                            |
-| Analog input     | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Analog input probes                                                  |
-| Scenario status  | -                                  | -              | Reports Off, Triggered, or Active                                    |
-| Ping latency     | Duration                           | ms             | Round-trip time to the CAME server (diagnostic, disabled by default) |
+| Sensor type                  | Device class                       | Unit           | Description                                                            |
+| ---------------------------- | ---------------------------------- | -------------- | ---------------------------------------------------------------------- |
+| Zone temperature             | Temperature                        | &deg;C         | Current temperature from thermoregulation zones                        |
+| Analog sensor                | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Standalone analog sensors                                              |
+| Analog input                 | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Analog input probes                                                    |
+| Energy meter power           | Power                              | W              | Instantaneous power measured by an energy meter (updated in real time) |
+| Energy last 24h / last month | -                                  | Wh             | Rolling average energy values reported by the server (diagnostic)      |
+| Scenario status              | -                                  | -              | Reports Off, Triggered, or Active                                      |
+| Ping latency                 | Duration                           | ms             | Round-trip time to the CAME server (diagnostic, disabled by default)   |
+
+#### Energy meters
+
+Each CAME energy meter appears as its own device with a power sensor showing the instantaneous power on the measured line. The CAME server pushes a new reading whenever the measured power changes, so the sensor updates in real time. The raw `meter_type` and `produced` fields reported by the server are available as state attributes.
+
+Two additional diagnostic sensors expose the rolling average energy values (`last 24h` and `last month`) exactly as reported by the server.
+
+{% note %}
+**Using energy meters with the Home Assistant Energy dashboard**: the Energy dashboard requires a _cumulative_ energy sensor, but CAME servers only report instantaneous power and rolling averages — the integration does not fabricate a counter. To feed the Energy dashboard, create a [Riemann sum integral helper](https://www.home-assistant.io/integrations/integration/) on top of the meter's power sensor (**Settings** > **Devices & services** > **Helpers** > **Create helper** > **Integral sensor**, method _left_), which produces the cumulative kWh sensor the dashboard expects.
+{% endnote %}
 
 ### Cameras
 

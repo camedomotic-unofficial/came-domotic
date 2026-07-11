@@ -9,6 +9,7 @@ from aiocamedomotic.models import (
     AnalogSensor,
     Camera,
     DigitalInput,
+    EnergyMeter,
     Light,
     MapPage,
     Opening,
@@ -50,4 +51,6 @@ class CameDomoticServerData:
     timers: dict[int, Timer] = field(default_factory=dict)
     cameras: dict[int, Camera] = field(default_factory=dict)
     maps: dict[int, MapPage] = field(default_factory=dict)
+    # Energy meters have no act_id: keyed by meter.id (also the push-update key)
+    energy_meters: dict[int, EnergyMeter] = field(default_factory=dict)
     topology: PlantTopology | None = None

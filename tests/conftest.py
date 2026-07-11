@@ -8,6 +8,7 @@ from aiocamedomotic.models import (
     AnalogSensorType,
     DigitalInputStatus,
     DigitalInputType,
+    EnergyMeterType,
     LightStatus,
     LightType,
     OpeningStatus,
@@ -344,6 +345,51 @@ MOCK_ANALOG_INPUTS = [
 ]
 
 
+def _mock_energy_meter(
+    meter_id,
+    name,
+    instant_power=1500,
+    unit="W",
+    energy_unit="Wh",
+    last_24h_avg=350,
+    last_month_avg=420,
+    produced=0,
+    meter_type=EnergyMeterType.POWER,
+):
+    """Create a mock EnergyMeter object with all required attributes.
+
+    Energy meters have no act_id: they are keyed by id. Includes a
+    raw_data dict so that coordinator merge logic works correctly in tests.
+    """
+    meter = MagicMock()
+    meter.id = meter_id
+    meter.name = name
+    meter.instant_power = instant_power
+    meter.unit = unit
+    meter.energy_unit = energy_unit
+    meter.last_24h_avg = last_24h_avg
+    meter.last_month_avg = last_month_avg
+    meter.produced = produced
+    meter.meter_type = meter_type
+    meter.raw_data = {
+        "id": meter_id,
+        "name": name,
+        "instant_power": instant_power,
+        "unit": unit,
+        "energy_unit": energy_unit,
+        "last_24h_avg": last_24h_avg,
+        "last_month_avg": last_month_avg,
+        "produced": produced,
+    }
+    return meter
+
+
+MOCK_ENERGY_METERS = [
+    _mock_energy_meter(1, "Main Line", instant_power=1500),
+    _mock_energy_meter(2, "Solar Line", instant_power=250, produced=1),
+]
+
+
 def _mock_relay(
     act_id,
     name,
@@ -590,6 +636,7 @@ def _mock_server_info(
             "analogin",
             "relays",
             "timers",
+            "energy",
         ]
     info = MagicMock()
     info.keycode = MOCK_KEYCODE
@@ -616,6 +663,7 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     timers={t.id: t for t in MOCK_TIMERS},
     cameras={c.id: c for c in MOCK_CAMERAS},
     maps={p.page_id: p for p in MOCK_MAP_PAGES},
+    energy_meters={m.id: m for m in MOCK_ENERGY_METERS},
     topology=MOCK_TOPOLOGY,
 )
 
@@ -670,6 +718,10 @@ def bypass_get_data_fixture():
         patch(
             f"{_API_CLIENT}.async_get_timers",
             return_value=list(MOCK_TIMERS),
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_energy_meters",
+            return_value=list(MOCK_ENERGY_METERS),
         ),
         patch(
             f"{_API_CLIENT}.async_get_cameras",

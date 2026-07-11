@@ -12,6 +12,7 @@ from aiocamedomotic.models import (
     AnalogIn,
     AnalogSensor,
     AnalogSensorType,
+    EnergyMeter,
     ScenarioStatus,
     ThermoZone,
 )
@@ -24,6 +25,8 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfEnergy,
+    UnitOfPower,
     UnitOfPressure,
     UnitOfTemperature,
     UnitOfTime,
@@ -188,6 +191,47 @@ def _get_analog_input_description(
     )
 
 
+@dataclass(frozen=True, kw_only=True)
+class CameDomoticEnergyMeterDescription(SensorEntityDescription):
+    """Describes a CAME Domotic energy meter sensor entity."""
+
+    value_fn: Callable[[EnergyMeter], int | None]
+
+
+ENERGY_METER_DIAGNOSTIC_SENSORS: tuple[CameDomoticEnergyMeterDescription, ...] = (
+    # No device_class: HA forbids ENERGY with MEASUREMENT, and these are
+    # rolling averages reported by the server, not cumulative counters.
+    CameDomoticEnergyMeterDescription(
+        key="energy_last_24h_avg",
+        translation_key="energy_last_24h_avg",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda meter: meter.last_24h_avg,
+    ),
+    CameDomoticEnergyMeterDescription(
+        key="energy_last_month_avg",
+        translation_key="energy_last_month_avg",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda meter: meter.last_month_avg,
+    ),
+)
+
+
+def _power_unit(unit: str | None) -> str | None:
+    """Map the meter-reported power unit to an HA unit, passing unknowns through."""
+    if unit == "W":
+        return UnitOfPower.WATT
+    return unit or None
+
+
+def _energy_unit(unit: str | None) -> str | None:
+    """Map the meter-reported energy unit to an HA unit, passing unknowns through."""
+    if unit == "Wh":
+        return UnitOfEnergy.WATT_HOUR
+    return unit or None
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: CameDomoticConfigEntry,
@@ -200,13 +244,16 @@ async def async_setup_entry(
     analog_sensors = coordinator.data.analog_sensors
     analog_inputs = coordinator.data.analog_inputs
     scenarios = coordinator.data.scenarios
+    energy_meters = coordinator.data.energy_meters
     _LOGGER.debug(
         "Setting up %d thermo zone sensor(s), %d analog sensor(s), "
-        "%d analog input(s), and %d scenario status sensor(s)",
+        "%d analog input(s), %d scenario status sensor(s), "
+        "and %d energy meter(s)",
         len(zones),
         len(analog_sensors),
         len(analog_inputs),
         len(scenarios),
+        len(energy_meters),
     )
     async_add_entities(
         [
@@ -244,6 +291,15 @@ async def async_setup_entry(
             *(
                 CameDomoticScenarioStatusSensor(coordinator, scenario_id, scenario.name)
                 for scenario_id, scenario in scenarios.items()
+            ),
+            *(
+                CameDomoticEnergyMeterPowerSensor(coordinator, meter)
+                for meter in energy_meters.values()
+            ),
+            *(
+                CameDomoticEnergyMeterDiagnosticSensor(coordinator, meter, description)
+                for meter in energy_meters.values()
+                for description in ENERGY_METER_DIAGNOSTIC_SENSORS
             ),
         ]
     )
@@ -389,6 +445,89 @@ class CameDomoticAnalogInputEntity(CameDomoticDeviceEntity, SensorEntity):
         if analog_input is None:
             return None
         return self.entity_description.value_fn(analog_input)
+
+
+class CameDomoticEnergyMeterPowerSensor(CameDomoticDeviceEntity, SensorEntity):
+    """Power sensor for a CAME Domotic energy meter.
+
+    Energy meters are plant-level devices (no floor/room placement) that
+    report instantaneous power; the server pushes an update whenever the
+    measured power changes.
+    """
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 0
+    _attr_name = None
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        meter: EnergyMeter,
+    ) -> None:
+        """Initialize the energy meter power sensor."""
+        super().__init__(
+            coordinator,
+            entity_key=f"energy_meter_{meter.id}_power",
+            device_name=meter.name,
+            device_id=f"energy_meter_{meter.id}",
+        )
+        self._meter_id = meter.id
+        self._attr_native_unit_of_measurement = _power_unit(meter.unit)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the current instantaneous power."""
+        meter = self.coordinator.data.energy_meters.get(self._meter_id)
+        if meter is None:
+            return None
+        return meter.instant_power
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return raw meter fields useful for debugging."""
+        meter = self.coordinator.data.energy_meters.get(self._meter_id)
+        if meter is None:
+            return None
+        return {
+            "meter_type": meter.meter_type.name.lower(),
+            "produced": meter.produced,
+        }
+
+
+class CameDomoticEnergyMeterDiagnosticSensor(CameDomoticDeviceEntity, SensorEntity):
+    """Diagnostic sensor for an energy meter's rolling average values.
+
+    Exposes the raw last_24h_avg / last_month_avg fields as reported by
+    the server (refreshed with every meter push update).
+    """
+
+    entity_description: CameDomoticEnergyMeterDescription
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        meter: EnergyMeter,
+        description: CameDomoticEnergyMeterDescription,
+    ) -> None:
+        """Initialize the energy meter diagnostic sensor."""
+        super().__init__(
+            coordinator,
+            entity_key=f"energy_meter_{meter.id}_{description.key}",
+            device_name=meter.name,
+            device_id=f"energy_meter_{meter.id}",
+        )
+        self.entity_description = description
+        self._meter_id = meter.id
+        self._attr_native_unit_of_measurement = _energy_unit(meter.energy_unit)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the rolling average value."""
+        meter = self.coordinator.data.energy_meters.get(self._meter_id)
+        if meter is None:
+            return None
+        return self.entity_description.value_fn(meter)
 
 
 _SCENARIO_STATUS_VALUES = [s.name for s in ScenarioStatus]

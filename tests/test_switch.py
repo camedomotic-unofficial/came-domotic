@@ -64,6 +64,7 @@ async def _setup_entry(hass, mock_relays, mock_timers=None):
             f"{_API_CLIENT}.async_get_timers",
             return_value=mock_timers,
         ),
+        patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
