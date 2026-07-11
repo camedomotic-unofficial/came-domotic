@@ -23,6 +23,7 @@ from custom_components.came_domotic.api import (
     CameDomoticApiClientAuthenticationError,
     CameDomoticApiClientCommunicationError,
     CameDomoticApiClientError,
+    CameDomoticApiClientTimeoutError,
 )
 from custom_components.came_domotic.const import (
     DOMAIN,
@@ -728,6 +729,71 @@ async def test_long_poll_loop_generic_error_retries(hass, bypass_get_data):
 
     mock_sleep.assert_any_call(5)
     assert call_count == 2
+
+
+async def test_long_poll_loop_timeout_repolls_without_backoff(hass, bypass_get_data):
+    """Test that a long-poll timeout re-polls immediately, not as a failure."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    count_before = coordinator._long_poll_count
+
+    call_count = 0
+
+    async def _fake_get_updates(timeout=120):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise CameDomoticApiClientTimeoutError("idle plant")
+        raise asyncio.CancelledError
+
+    with (
+        patch.object(
+            coordinator.api, "async_get_updates", side_effect=_fake_get_updates
+        ),
+        patch("custom_components.came_domotic.coordinator.asyncio.sleep") as mock_sleep,
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    # Timeout must re-poll immediately: no RECONNECT_DELAY, no throttle sleep
+    mock_sleep.assert_not_called()
+    assert call_count == 2
+    # A timeout is a completed cseq call: it counts toward session recycling
+    assert coordinator._long_poll_count == count_before + 1
+    # And it must not affect availability (ping coordinator owns that)
+    assert coordinator.server_available is True
+
+
+async def test_long_poll_loop_timeouts_trigger_session_recycle(hass, bypass_get_data):
+    """Test that timeouts alone eventually trigger session recycling."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator._long_poll_count = SESSION_RECYCLE_THRESHOLD - 1
+
+    mock_recycle = AsyncMock(side_effect=asyncio.CancelledError)
+    with (
+        patch.object(
+            coordinator.api,
+            "async_get_updates",
+            side_effect=CameDomoticApiClientTimeoutError("idle plant"),
+        ),
+        patch.object(coordinator, "_async_recycle_session", mock_recycle),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await coordinator._async_long_poll_loop()
+
+    # The timeout pushed the count to the threshold, triggering the recycle
+    mock_recycle.assert_awaited_once()
 
 
 async def test_long_poll_loop_throttle_between_updates(hass, bypass_get_data):
