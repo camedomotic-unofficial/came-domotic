@@ -12,18 +12,18 @@ Built on top of the [aiocamedomotic](https://github.com/camedomotic-unofficial/a
 
 ## Supported features
 
-| Platform          | Description                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| **Light**         | On/off switches, dimmers, and RGB lights                                           |
-| **Cover**         | Shutters and motorized openings with tilt control                                  |
-| **Climate**       | Thermoregulation zones (heating, cooling, fan speed)                               |
-| **Scene**         | Predefined scenarios                                                               |
-| **Switch**        | Relays and timers with timetable scheduling                                        |
-| **Binary sensor** | Digital inputs, server connectivity                                                |
-| **Sensor**        | Temperature, humidity, pressure, energy meter power, scenario status, ping latency |
-| **Camera**        | TVCC/IP cameras with RTSP streaming and JPEG snapshots                             |
-| **Image**         | Floor plan map pages                                                               |
-| **Select**        | Plant-level thermoregulation season (Winter/Summer/Off)                            |
+| Platform          | Description                                                                      |
+| ----------------- | -------------------------------------------------------------------------------- |
+| **Light**         | On/off switches, dimmers, and RGB lights                                         |
+| **Cover**         | Shutters and motorized openings with tilt control                                |
+| **Climate**       | Thermoregulation zones (heating, cooling, fan speed)                             |
+| **Scene**         | Predefined scenarios                                                             |
+| **Switch**        | Relays, timers with timetable scheduling, per-load shedding control              |
+| **Binary sensor** | Digital inputs, load shedding (detached) state, server connectivity              |
+| **Sensor**        | Temperature, humidity, pressure, energy and load shedding power, scenario status |
+| **Camera**        | TVCC/IP cameras with RTSP streaming and JPEG snapshots                           |
+| **Image**         | Floor plan map pages                                                             |
+| **Select**        | Plant-level thermoregulation season (Winter/Summer/Off)                          |
 
 The integration automatically discovers which device types are available based on your server's configuration. It uses a push-based update mechanism (long-polling) for near-instant state updates.
 

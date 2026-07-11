@@ -55,6 +55,9 @@
   },
   "entity": {
     "binary_sensor": {
+      "load_detached": {
+        "name": "{load_name} detached"
+      },
       "server_connectivity": {
         "name": "Connectivity"
       }
@@ -78,6 +81,11 @@
       },
       "ping_latency": {
         "name": "Ping latency"
+      }
+    },
+    "switch": {
+      "load_shedding": {
+        "name": "{load_name} load shedding"
       }
     }
   },

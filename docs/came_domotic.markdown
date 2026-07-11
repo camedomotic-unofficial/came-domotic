@@ -46,9 +46,9 @@ The integration works with CAME Domotic servers (ETI/Domo system). The following
 - **Covers** - Shutters and other motorized openings with tilt control
 - **Climate** - Thermoregulation zones with heating/cooling and fan speed control
 - **Scenes** - Predefined scenarios that can be activated
-- **Switches** - Relays (on/off control) and timers (enable/disable with scheduling)
-- **Binary sensors** - Digital inputs and server connectivity status
-- **Sensors** - Temperature, humidity, pressure sensors, energy meters, and scenario status
+- **Switches** - Relays (on/off control), timers (enable/disable with scheduling), and per-load shedding participation
+- **Binary sensors** - Digital inputs, load shedding (detached) state, and server connectivity status
+- **Sensors** - Temperature, humidity, pressure sensors, energy meters, load shedding controllers, and scenario status
 - **Cameras** - TVCC/IP cameras with RTSP streaming and JPEG snapshots
 - **Images** - Floor plan map pages from the CAME server
 - **Select** - Plant-level thermoregulation season (Winter/Summer/Off)
@@ -143,29 +143,36 @@ CAME scenarios are exposed as scene entities. Activating a scene triggers the co
 
 ### Switches
 
-Two types of switches are available:
+Three types of switches are available:
 
 - **Relays**: Simple on/off control for generic relay actuators
 - **Timers**: Enable/disable control for scheduled timers, with extra state attributes showing the configured schedule (active days and time slots)
+- **Load shedding**: A configuration switch per managed load, controlling whether the load _participates in load shedding_ (the same toggle offered by the official CAME app)
 
 Timer switches also support the **set_timer_timetable** entity service for configuring schedules from automations (see [Actions](#actions) below).
+
+{% important %}
+The load shedding switch does **not** turn the appliance on or off. It only tells the load shedding controller whether it may detach (shed) that load when consumption exceeds the overload threshold. Turning it off excludes the load from shedding regardless of priority.
+{% endimportant %}
 
 ### Binary sensors
 
 - **Digital inputs**: Read-only sensors that report Active or Idle state, with a `last_triggered` timestamp attribute
+- **Load detached**: A problem sensor per managed load that turns on when the load shedding controller has detached (shed) the load due to an overload — useful for notifications and automations (for example, "⚠️ Oven was shed due to overload"). The load's shedding `priority` (lower values are detached first) and the raw relay output `status` are available as attributes
 - **Server connectivity**: A diagnostic sensor that shows whether the CAME server is reachable
 
 ### Sensors
 
-| Sensor type                  | Device class                       | Unit           | Description                                                            |
-| ---------------------------- | ---------------------------------- | -------------- | ---------------------------------------------------------------------- |
-| Zone temperature             | Temperature                        | &deg;C         | Current temperature from thermoregulation zones                        |
-| Analog sensor                | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Standalone analog sensors                                              |
-| Analog input                 | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Analog input probes                                                    |
-| Energy meter power           | Power                              | W              | Instantaneous power measured by an energy meter (updated in real time) |
-| Energy last 24h / last month | -                                  | Wh             | Rolling average energy values reported by the server (diagnostic)      |
-| Scenario status              | -                                  | -              | Reports Off, Triggered, or Active                                      |
-| Ping latency                 | Duration                           | ms             | Round-trip time to the CAME server (diagnostic, disabled by default)   |
+| Sensor type                    | Device class                       | Unit           | Description                                                                                              |
+| ------------------------------ | ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| Zone temperature               | Temperature                        | &deg;C         | Current temperature from thermoregulation zones                                                          |
+| Analog sensor                  | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Standalone analog sensors                                                                                |
+| Analog input                   | Temperature, Humidity, or Pressure | &deg;C, %, hPa | Analog input probes                                                                                      |
+| Energy meter power             | Power                              | W              | Instantaneous power measured by an energy meter (updated in real time)                                   |
+| Energy last 24h / last month   | -                                  | Wh             | Rolling average energy values reported by the server (diagnostic)                                        |
+| Load shedding controller power | Power                              | W              | Current power measured by a load shedding controller (attributes: `max_power`, `hysteresis`, `meter_id`) |
+| Scenario status                | -                                  | -              | Reports Off, Triggered, or Active                                                                        |
+| Ping latency                   | Duration                           | ms             | Round-trip time to the CAME server (diagnostic, disabled by default)                                     |
 
 #### Energy meters
 

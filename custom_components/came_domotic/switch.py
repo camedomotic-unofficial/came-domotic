@@ -3,6 +3,8 @@
 Exposes CAME Domotic relays and timers as Home Assistant switch entities.
 Each relay supports simple on/off control. Each timer supports global
 enable/disable plus a ``set_timer_timetable`` entity service for scheduling.
+Loads managed by a load shedding controller get a configuration switch
+controlling their participation in load shedding.
 """
 
 from __future__ import annotations
@@ -10,8 +12,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from aiocamedomotic.models import RelayStatus
+from aiocamedomotic.models import LoadsCtrlRelay, RelayStatus
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
+from homeassistant.const import EntityCategory
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import (
@@ -94,6 +97,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     relays = coordinator.data.relays
     timers = coordinator.data.timers
+    loadsctrl_relays = coordinator.data.loadsctrl_relays
 
     entities: list[SwitchEntity] = [
         CameDomoticRelay(
@@ -109,11 +113,17 @@ async def async_setup_entry(
         CameDomoticTimer(coordinator, timer_id, timer.name)
         for timer_id, timer in timers.items()
     )
+    entities.extend(
+        CameDomoticLoadShedSwitch(coordinator, load)
+        for load in loadsctrl_relays.values()
+    )
 
     _LOGGER.debug(
-        "Setting up %d relay switch(es) and %d timer switch(es)",
+        "Setting up %d relay switch(es), %d timer switch(es), "
+        "and %d load shedding switch(es)",
         len(relays),
         len(timers),
+        len(loadsctrl_relays),
     )
     async_add_entities(entities)
 
@@ -273,6 +283,140 @@ class CameDomoticRelay(CameDomoticDeviceEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the relay."""
         await self._async_apply_relay_state(RelayStatus.OFF, optimistic_is_on=False)
+
+
+class CameDomoticLoadShedSwitch(CameDomoticDeviceEntity, SwitchEntity):
+    """Configuration switch controlling a load's participation in shedding.
+
+    ON means the load shedding controller may detach (shed) this load on
+    overload; OFF excludes it from shedding. This does NOT switch the
+    appliance's power. Uses the same optimistic update pattern as relays:
+    after every accepted write the server pushes a confirmation snapshot
+    that clears the optimistic state.
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "load_shedding"
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        relay: LoadsCtrlRelay,
+    ) -> None:
+        """Initialize the load shedding switch."""
+        controller_id = coordinator.data.loadsctrl_relay_owner[relay.id]
+        controller = coordinator.data.loadsctrl_meters[controller_id]
+        super().__init__(
+            coordinator,
+            entity_key=f"loadsctrl_relay_{relay.id}_enabled",
+            device_name=controller.name,
+            device_id=f"loadsctrl_{controller_id}",
+        )
+        self._relay_id = relay.id
+        self._attr_translation_placeholders = {"load_name": relay.name}
+        self._optimistic_is_on: bool | None = None
+        self._optimistic_snapshot_enabled: bool | None = None
+        self._optimistic_timeout_cancel: CALLBACK_TYPE | None = None
+
+    @callback
+    def _clear_optimistic_state(self, reason: str) -> None:
+        """Clear optimistic state and cancel any pending timeout."""
+        _LOGGER.debug(
+            "Clearing optimistic state for load id=%d (%s)",
+            self._relay_id,
+            reason,
+        )
+        self._optimistic_is_on = None
+        self._optimistic_snapshot_enabled = None
+        if self._optimistic_timeout_cancel is not None:
+            self._optimistic_timeout_cancel()
+            self._optimistic_timeout_cancel = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Clear optimistic state when coordinator data catches up."""
+        if self._optimistic_is_on is not None:
+            relay = self.coordinator.data.loadsctrl_relays.get(self._relay_id)
+            data_changed = (
+                relay is not None
+                and self._optimistic_snapshot_enabled is not None
+                and relay.enabled != self._optimistic_snapshot_enabled
+            )
+            if data_changed or relay is None:
+                self._clear_optimistic_state(
+                    f"data_changed={data_changed}, load_missing={relay is None}"
+                )
+        super()._handle_coordinator_update()
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if the load participates in load shedding."""
+        if self._optimistic_is_on is not None:
+            return self._optimistic_is_on
+        relay = self.coordinator.data.loadsctrl_relays.get(self._relay_id)
+        if relay is None:
+            return None
+        return relay.enabled
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel any pending optimistic timeout on entity removal."""
+        if self._optimistic_timeout_cancel is not None:
+            self._optimistic_timeout_cancel()
+            self._optimistic_timeout_cancel = None
+        await super().async_will_remove_from_hass()
+
+    def _schedule_optimistic_timeout(self) -> None:
+        """Schedule an active timer to force-clear optimistic state."""
+        if self._optimistic_timeout_cancel is not None:
+            self._optimistic_timeout_cancel()
+
+        @callback
+        def _on_timeout(_now: Any) -> None:
+            self._optimistic_timeout_cancel = None
+            if self._optimistic_is_on is not None:
+                self._clear_optimistic_state("timeout")
+                self.async_write_ha_state()
+
+        self._optimistic_timeout_cancel = async_call_later(
+            self.hass, _OPTIMISTIC_TIMEOUT, _on_timeout
+        )
+
+    async def _async_apply_enabled(self, *, enabled: bool) -> None:
+        """Send the shedding-participation command with optimistic update."""
+        relay = self.coordinator.data.loadsctrl_relays.get(self._relay_id)
+        if relay is None:
+            _LOGGER.warning(
+                "Cannot set load id=%d shedding participation to %s: "
+                "not found in coordinator data",
+                self._relay_id,
+                enabled,
+            )
+            return
+
+        pre_call_enabled = relay.enabled
+
+        await self.coordinator.api.async_set_loadsctrl_relay_enabled(
+            relay, enabled=enabled
+        )
+
+        # Optimistic update after successful API call
+        self._optimistic_snapshot_enabled = pre_call_enabled
+        self._optimistic_is_on = enabled
+        self._schedule_optimistic_timeout()
+        _LOGGER.debug(
+            "Optimistic update for load id=%d: is_on=%s",
+            self._relay_id,
+            enabled,
+        )
+        self.async_write_ha_state()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Include the load in load shedding."""
+        await self._async_apply_enabled(enabled=True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Exclude the load from load shedding."""
+        await self._async_apply_enabled(enabled=False)
 
 
 class CameDomoticTimer(CameDomoticEntity, SwitchEntity):

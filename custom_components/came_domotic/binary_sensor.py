@@ -2,6 +2,7 @@
 
 Exposes CAME Domotic digital inputs as Home Assistant binary sensor entities.
 Digital inputs are read-only devices that report ACTIVE/IDLE state.
+Load shedding is reported via per-load "shed" problem sensors.
 """
 
 from __future__ import annotations
@@ -9,7 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from aiocamedomotic.models import DigitalInputStatus
+from aiocamedomotic.models import DigitalInputStatus, LoadsCtrlRelay
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -39,13 +40,22 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     ping_coordinator = entry.runtime_data.ping_coordinator
     digital_inputs = coordinator.data.digital_inputs
-    _LOGGER.debug("Setting up %d digital input binary sensor(s)", len(digital_inputs))
+    loadsctrl_relays = coordinator.data.loadsctrl_relays
+    _LOGGER.debug(
+        "Setting up %d digital input binary sensor(s) and %d load shed sensor(s)",
+        len(digital_inputs),
+        len(loadsctrl_relays),
+    )
     async_add_entities(
         [
             CameDomoticServerConnectivitySensor(ping_coordinator, entry.entry_id),
             *(
                 CameDomoticDigitalInput(coordinator, act_id, di.name)
                 for act_id, di in digital_inputs.items()
+            ),
+            *(
+                CameDomoticLoadShedSensor(coordinator, relay)
+                for relay in loadsctrl_relays.values()
             ),
         ]
     )
@@ -110,6 +120,55 @@ class CameDomoticDigitalInput(CameDomoticDeviceEntity, BinarySensorEntity):
         return {
             "addr": digital_input.addr,
             "last_triggered": last_triggered,
+        }
+
+
+class CameDomoticLoadShedSensor(CameDomoticDeviceEntity, BinarySensorEntity):
+    """Problem sensor reporting whether a load is currently shed.
+
+    ON means the load shedding controller has detached (shed) this load
+    because consumption exceeded the overload threshold. The sensor is
+    attached to the controller's HA device, since loads have no
+    floor/room placement of their own.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "load_detached"
+
+    def __init__(
+        self,
+        coordinator: CameDomoticDataUpdateCoordinator,
+        relay: LoadsCtrlRelay,
+    ) -> None:
+        """Initialize the load shed sensor."""
+        controller_id = coordinator.data.loadsctrl_relay_owner[relay.id]
+        controller = coordinator.data.loadsctrl_meters[controller_id]
+        super().__init__(
+            coordinator,
+            entity_key=f"loadsctrl_relay_{relay.id}_detached",
+            device_name=controller.name,
+            device_id=f"loadsctrl_{controller_id}",
+        )
+        self._relay_id = relay.id
+        self._attr_translation_placeholders = {"load_name": relay.name}
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if the load is currently shed by the controller."""
+        relay = self.coordinator.data.loadsctrl_relays.get(self._relay_id)
+        if relay is None:
+            return None
+        return relay.detached
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return read-only load configuration attributes."""
+        relay = self.coordinator.data.loadsctrl_relays.get(self._relay_id)
+        if relay is None:
+            return None
+        return {
+            "priority": relay.priority,
+            "status": relay.status.name.lower(),
         }
 
 

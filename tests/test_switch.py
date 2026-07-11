@@ -6,6 +6,7 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
 from aiocamedomotic.models import RelayStatus
+from homeassistant.const import EntityCategory
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 import pytest
@@ -21,6 +22,8 @@ from custom_components.came_domotic.const import DOMAIN
 from custom_components.came_domotic.models import CameDomoticServerData
 
 from .conftest import (
+    _mock_loadsctrl_meter,
+    _mock_loadsctrl_relay,
     _mock_relay,
     _mock_server_info,
     _mock_timer,
@@ -36,10 +39,20 @@ _COORDINATOR = (
 )
 
 
-async def _setup_entry(hass, mock_relays, mock_timers=None):
+async def _setup_entry(
+    hass,
+    mock_relays,
+    mock_timers=None,
+    mock_loadsctrl_meters=None,
+    mock_loadsctrl_relays=None,
+):
     """Set up a config entry with the given mock relays and timers."""
     if mock_timers is None:
         mock_timers = []
+    if mock_loadsctrl_meters is None:
+        mock_loadsctrl_meters = []
+    if mock_loadsctrl_relays is None:
+        mock_loadsctrl_relays = []
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -65,6 +78,14 @@ async def _setup_entry(hass, mock_relays, mock_timers=None):
             return_value=mock_timers,
         ),
         patch(f"{_API_CLIENT}.async_get_energy_meters", return_value=[]),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_meters",
+            return_value=mock_loadsctrl_meters,
+        ),
+        patch(
+            f"{_API_CLIENT}.async_get_loadsctrl_relays",
+            return_value=mock_loadsctrl_relays,
+        ),
         patch(
             f"{_API_CLIENT}.async_get_topology",
             return_value=_mock_topology(),
@@ -100,8 +121,8 @@ async def test_relay_entities_created(hass, bypass_get_data):
         for e in registry.entities.values()
         if e.config_entry_id == config_entry.entry_id and e.domain == "switch"
     ]
-    # 2 relays + 2 timers = 4
-    assert len(entries) == 4
+    # 2 relays + 2 timers + 2 load shedding switches = 6
+    assert len(entries) == 6
 
 
 async def test_relay_unique_id(hass, bypass_get_data):
@@ -123,6 +144,8 @@ async def test_relay_unique_id(hass, bypass_get_data):
         "test_relay_601",
         "test_timer_900",
         "test_timer_901",
+        "test_loadsctrl_relay_201_enabled",
+        "test_loadsctrl_relay_202_enabled",
     }
 
 
@@ -1193,3 +1216,314 @@ async def test_set_timer_timetable_not_found(hass):
         },
         blocking=True,
     )
+
+
+# =============================================================================
+# Load shedding switch tests
+# =============================================================================
+
+
+async def _setup_loadsctrl_entry(hass, relays=None):
+    """Set up a config entry with a loads controller and the given loads."""
+    if relays is None:
+        relays = [
+            _mock_loadsctrl_relay(201, "Oven", enabled=True),
+            _mock_loadsctrl_relay(202, "Heat Pump", enabled=False),
+        ]
+    return await _setup_entry(
+        hass,
+        [],
+        mock_loadsctrl_meters=[_mock_loadsctrl_meter(100, "Load Controller")],
+        mock_loadsctrl_relays=relays,
+    )
+
+
+async def test_load_shedding_switch_states(hass):
+    """Test switch states reflect each load's shedding participation."""
+    await _setup_loadsctrl_entry(hass)
+
+    oven = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert oven is not None
+    assert oven.state == "on"
+
+    heat_pump = hass.states.get("switch.load_controller_heat_pump_load_shedding")
+    assert heat_pump is not None
+    assert heat_pump.state == "off"
+
+
+async def test_load_shedding_switch_entity_category(hass):
+    """Test the shedding switch is a configuration entity."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    registry = er.async_get(hass)
+    entry = next(
+        e
+        for e in registry.entities.values()
+        if e.config_entry_id == config_entry.entry_id
+        and e.unique_id == "test_loadsctrl_relay_201_enabled"
+    )
+    assert entry.entity_category == EntityCategory.CONFIG
+
+
+async def test_load_shedding_switch_turn_off(hass):
+    """Test excluding a load calls the API and sets optimistic state."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+    mock_set_enabled = AsyncMock()
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", mock_set_enabled
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    mock_set_enabled.assert_awaited_once()
+    assert mock_set_enabled.await_args is not None
+    assert mock_set_enabled.await_args.kwargs == {"enabled": False}
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "off"
+
+
+async def test_load_shedding_switch_turn_on(hass):
+    """Test including a load calls the API and sets optimistic state."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+    mock_set_enabled = AsyncMock()
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", mock_set_enabled
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_on",
+            {"entity_id": "switch.load_controller_heat_pump_load_shedding"},
+            blocking=True,
+        )
+
+    mock_set_enabled.assert_awaited_once()
+    assert mock_set_enabled.await_args is not None
+    assert mock_set_enabled.await_args.kwargs == {"enabled": True}
+    state = hass.states.get("switch.load_controller_heat_pump_load_shedding")
+    assert state.state == "on"
+
+
+async def test_load_shedding_switch_echo_clears_optimistic(hass):
+    """Test the server's echo push clears the optimistic state."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    # Simulate the server echo: enabled flips to False
+    coordinator.data.loadsctrl_relays[201].enabled = False
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "off"
+
+    # Flip back through real data to prove optimistic was truly cleared
+    coordinator.data.loadsctrl_relays[201].enabled = True
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "on"
+
+
+async def test_load_shedding_switch_optimistic_preserved_when_unchanged(hass):
+    """Test optimistic state persists until the server data catches up."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    # Data unchanged (still enabled) — push update
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "off"
+
+
+async def test_load_shedding_switch_optimistic_timeout(hass):
+    """Test optimistic state is force-cleared after the timeout."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "off"
+
+    # Fire the optimistic timeout: state falls back to real data (enabled)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=8))
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "on"
+
+
+async def test_load_shedding_switch_api_error_no_optimistic(hass):
+    """Test no optimistic update when the API call fails."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+    mock_set_enabled = AsyncMock(
+        side_effect=CameDomoticApiClientCommunicationError("fail"),
+    )
+
+    with (
+        patch.object(
+            coordinator.api, "async_set_loadsctrl_relay_enabled", mock_set_enabled
+        ),
+        pytest.raises(CameDomoticApiClientCommunicationError),
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    # State unchanged: no optimistic update was applied
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "on"
+
+
+async def test_load_shedding_switch_load_not_found(hass):
+    """Test turning the switch when the load disappeared logs and returns."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.data.loadsctrl_relays.clear()
+    mock_set_enabled = AsyncMock()
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", mock_set_enabled
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    mock_set_enabled.assert_not_awaited()
+
+
+async def test_load_shedding_switch_state_unknown_when_load_missing(hass):
+    """Test is_on returns None when the load disappears from data."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+    coordinator.data.loadsctrl_relays.clear()
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "unknown"
+
+
+async def test_load_shedding_switch_optimistic_cleared_when_load_disappears(hass):
+    """Test optimistic state is cleared when the load disappears."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    coordinator.data.loadsctrl_relays.clear()
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "unknown"
+
+
+async def test_load_shedding_switch_timeout_cancelled_on_removal(hass):
+    """Test a pending optimistic timeout is cancelled on entity removal."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    # Unload the entry (triggers async_will_remove_from_hass)
+    await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+
+async def test_load_shedding_switch_rapid_commands_reset_timeout(hass):
+    """Test a second rapid command cancels and reschedules the timeout."""
+    config_entry = await _setup_loadsctrl_entry(hass)
+
+    coordinator = config_entry.runtime_data.coordinator
+
+    with patch.object(
+        coordinator.api, "async_set_loadsctrl_relay_enabled", AsyncMock()
+    ):
+        await hass.services.async_call(
+            "switch",
+            "turn_off",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+        await hass.services.async_call(
+            "switch",
+            "turn_on",
+            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            blocking=True,
+        )
+
+    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    assert state.state == "on"

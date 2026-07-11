@@ -11,6 +11,8 @@ from aiocamedomotic.models import (
     DigitalInput,
     EnergyMeter,
     Light,
+    LoadsCtrlMeter,
+    LoadsCtrlRelay,
     MapPage,
     Opening,
     PlantTopology,
@@ -53,4 +55,13 @@ class CameDomoticServerData:
     maps: dict[int, MapPage] = field(default_factory=dict)
     # Energy meters have no act_id: keyed by meter.id (also the push-update key)
     energy_meters: dict[int, EnergyMeter] = field(default_factory=dict)
+    # Load shedding controllers, keyed by controller.id.
+    # Beware: controller.id != controller.meter_id (the associated energy meter).
+    loadsctrl_meters: dict[int, LoadsCtrlMeter] = field(default_factory=dict)
+    # Managed loads (all controllers merged), keyed by relay.id.
+    # Beware: relays also carry an act_id, but every loadsctrl command and
+    # push update keys on relay.id.
+    loadsctrl_relays: dict[int, LoadsCtrlRelay] = field(default_factory=dict)
+    # Maps relay.id -> owning controller.id (for HA device attachment)
+    loadsctrl_relay_owner: dict[int, int] = field(default_factory=dict)
     topology: PlantTopology | None = None
