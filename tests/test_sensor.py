@@ -872,7 +872,7 @@ async def test_loadsctrl_power_sensor_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.load_controller_load_control_power")
+    state = hass.states.get("sensor.load_control_load_controller")
     assert state is not None
     assert state.state == "1200"
     assert state.attributes["device_class"] == SensorDeviceClass.POWER
@@ -896,6 +896,6 @@ async def test_loadsctrl_power_sensor_controller_not_found(hass, bypass_get_data
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.load_controller_load_control_power")
+    state = hass.states.get("sensor.load_control_load_controller")
     assert state.state == STATE_UNKNOWN
     assert "max_power" not in state.attributes

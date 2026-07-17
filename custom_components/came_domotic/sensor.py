@@ -514,9 +514,7 @@ class CameDomoticLoadsCtrlPowerSensor(CameDomoticDeviceEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_suggested_display_precision = 0
-    # Translated suffix name: the controller mirrors its energy meter's
-    # name, so an unnamed sensor would collide with the meter's power sensor.
-    _attr_translation_key = "loadsctrl_power"
+    _attr_name = None
 
     def __init__(
         self,
@@ -524,11 +522,15 @@ class CameDomoticLoadsCtrlPowerSensor(CameDomoticDeviceEntity, SensorEntity):
         controller: LoadsCtrlMeter,
     ) -> None:
         """Initialize the loads controller power sensor."""
+        # The controller mirrors its energy meter's name, so the device gets
+        # a translated "Load control - <name>" prefix to distinguish it from
+        # the meter's own device (and this sensor from the meter's).
         super().__init__(
             coordinator,
             entity_key=f"loadsctrl_{controller.id}_power",
             device_name=controller.name,
             device_id=f"loadsctrl_{controller.id}",
+            device_translation_key="loadsctrl_device",
         )
         self._controller_id = controller.id
 

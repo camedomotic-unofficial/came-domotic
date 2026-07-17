@@ -51,12 +51,15 @@
   "device": {
     "came_server_device_friendly_name": {
       "name": "Server CAME"
+    },
+    "loadsctrl_device": {
+      "name": "Controllo carichi - {name}"
     }
   },
   "entity": {
     "binary_sensor": {
       "load_detached": {
-        "name": "distaccato"
+        "name": "Distaccato"
       },
       "server_connectivity": {
         "name": "Connettività"
@@ -74,13 +77,10 @@
     },
     "sensor": {
       "energy_last_24h_avg": {
-        "name": "media 24h"
+        "name": "Media 24h"
       },
       "energy_last_month_avg": {
-        "name": "media mensile"
-      },
-      "loadsctrl_power": {
-        "name": "potenza carichi"
+        "name": "Media mensile"
       },
       "ping_latency": {
         "name": "Latenza ping"
@@ -88,7 +88,7 @@
     },
     "switch": {
       "load_shedding": {
-        "name": "distaccabile"
+        "name": "Distaccabile"
       }
     }
   },

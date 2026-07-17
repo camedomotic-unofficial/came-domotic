@@ -87,6 +87,7 @@ class CameDomoticDeviceEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator
         device_id: str,
         floor_ind: int | None = None,
         room_ind: int | None = None,
+        device_translation_key: str | None = None,
     ) -> None:
         """Initialize a per-device entity.
 
@@ -98,6 +99,9 @@ class CameDomoticDeviceEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator
             floor_ind: Floor index (reserved for future hierarchical area
                 resolution; currently not used in suggested_area lookup).
             room_ind: Room index for suggested area lookup.
+            device_translation_key: Optional key into the ``device`` section
+                of the translations; the translated name receives
+                ``device_name`` via the ``{name}`` placeholder.
         """
         super().__init__(coordinator)
         assert coordinator.config_entry is not None  # noqa: S101  # nosec B101
@@ -111,6 +115,9 @@ class CameDomoticDeviceEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator
             via_device=(DOMAIN, entry_id),
             suggested_area=suggested_area,
         )
+        if device_translation_key is not None:
+            self._attr_device_info["translation_key"] = device_translation_key
+            self._attr_device_info["translation_placeholders"] = {"name": device_name}
         _LOGGER.debug(
             "Device entity '%s' initialized (suggested_area=%s)",
             device_name,
