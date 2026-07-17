@@ -127,9 +127,10 @@ class CameDomoticLoadShedSensor(CameDomoticDeviceEntity, BinarySensorEntity):
     """Problem sensor reporting whether a load is currently shed.
 
     ON means the load shedding controller has detached (shed) this load
-    because consumption exceeded the overload threshold. The sensor is
-    attached to the controller's HA device, since loads have no
-    floor/room placement of their own.
+    because consumption exceeded the overload threshold. The sensor lives
+    on a per-load HA device named after the load (loads have no floor/room
+    placement of their own), so the friendly name reads
+    "<load name> <translated suffix>".
     """
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
@@ -141,16 +142,13 @@ class CameDomoticLoadShedSensor(CameDomoticDeviceEntity, BinarySensorEntity):
         relay: LoadsCtrlRelay,
     ) -> None:
         """Initialize the load shed sensor."""
-        controller_id = coordinator.data.loadsctrl_relay_owner[relay.id]
-        controller = coordinator.data.loadsctrl_meters[controller_id]
         super().__init__(
             coordinator,
             entity_key=f"loadsctrl_relay_{relay.id}_detached",
-            device_name=controller.name,
-            device_id=f"loadsctrl_{controller_id}",
+            device_name=relay.name,
+            device_id=f"loadsctrl_relay_{relay.id}",
         )
         self._relay_id = relay.id
-        self._attr_translation_placeholders = {"load_name": relay.name}
 
     @property
     def is_on(self) -> bool | None:

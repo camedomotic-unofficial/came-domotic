@@ -28,6 +28,25 @@ _LOGGER = logging.getLogger(__name__)
 # Map aiocamedomotic OpeningType to Home Assistant CoverDeviceClass.
 _DEVICE_CLASS_MAP: dict[OpeningType, CoverDeviceClass] = {
     OpeningType.SHUTTER: CoverDeviceClass.SHUTTER,
+    OpeningType.AWNING: CoverDeviceClass.AWNING,
+    OpeningType.VENETIAN_BLIND: CoverDeviceClass.BLIND,
+    OpeningType.GATE: CoverDeviceClass.GATE,
+}
+
+_BASE_FEATURES = (
+    CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
+)
+_TILT_FEATURES = (
+    CoverEntityFeature.OPEN_TILT
+    | CoverEntityFeature.CLOSE_TILT
+    | CoverEntityFeature.STOP_TILT
+)
+# Opening types that expose slat (tilt) commands. UNKNOWN keeps tilt to
+# preserve the pre-1.14 behavior, where every opening advertised tilt.
+_TILT_TYPES = {
+    OpeningType.SHUTTER,
+    OpeningType.VENETIAN_BLIND,
+    OpeningType.UNKNOWN,
 }
 
 
@@ -56,19 +75,11 @@ async def async_setup_entry(
 class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
     """Cover entity for a CAME Domotic opening (e.g. shutter).
 
-    Supports open/close/stop motor control and slat (tilt) open/close.
+    Supports open/close/stop motor control; slat (tilt) open/close is
+    offered only for opening types with slats (shutters, venetian blinds).
     Position tracking is not available — the CAME API only reports
     discrete motor states (opening, closing, stopped, slat open/close).
     """
-
-    _attr_supported_features = (
-        CoverEntityFeature.OPEN
-        | CoverEntityFeature.CLOSE
-        | CoverEntityFeature.STOP
-        | CoverEntityFeature.OPEN_TILT
-        | CoverEntityFeature.CLOSE_TILT
-        | CoverEntityFeature.STOP_TILT
-    )
 
     def __init__(
         self,
@@ -101,6 +112,9 @@ class CameDomoticCover(CameDomoticDeviceEntity, CoverEntity):
         self._attr_has_entity_name = False
         self._attr_name = opening_name
         self._attr_device_class = _DEVICE_CLASS_MAP.get(opening_type)
+        self._attr_supported_features = _BASE_FEATURES | (
+            _TILT_FEATURES if opening_type in _TILT_TYPES else CoverEntityFeature(0)
+        )
         self._optimistic_is_opening: bool | None = None
         self._optimistic_is_closing: bool | None = None
 

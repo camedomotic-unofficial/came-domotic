@@ -15,7 +15,7 @@ Built on top of the [aiocamedomotic](https://github.com/camedomotic-unofficial/a
 | Platform          | Description                                                                      |
 | ----------------- | -------------------------------------------------------------------------------- |
 | **Light**         | On/off switches, dimmers, and RGB lights                                         |
-| **Cover**         | Shutters and motorized openings with tilt control                                |
+| **Cover**         | Shutters, awnings, venetian blinds, and gates (tilt control where supported)     |
 | **Climate**       | Thermoregulation zones (heating, cooling, fan speed)                             |
 | **Scene**         | Predefined scenarios                                                             |
 | **Switch**        | Relays, timers with timetable scheduling, per-load shedding control              |

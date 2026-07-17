@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from aiocamedomotic.models import (
     AnalogSensorType,
@@ -752,7 +752,6 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     energy_meters={m.id: m for m in MOCK_ENERGY_METERS},
     loadsctrl_meters={c.id: c for c in MOCK_LOADSCTRL_METERS},
     loadsctrl_relays={r.id: r for r in MOCK_LOADSCTRL_RELAYS},
-    loadsctrl_relay_owner={r.id: 100 for r in MOCK_LOADSCTRL_RELAYS},
     topology=MOCK_TOPOLOGY,
 )
 
@@ -761,6 +760,16 @@ MOCK_SERVER_DATA = CameDomoticServerData(
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations for all tests via the plugin fixture."""
     return
+
+
+@pytest.fixture(name="entity_registry_enabled_by_default")
+def entity_registry_enabled_by_default_fixture():
+    """Force entities that are disabled by default to be enabled."""
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        PropertyMock(return_value=True),
+    ):
+        yield
 
 
 @pytest.fixture(name="bypass_get_data")

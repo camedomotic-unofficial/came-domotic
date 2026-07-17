@@ -113,6 +113,16 @@ Pattern for adding new platforms:
 
 ## Branching, PRs & Releases
 
+### Starting new work
+
+Before starting any new feature, fix, or dependency upgrade, make sure you are working on top of the latest `main`:
+
+1. Run `git fetch origin main` to get the current state of the remote.
+2. **If on `main`**: pull (`git pull`) so it's up to date, then create the new branch from it.
+3. **If already on a development branch** (e.g., the session starts on one): stay on it, but check whether `origin/main` has moved ahead (`git log --oneline HEAD..origin/main`). If it has, report the new commits to the user and ask whether to rebase/merge `main` into the branch before continuing — new upstream work may overlap with or already implement what's being planned.
+
+This avoids building work on a stale base (e.g., re-implementing something already merged last week).
+
 ### Branch naming
 
 Use descriptive kebab-case names: `add-fan-entity`, `fix-cover-tilt`, `bump-aiocamedomotic-1.11.0`.

@@ -1242,11 +1242,11 @@ async def test_load_shedding_switch_states(hass):
     """Test switch states reflect each load's shedding participation."""
     await _setup_loadsctrl_entry(hass)
 
-    oven = hass.states.get("switch.load_controller_oven_load_shedding")
+    oven = hass.states.get("switch.oven_sheddable")
     assert oven is not None
     assert oven.state == "on"
 
-    heat_pump = hass.states.get("switch.load_controller_heat_pump_load_shedding")
+    heat_pump = hass.states.get("switch.heat_pump_sheddable")
     assert heat_pump is not None
     assert heat_pump.state == "off"
 
@@ -1278,14 +1278,14 @@ async def test_load_shedding_switch_turn_off(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
     mock_set_enabled.assert_awaited_once()
     assert mock_set_enabled.await_args is not None
     assert mock_set_enabled.await_args.kwargs == {"enabled": False}
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "off"
 
 
@@ -1302,14 +1302,14 @@ async def test_load_shedding_switch_turn_on(hass):
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.load_controller_heat_pump_load_shedding"},
+            {"entity_id": "switch.heat_pump_sheddable"},
             blocking=True,
         )
 
     mock_set_enabled.assert_awaited_once()
     assert mock_set_enabled.await_args is not None
     assert mock_set_enabled.await_args.kwargs == {"enabled": True}
-    state = hass.states.get("switch.load_controller_heat_pump_load_shedding")
+    state = hass.states.get("switch.heat_pump_sheddable")
     assert state.state == "on"
 
 
@@ -1325,7 +1325,7 @@ async def test_load_shedding_switch_echo_clears_optimistic(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
@@ -1334,7 +1334,7 @@ async def test_load_shedding_switch_echo_clears_optimistic(hass):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "off"
 
     # Flip back through real data to prove optimistic was truly cleared
@@ -1342,7 +1342,7 @@ async def test_load_shedding_switch_echo_clears_optimistic(hass):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "on"
 
 
@@ -1358,7 +1358,7 @@ async def test_load_shedding_switch_optimistic_preserved_when_unchanged(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
@@ -1366,7 +1366,7 @@ async def test_load_shedding_switch_optimistic_preserved_when_unchanged(hass):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "off"
 
 
@@ -1382,18 +1382,18 @@ async def test_load_shedding_switch_optimistic_timeout(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "off"
 
     # Fire the optimistic timeout: state falls back to real data (enabled)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=8))
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "on"
 
 
@@ -1415,12 +1415,12 @@ async def test_load_shedding_switch_api_error_no_optimistic(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
     # State unchanged: no optimistic update was applied
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "on"
 
 
@@ -1438,7 +1438,7 @@ async def test_load_shedding_switch_load_not_found(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
@@ -1454,7 +1454,7 @@ async def test_load_shedding_switch_state_unknown_when_load_missing(hass):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "unknown"
 
 
@@ -1470,7 +1470,7 @@ async def test_load_shedding_switch_optimistic_cleared_when_load_disappears(hass
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
@@ -1478,7 +1478,7 @@ async def test_load_shedding_switch_optimistic_cleared_when_load_disappears(hass
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "unknown"
 
 
@@ -1494,7 +1494,7 @@ async def test_load_shedding_switch_timeout_cancelled_on_removal(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
@@ -1515,15 +1515,15 @@ async def test_load_shedding_switch_rapid_commands_reset_timeout(hass):
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.load_controller_oven_load_shedding"},
+            {"entity_id": "switch.oven_sheddable"},
             blocking=True,
         )
 
-    state = hass.states.get("switch.load_controller_oven_load_shedding")
+    state = hass.states.get("switch.oven_sheddable")
     assert state.state == "on"

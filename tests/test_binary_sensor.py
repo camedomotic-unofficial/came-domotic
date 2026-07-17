@@ -343,14 +343,14 @@ async def test_load_detached_sensor_states(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    oven = hass.states.get("binary_sensor.load_controller_oven_detached")
+    oven = hass.states.get("binary_sensor.oven_detached")
     assert oven is not None
     assert oven.state == "off"
     assert oven.attributes["device_class"] == "problem"
     assert oven.attributes["priority"] == 1
     assert oven.attributes["status"] == "on"
 
-    heat_pump = hass.states.get("binary_sensor.load_controller_heat_pump_detached")
+    heat_pump = hass.states.get("binary_sensor.heat_pump_detached")
     assert heat_pump is not None
     assert heat_pump.state == "on"
     assert heat_pump.attributes["priority"] == 2
@@ -371,7 +371,7 @@ async def test_load_detached_sensor_push_update(hass):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.load_controller_oven_detached")
+    state = hass.states.get("binary_sensor.oven_detached")
     assert state.state == "on"
 
 
@@ -388,6 +388,6 @@ async def test_load_detached_sensor_load_not_found(hass, bypass_get_data):
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.load_controller_oven_detached")
+    state = hass.states.get("binary_sensor.oven_detached")
     assert state.state == "unknown"
     assert "priority" not in state.attributes
