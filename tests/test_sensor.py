@@ -772,7 +772,28 @@ async def test_energy_meter_power_sensor_state(hass, bypass_get_data):
     assert solar.attributes["produced"] == 1
 
 
-async def test_energy_meter_diagnostic_sensors(hass, bypass_get_data):
+async def test_energy_meter_diagnostic_sensors_disabled_by_default(
+    hass, bypass_get_data
+):
+    """Test the rolling average diagnostic sensors are disabled by default."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    for unique_id in (
+        "test_energy_meter_1_energy_last_24h_avg",
+        "test_energy_meter_1_energy_last_month_avg",
+    ):
+        entry = next(e for e in registry.entities.values() if e.unique_id == unique_id)
+        assert entry.disabled_by is not None
+
+
+async def test_energy_meter_diagnostic_sensors(
+    hass, bypass_get_data, entity_registry_enabled_by_default
+):
     """Test the rolling average diagnostic sensors for energy meters."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
@@ -797,7 +818,9 @@ async def test_energy_meter_diagnostic_sensors(hass, bypass_get_data):
     assert entry.entity_category == EntityCategory.DIAGNOSTIC
 
 
-async def test_energy_meter_unknown_units_passed_through(hass):
+async def test_energy_meter_unknown_units_passed_through(
+    hass, entity_registry_enabled_by_default
+):
     """Test that unrecognized meter units are passed through verbatim."""
     config_entry = await _setup_entry(
         hass,
@@ -819,7 +842,9 @@ async def test_energy_meter_unknown_units_passed_through(hass):
     assert avg.attributes["unit_of_measurement"] == "kWh"
 
 
-async def test_energy_meter_sensors_meter_not_found(hass, bypass_get_data):
+async def test_energy_meter_sensors_meter_not_found(
+    hass, bypass_get_data, entity_registry_enabled_by_default
+):
     """Test sensors return unknown when the meter disappears from data."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
@@ -840,7 +865,9 @@ async def test_energy_meter_sensors_meter_not_found(hass, bypass_get_data):
     assert avg.state == STATE_UNKNOWN
 
 
-async def test_energy_meter_push_update_refreshes_state(hass):
+async def test_energy_meter_push_update_refreshes_state(
+    hass, entity_registry_enabled_by_default
+):
     """Test that a pushed data update is reflected in the sensor states."""
     config_entry = await _setup_entry(
         hass,
