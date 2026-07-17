@@ -752,7 +752,6 @@ MOCK_SERVER_DATA = CameDomoticServerData(
     energy_meters={m.id: m for m in MOCK_ENERGY_METERS},
     loadsctrl_meters={c.id: c for c in MOCK_LOADSCTRL_METERS},
     loadsctrl_relays={r.id: r for r in MOCK_LOADSCTRL_RELAYS},
-    loadsctrl_relay_owner={r.id: 100 for r in MOCK_LOADSCTRL_RELAYS},
     topology=MOCK_TOPOLOGY,
 )
 

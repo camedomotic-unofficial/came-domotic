@@ -780,19 +780,19 @@ async def test_energy_meter_diagnostic_sensors(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    last_24h = hass.states.get("sensor.main_line_energy_last_24h_avg")
+    last_24h = hass.states.get("sensor.main_line_24h_average")
     assert last_24h is not None
     assert last_24h.state == "350"
     assert last_24h.attributes["unit_of_measurement"] == UnitOfEnergy.WATT_HOUR
     assert last_24h.attributes["state_class"] == SensorStateClass.MEASUREMENT
     assert "device_class" not in last_24h.attributes
 
-    last_month = hass.states.get("sensor.main_line_energy_last_month_avg")
+    last_month = hass.states.get("sensor.main_line_monthly_average")
     assert last_month is not None
     assert last_month.state == "420"
 
     registry = er.async_get(hass)
-    entry = registry.async_get("sensor.main_line_energy_last_24h_avg")
+    entry = registry.async_get("sensor.main_line_24h_average")
     assert entry is not None
     assert entry.entity_category == EntityCategory.DIAGNOSTIC
 
@@ -814,7 +814,7 @@ async def test_energy_meter_unknown_units_passed_through(hass):
     assert power is not None
     assert power.attributes["unit_of_measurement"] == "kW"
 
-    avg = hass.states.get("sensor.weird_meter_energy_last_24h_avg")
+    avg = hass.states.get("sensor.weird_meter_24h_average")
     assert avg is not None
     assert avg.attributes["unit_of_measurement"] == "kWh"
 
@@ -836,7 +836,7 @@ async def test_energy_meter_sensors_meter_not_found(hass, bypass_get_data):
     assert power.state == STATE_UNKNOWN
     assert "meter_type" not in power.attributes
 
-    avg = hass.states.get("sensor.main_line_energy_last_24h_avg")
+    avg = hass.states.get("sensor.main_line_24h_average")
     assert avg.state == STATE_UNKNOWN
 
 
@@ -858,7 +858,7 @@ async def test_energy_meter_push_update_refreshes_state(hass):
     await hass.async_block_till_done()
 
     assert hass.states.get("sensor.main_line").state == "1800"
-    assert hass.states.get("sensor.main_line_energy_last_24h_avg").state == "375"
+    assert hass.states.get("sensor.main_line_24h_average").state == "375"
 
 
 # --- Loads controller power sensor ---
@@ -872,7 +872,7 @@ async def test_loadsctrl_power_sensor_state(hass, bypass_get_data):
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.load_controller")
+    state = hass.states.get("sensor.load_controller_load_control_power")
     assert state is not None
     assert state.state == "1200"
     assert state.attributes["device_class"] == SensorDeviceClass.POWER
@@ -896,6 +896,6 @@ async def test_loadsctrl_power_sensor_controller_not_found(hass, bypass_get_data
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.load_controller")
+    state = hass.states.get("sensor.load_controller_load_control_power")
     assert state.state == STATE_UNKNOWN
     assert "max_power" not in state.attributes

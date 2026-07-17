@@ -56,7 +56,7 @@
   "entity": {
     "binary_sensor": {
       "load_detached": {
-        "name": "Distacco {load_name}"
+        "name": "distaccato"
       },
       "server_connectivity": {
         "name": "Connettività"
@@ -74,10 +74,13 @@
     },
     "sensor": {
       "energy_last_24h_avg": {
-        "name": "Energia ultime 24h (media)"
+        "name": "media 24h"
       },
       "energy_last_month_avg": {
-        "name": "Energia ultimo mese (media)"
+        "name": "media mensile"
+      },
+      "loadsctrl_power": {
+        "name": "potenza carichi"
       },
       "ping_latency": {
         "name": "Latenza ping"
@@ -85,7 +88,7 @@
     },
     "switch": {
       "load_shedding": {
-        "name": "Distacco carico {load_name}"
+        "name": "distaccabile"
       }
     }
   },

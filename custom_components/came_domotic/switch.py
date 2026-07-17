@@ -293,6 +293,9 @@ class CameDomoticLoadShedSwitch(CameDomoticDeviceEntity, SwitchEntity):
     appliance's power. Uses the same optimistic update pattern as relays:
     after every accepted write the server pushes a confirmation snapshot
     that clears the optimistic state.
+
+    The switch lives on a per-load HA device named after the load, so the
+    friendly name reads "<load name> <translated suffix>".
     """
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -304,16 +307,13 @@ class CameDomoticLoadShedSwitch(CameDomoticDeviceEntity, SwitchEntity):
         relay: LoadsCtrlRelay,
     ) -> None:
         """Initialize the load shedding switch."""
-        controller_id = coordinator.data.loadsctrl_relay_owner[relay.id]
-        controller = coordinator.data.loadsctrl_meters[controller_id]
         super().__init__(
             coordinator,
             entity_key=f"loadsctrl_relay_{relay.id}_enabled",
-            device_name=controller.name,
-            device_id=f"loadsctrl_{controller_id}",
+            device_name=relay.name,
+            device_id=f"loadsctrl_relay_{relay.id}",
         )
         self._relay_id = relay.id
-        self._attr_translation_placeholders = {"load_name": relay.name}
         self._optimistic_is_on: bool | None = None
         self._optimistic_snapshot_enabled: bool | None = None
         self._optimistic_timeout_cancel: CALLBACK_TYPE | None = None

@@ -3310,7 +3310,7 @@ async def _setup_entry_with_loadsctrl(hass, config_entry):
 
 
 async def test_loadsctrl_relays_fetched_per_controller(hass):
-    """Test loads are fetched per controller and the owner map is built."""
+    """Test loads are fetched per controller and keyed by relay id."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     config_entry.add_to_hass(hass)
 
@@ -3319,7 +3319,6 @@ async def test_loadsctrl_relays_fetched_per_controller(hass):
     coordinator = config_entry.runtime_data.coordinator
     assert set(coordinator.data.loadsctrl_meters) == {100}
     assert set(coordinator.data.loadsctrl_relays) == {201, 202}
-    assert coordinator.data.loadsctrl_relay_owner == {201: 100, 202: 100}
     # Relays are keyed by relay.id, never act_id
     assert coordinator.data.loadsctrl_relays[201].act_id == 1201
 

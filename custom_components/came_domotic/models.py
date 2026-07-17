@@ -62,6 +62,4 @@ class CameDomoticServerData:
     # Beware: relays also carry an act_id, but every loadsctrl command and
     # push update keys on relay.id.
     loadsctrl_relays: dict[int, LoadsCtrlRelay] = field(default_factory=dict)
-    # Maps relay.id -> owning controller.id (for HA device attachment)
-    loadsctrl_relay_owner: dict[int, int] = field(default_factory=dict)
     topology: PlantTopology | None = None

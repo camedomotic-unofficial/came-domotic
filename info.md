@@ -7,11 +7,12 @@ A Home Assistant custom integration for [CAME](https://www.came.com/) Domotic ho
 ## Supported features
 
 - **Lights** - On/off, dimmers, and RGB
-- **Covers** - Shutters with tilt control
+- **Covers** - Shutters, awnings, venetian blinds, and gates (tilt where supported)
 - **Climate** - Thermoregulation zones (heating, cooling, fan speed)
 - **Scenes** - Predefined scenarios
-- **Switches** - Relays and timers with scheduling
-- **Sensors** - Temperature, humidity, pressure, digital inputs, connectivity
+- **Switches** - Relays, timers with scheduling, per-load shedding control
+- **Binary sensors** - Digital inputs, load shedding (detached) state, server connectivity
+- **Sensors** - Temperature, humidity, pressure, energy and load shedding power, scenario status
 - **Cameras** - RTSP streaming and JPEG snapshots
 - **Images** - Floor plan map pages
 

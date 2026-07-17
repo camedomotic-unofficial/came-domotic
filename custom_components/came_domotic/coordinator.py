@@ -220,7 +220,6 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
 
             loadsctrl_meters: list = []
             loadsctrl_relays: list = []
-            loadsctrl_relay_owner: dict[int, int] = {}
             if ServerFeature.LOADSCTRL in features:
                 loadsctrl_meters = await self.api.async_get_loadsctrl_meters()
                 for controller in loadsctrl_meters:
@@ -228,8 +227,6 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
                         controller
                     )
                     loadsctrl_relays.extend(relays_of_controller)
-                    for relay in relays_of_controller:
-                        loadsctrl_relay_owner[relay.id] = controller.id
         except CameDomoticApiClientAuthenticationError as exception:
             _LOGGER.warning("Authentication failed during data update")
             raise ConfigEntryAuthFailed(exception) from exception
@@ -318,7 +315,6 @@ class CameDomoticDataUpdateCoordinator(DataUpdateCoordinator[CameDomoticServerDa
             energy_meters={m.id: m for m in energy_meters},
             loadsctrl_meters={c.id: c for c in loadsctrl_meters},
             loadsctrl_relays={r.id: r for r in loadsctrl_relays},
-            loadsctrl_relay_owner=loadsctrl_relay_owner,
             topology=topology,
         )
 

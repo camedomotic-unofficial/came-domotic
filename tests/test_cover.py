@@ -650,3 +650,64 @@ async def test_cover_open_api_error_no_optimistic(hass):
     state = hass.states.get("cover.living_room_living_room_shutter")
     assert state is not None
     assert state.state != "opening"
+
+
+# --- Opening types (device class + tilt support) ---
+
+
+@pytest.mark.parametrize(
+    ("opening_type", "expected_device_class"),
+    [
+        (OpeningType.SHUTTER, CoverDeviceClass.SHUTTER),
+        (OpeningType.AWNING, CoverDeviceClass.AWNING),
+        (OpeningType.VENETIAN_BLIND, CoverDeviceClass.BLIND),
+        (OpeningType.GATE, CoverDeviceClass.GATE),
+        (OpeningType.UNKNOWN, None),
+    ],
+)
+async def test_cover_device_class_per_type(hass, opening_type, expected_device_class):
+    """Test each opening type maps to the expected cover device class."""
+    openings = [
+        _mock_opening(100, 101, "Test Opening", opening_type=opening_type),
+    ]
+    await _setup_entry(hass, openings)
+
+    state = hass.states.get("cover.living_room_test_opening")
+    assert state is not None
+    assert state.attributes.get("device_class") == expected_device_class
+
+
+@pytest.mark.parametrize(
+    ("opening_type", "has_tilt"),
+    [
+        (OpeningType.SHUTTER, True),
+        (OpeningType.VENETIAN_BLIND, True),
+        (OpeningType.UNKNOWN, True),
+        (OpeningType.AWNING, False),
+        (OpeningType.GATE, False),
+    ],
+)
+async def test_cover_tilt_support_per_type(hass, opening_type, has_tilt):
+    """Test tilt features are only offered for slat-capable opening types."""
+    from homeassistant.components.cover import CoverEntityFeature
+
+    openings = [
+        _mock_opening(100, 101, "Test Opening", opening_type=opening_type),
+    ]
+    await _setup_entry(hass, openings)
+
+    state = hass.states.get("cover.living_room_test_opening")
+    assert state is not None
+    features = CoverEntityFeature(state.attributes["supported_features"])
+
+    base = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
+    tilt = (
+        CoverEntityFeature.OPEN_TILT
+        | CoverEntityFeature.CLOSE_TILT
+        | CoverEntityFeature.STOP_TILT
+    )
+    assert features & base == base
+    if has_tilt:
+        assert features & tilt == tilt
+    else:
+        assert features & tilt == CoverEntityFeature(0)
