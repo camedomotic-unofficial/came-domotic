@@ -28,6 +28,8 @@ from .api import (
 from .const import DOMAIN
 
 if TYPE_CHECKING:
+    from aiocamedomotic.models import Scenario
+
     from . import CameDomoticConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,6 +41,12 @@ SERVICE_CHANGE_PASSWORD = "change_password"  # noqa: S105  # nosec B105
 SERVICE_GET_TERMINAL_GROUPS = "get_terminal_groups"
 SERVICE_GET_USERS = "get_users"
 SERVICE_FORCE_REFRESH = "force_refresh"
+SERVICE_START_SCENARIO_RECORDING = "start_scenario_recording"
+SERVICE_STOP_SCENARIO_RECORDING = "stop_scenario_recording"
+SERVICE_RENAME_SCENARIO = "rename_scenario"
+SERVICE_DELETE_SCENARIO = "delete_scenario"
+SERVICE_RESET_ENERGY_COUNTERS = "reset_energy_counters"
+SERVICE_GET_SERVER_DATETIME = "get_server_datetime"
 
 # Field attribute names
 ATTR_USERNAME = "username"
@@ -46,6 +54,8 @@ ATTR_PASSWORD = "password"  # noqa: S105  # nosec B105
 ATTR_CURRENT_PASSWORD = "current_password"  # noqa: S105  # nosec B105
 ATTR_NEW_PASSWORD = "new_password"  # noqa: S105  # nosec B105
 ATTR_GROUP = "group"
+ATTR_NAME = "name"
+ATTR_NEW_NAME = "new_name"
 
 # Voluptuous schemas
 SERVICE_CREATE_USER_SCHEMA = vol.Schema(
@@ -91,6 +101,46 @@ SERVICE_FORCE_REFRESH_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_START_SCENARIO_RECORDING_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+        vol.Required(ATTR_NAME): vol.All(cv.string, vol.Length(min=1)),
+    }
+)
+
+SERVICE_STOP_SCENARIO_RECORDING_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+    }
+)
+
+SERVICE_RENAME_SCENARIO_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+        vol.Required(ATTR_NAME): vol.All(cv.string, vol.Length(min=1)),
+        vol.Required(ATTR_NEW_NAME): vol.All(cv.string, vol.Length(min=1)),
+    }
+)
+
+SERVICE_DELETE_SCENARIO_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+        vol.Required(ATTR_NAME): vol.All(cv.string, vol.Length(min=1)),
+    }
+)
+
+SERVICE_RESET_ENERGY_COUNTERS_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+    }
+)
+
+SERVICE_GET_SERVER_DATETIME_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+    }
+)
+
 
 def _get_entry_and_client(
     hass: HomeAssistant, call: ServiceCall
@@ -117,6 +167,54 @@ def _get_entry_and_client(
         )
 
     return entry, entry.runtime_data.client
+
+
+async def _get_user_defined_scenario(
+    client: CameDomoticApiClient, name: str
+) -> Scenario:
+    """Look up a user-defined scenario by name.
+
+    If multiple scenarios share the same name, the one with the highest id
+    (the most recently created) is returned, consistently with the library's
+    stop-recording behavior.
+
+    Raises:
+        ServiceValidationError: If no scenario matches the name, or the
+            matched scenario is system-defined.
+        HomeAssistantError: If fetching the scenario list fails.
+    """
+    try:
+        scenarios = await client.async_get_scenarios()
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    matches = [s for s in scenarios if s.name == name]
+    if not matches:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="scenario_not_found",
+            translation_placeholders={"name": name},
+        )
+
+    scenario = max(matches, key=lambda s: s.id)
+    if not scenario.user_defined:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="scenario_not_user_defined",
+            translation_placeholders={"name": name},
+        )
+
+    return scenario
 
 
 async def async_handle_create_user(call: ServiceCall) -> None:
@@ -367,6 +465,201 @@ async def async_handle_force_refresh(call: ServiceCall) -> None:
     _LOGGER.debug("Full data refresh completed successfully")
 
 
+async def async_handle_start_scenario_recording(call: ServiceCall) -> None:
+    """Handle the start_scenario_recording service call."""
+    hass = call.hass
+    _, client = _get_entry_and_client(hass, call)
+
+    name: str = call.data[ATTR_NAME]
+
+    _LOGGER.debug("Service call: starting recording of scenario '%s'", name)
+
+    try:
+        await client.async_start_scenario_recording(name)
+    except ValueError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="invalid_scenario_name",
+            translation_placeholders={"name": name},
+        ) from err
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    _LOGGER.debug("Scenario recording started for '%s'", name)
+
+
+async def async_handle_stop_scenario_recording(call: ServiceCall) -> ServiceResponse:
+    """Handle the stop_scenario_recording service call."""
+    hass = call.hass
+    entry, client = _get_entry_and_client(hass, call)
+
+    _LOGGER.debug("Service call: stopping scenario recording")
+
+    try:
+        scenario = await client.async_stop_scenario_recording()
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    # Reload the entry so the new scenario shows up as a scene entity
+    hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    if not call.return_response:
+        return None
+    return {
+        "scenario": (
+            {"id": scenario.id, "name": scenario.name} if scenario is not None else None
+        )
+    }
+
+
+async def async_handle_rename_scenario(call: ServiceCall) -> None:
+    """Handle the rename_scenario service call."""
+    hass = call.hass
+    entry, client = _get_entry_and_client(hass, call)
+
+    name: str = call.data[ATTR_NAME]
+    new_name: str = call.data[ATTR_NEW_NAME]
+
+    _LOGGER.debug("Service call: renaming scenario '%s' to '%s'", name, new_name)
+
+    scenario = await _get_user_defined_scenario(client, name)
+
+    try:
+        await client.async_rename_scenario(scenario, new_name)
+    except ValueError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="invalid_scenario_name",
+            translation_placeholders={"name": new_name},
+        ) from err
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    # Reload the entry so the scene entity reflects the new name
+    hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    _LOGGER.debug("Scenario '%s' renamed to '%s'", name, new_name)
+
+
+async def async_handle_delete_scenario(call: ServiceCall) -> None:
+    """Handle the delete_scenario service call."""
+    hass = call.hass
+    entry, client = _get_entry_and_client(hass, call)
+
+    name: str = call.data[ATTR_NAME]
+
+    _LOGGER.debug("Service call: deleting scenario '%s'", name)
+
+    scenario = await _get_user_defined_scenario(client, name)
+
+    try:
+        await client.async_delete_scenario(scenario)
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    # Reload the entry so the deleted scenario's scene entity is removed
+    hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    _LOGGER.debug("Scenario '%s' deleted successfully", name)
+
+
+async def async_handle_reset_energy_counters(call: ServiceCall) -> None:
+    """Handle the reset_energy_counters service call."""
+    hass = call.hass
+    _, client = _get_entry_and_client(hass, call)
+
+    _LOGGER.debug("Service call: resetting energy counters")
+
+    try:
+        await client.async_reset_energy_counters()
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    _LOGGER.debug("Energy counters reset successfully")
+
+
+async def async_handle_get_server_datetime(call: ServiceCall) -> ServiceResponse:
+    """Handle the get_server_datetime service call."""
+    hass = call.hass
+    _, client = _get_entry_and_client(hass, call)
+
+    _LOGGER.debug("Service call: fetching server datetime")
+
+    try:
+        server_datetime = await client.async_get_server_datetime()
+    except CameDomoticApiClientAuthenticationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_auth_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    except CameDomoticApiClientCommunicationError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="service_comm_error",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    utc_datetime = server_datetime.utc_datetime
+    return {
+        "datetime": server_datetime.datetime_string,
+        "epoch": server_datetime.epoch,
+        "utc_datetime": utc_datetime.isoformat() if utc_datetime else None,
+        "timezone": server_datetime.timezone_name,
+        "daylight_saving_time": server_datetime.daylight_saving_time,
+    }
+
+
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Register the integration services (idempotent)."""
     if hass.services.has_service(DOMAIN, SERVICE_CREATE_USER):
@@ -410,6 +703,44 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         async_handle_force_refresh,
         schema=SERVICE_FORCE_REFRESH_SCHEMA,
     )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_START_SCENARIO_RECORDING,
+        async_handle_start_scenario_recording,
+        schema=SERVICE_START_SCENARIO_RECORDING_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_STOP_SCENARIO_RECORDING,
+        async_handle_stop_scenario_recording,
+        schema=SERVICE_STOP_SCENARIO_RECORDING_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_RENAME_SCENARIO,
+        async_handle_rename_scenario,
+        schema=SERVICE_RENAME_SCENARIO_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_DELETE_SCENARIO,
+        async_handle_delete_scenario,
+        schema=SERVICE_DELETE_SCENARIO_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_RESET_ENERGY_COUNTERS,
+        async_handle_reset_energy_counters,
+        schema=SERVICE_RESET_ENERGY_COUNTERS_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_SERVER_DATETIME,
+        async_handle_get_server_datetime,
+        schema=SERVICE_GET_SERVER_DATETIME_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
 
     _LOGGER.debug("Registered %s services", DOMAIN)
 
@@ -432,6 +763,12 @@ async def async_unload_services(hass: HomeAssistant) -> None:
         SERVICE_GET_TERMINAL_GROUPS,
         SERVICE_GET_USERS,
         SERVICE_FORCE_REFRESH,
+        SERVICE_START_SCENARIO_RECORDING,
+        SERVICE_STOP_SCENARIO_RECORDING,
+        SERVICE_RENAME_SCENARIO,
+        SERVICE_DELETE_SCENARIO,
+        SERVICE_RESET_ENERGY_COUNTERS,
+        SERVICE_GET_SERVER_DATETIME,
     ):
         if hass.services.has_service(DOMAIN, service):
             hass.services.async_remove(DOMAIN, service)

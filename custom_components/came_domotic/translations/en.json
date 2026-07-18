@@ -194,6 +194,82 @@
           "description": "Up to 4 time slots with start and optional stop times (HH:MM or HH:MM:SS format). Slots beyond those provided are cleared."
         }
       }
+    },
+    "start_scenario_recording": {
+      "name": "Start scenario recording",
+      "description": "Start recording a new custom scenario on the CAME Domotic server. Actions performed after this call are captured until recording is stopped.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server to record the scenario on."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name of the new scenario."
+        }
+      }
+    },
+    "stop_scenario_recording": {
+      "name": "Stop scenario recording",
+      "description": "Stop the ongoing scenario recording and save the new scenario. Returns the newly created scenario, if identifiable.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server where the recording is in progress."
+        }
+      }
+    },
+    "rename_scenario": {
+      "name": "Rename scenario",
+      "description": "Rename a user-defined scenario on the CAME Domotic server.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server hosting the scenario."
+        },
+        "name": {
+          "name": "Current name",
+          "description": "Current name of the scenario to rename."
+        },
+        "new_name": {
+          "name": "New name",
+          "description": "New name for the scenario."
+        }
+      }
+    },
+    "delete_scenario": {
+      "name": "Delete scenario",
+      "description": "Permanently delete a user-defined scenario from the CAME Domotic server. This action is irreversible.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server hosting the scenario."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name of the scenario to delete."
+        }
+      }
+    },
+    "reset_energy_counters": {
+      "name": "Reset energy counters",
+      "description": "Reset the stored energy consumption history of all energy meters on the CAME Domotic server. This action is irreversible; instantaneous readings are not affected.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server whose energy counters to reset."
+        }
+      }
+    },
+    "get_server_datetime": {
+      "name": "Get server date and time",
+      "description": "Get the current date, time, timezone, and daylight saving status of the CAME Domotic server.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The CAME Domotic server to query."
+        }
+      }
     }
   },
   "exceptions": {
@@ -217,6 +293,15 @@
     },
     "service_auth_error": {
       "message": "Authentication error with the CAME server: {error}"
+    },
+    "scenario_not_found": {
+      "message": "Scenario {name} not found on the CAME server."
+    },
+    "scenario_not_user_defined": {
+      "message": "Scenario {name} is system-defined and cannot be renamed or deleted."
+    },
+    "invalid_scenario_name": {
+      "message": "Invalid scenario name {name}: it must be a non-empty string."
     }
   }
 }

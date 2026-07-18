@@ -2766,3 +2766,358 @@ async def test_async_set_timer_timetable_not_initialized(hass):
 
     with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
         await client.async_set_timer_timetable(_mock_timer(), [None, None, None, None])
+
+
+# --- async_start_scenario_recording ---
+
+
+async def test_async_start_scenario_recording_success(hass):
+    """Test successful start of scenario recording."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_start_scenario_recording("Movie night")
+    mock_api.async_start_scenario_recording.assert_awaited_once_with("Movie night")
+
+
+async def test_async_start_scenario_recording_auth_error(hass):
+    """Test CameDomoticAuthError during start raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_start_scenario_recording.side_effect = CameDomoticAuthError(
+        "bad creds"
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_start_scenario_recording("Movie night")
+
+
+async def test_async_start_scenario_recording_server_error(hass):
+    """Test CameDomoticServerError during start raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_start_scenario_recording.side_effect = CameDomoticServerError(
+        "server err"
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_start_scenario_recording("Movie night")
+
+
+async def test_async_start_scenario_recording_generic_error(hass):
+    """Test CameDomoticError during start raises ApiClientError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_start_scenario_recording.side_effect = CameDomoticError("generic")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientError):
+        await client.async_start_scenario_recording("Movie night")
+
+
+async def test_async_start_scenario_recording_not_initialized(hass):
+    """Test async_start_scenario_recording raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_start_scenario_recording("Movie night")
+
+
+# --- async_stop_scenario_recording ---
+
+
+async def test_async_stop_scenario_recording_success(hass):
+    """Test successful stop of scenario recording returns the new scenario."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_api.async_stop_scenario_recording.return_value = mock_scenario
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_stop_scenario_recording()
+    assert result is mock_scenario
+    mock_api.async_stop_scenario_recording.assert_awaited_once()
+
+
+async def test_async_stop_scenario_recording_unidentified(hass):
+    """Test stop of scenario recording returning None."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_stop_scenario_recording.return_value = None
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_stop_scenario_recording()
+    assert result is None
+
+
+async def test_async_stop_scenario_recording_auth_error(hass):
+    """Test CameDomoticAuthError during stop raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_stop_scenario_recording.side_effect = CameDomoticAuthError(
+        "bad creds"
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_stop_scenario_recording()
+
+
+async def test_async_stop_scenario_recording_server_error(hass):
+    """Test CameDomoticServerError during stop raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_stop_scenario_recording.side_effect = CameDomoticServerError(
+        "server err"
+    )
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_stop_scenario_recording()
+
+
+async def test_async_stop_scenario_recording_not_initialized(hass):
+    """Test async_stop_scenario_recording raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_stop_scenario_recording()
+
+
+# --- async_rename_scenario ---
+
+
+async def test_async_rename_scenario_success(hass):
+    """Test successful scenario rename."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_rename = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_rename_scenario(mock_scenario, "Cinema mode")
+    mock_scenario.async_rename.assert_awaited_once_with("Cinema mode")
+
+
+async def test_async_rename_scenario_auth_error(hass):
+    """Test CameDomoticAuthError during rename raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_rename = AsyncMock(side_effect=CameDomoticAuthError("bad"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_rename_scenario(mock_scenario, "Cinema mode")
+
+
+async def test_async_rename_scenario_server_error(hass):
+    """Test CameDomoticServerError during rename raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_rename = AsyncMock(side_effect=CameDomoticServerError("err"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_rename_scenario(mock_scenario, "Cinema mode")
+
+
+async def test_async_rename_scenario_not_initialized(hass):
+    """Test async_rename_scenario raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_rename_scenario(MagicMock(), "Cinema mode")
+
+
+# --- async_delete_scenario ---
+
+
+async def test_async_delete_scenario_success(hass):
+    """Test successful scenario deletion."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_delete = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_delete_scenario(mock_scenario)
+    mock_scenario.async_delete.assert_awaited_once()
+
+
+async def test_async_delete_scenario_auth_error(hass):
+    """Test CameDomoticAuthError during deletion raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_delete = AsyncMock(side_effect=CameDomoticAuthError("bad"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_delete_scenario(mock_scenario)
+
+
+async def test_async_delete_scenario_server_error(hass):
+    """Test CameDomoticServerError during deletion raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_scenario = MagicMock()
+    mock_scenario.name = "Movie night"
+    mock_scenario.id = 42
+    mock_scenario.async_delete = AsyncMock(side_effect=CameDomoticServerError("err"))
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_delete_scenario(mock_scenario)
+
+
+async def test_async_delete_scenario_not_initialized(hass):
+    """Test async_delete_scenario raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_delete_scenario(MagicMock())
+
+
+# --- async_reset_energy_counters ---
+
+
+async def test_async_reset_energy_counters_success(hass):
+    """Test successful energy counters reset."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    await client.async_reset_energy_counters()
+    mock_api.async_reset_energy_counters.assert_awaited_once()
+
+
+async def test_async_reset_energy_counters_auth_error(hass):
+    """Test CameDomoticAuthError during reset raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_reset_energy_counters.side_effect = CameDomoticAuthError("bad")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_reset_energy_counters()
+
+
+async def test_async_reset_energy_counters_server_error(hass):
+    """Test CameDomoticServerError during reset raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_reset_energy_counters.side_effect = CameDomoticServerError("err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_reset_energy_counters()
+
+
+async def test_async_reset_energy_counters_not_initialized(hass):
+    """Test async_reset_energy_counters raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_reset_energy_counters()
+
+
+# --- async_get_server_datetime ---
+
+
+async def test_async_get_server_datetime_success(hass):
+    """Test successful server datetime retrieval."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_datetime = MagicMock()
+    mock_api.async_get_server_datetime.return_value = mock_datetime
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    result = await client.async_get_server_datetime()
+    assert result is mock_datetime
+
+
+async def test_async_get_server_datetime_auth_error(hass):
+    """Test CameDomoticAuthError during datetime fetch raises AuthenticationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_server_datetime.side_effect = CameDomoticAuthError("bad")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientAuthenticationError):
+        await client.async_get_server_datetime()
+
+
+async def test_async_get_server_datetime_server_error(hass):
+    """Test CameDomoticServerError during datetime fetch raises CommunicationError."""
+    client = _make_client(hass)
+    mock_api = AsyncMock()
+    mock_api.async_get_server_datetime.side_effect = CameDomoticServerError("err")
+
+    with patch(_PATCH_ASYNC_CREATE, return_value=mock_api):
+        await client.async_connect()
+
+    with pytest.raises(CameDomoticApiClientCommunicationError):
+        await client.async_get_server_datetime()
+
+
+async def test_async_get_server_datetime_not_initialized(hass):
+    """Test async_get_server_datetime raises ApiClientError when not connected."""
+    client = _make_client(hass)
+
+    with pytest.raises(CameDomoticApiClientError, match="Not initialized"):
+        await client.async_get_server_datetime()
