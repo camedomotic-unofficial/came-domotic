@@ -33,6 +33,7 @@ from aiocamedomotic.models import (
     Relay,
     RelayStatus,
     Scenario,
+    ServerDateTime,
     ServerInfo,
     TerminalGroup,
     ThermoZone,
@@ -450,6 +451,72 @@ class CameDomoticApiClient:
         assert self._api is not None  # noqa: S101  # nosec B101
         _LOGGER.debug("Activating scenario '%s' (id=%d)", scenario.name, scenario.id)
         await scenario.async_activate()
+
+    @_translate_errors
+    async def async_start_scenario_recording(self, name: str) -> None:
+        """Start recording a new custom scenario on the CAME Domotic server.
+
+        Args:
+            name: Name for the new scenario (must be non-empty).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Starting recording of scenario '%s'", name)
+        await self._api.async_start_scenario_recording(name)
+
+    @_translate_errors
+    async def async_stop_scenario_recording(self) -> Scenario | None:
+        """Stop the ongoing scenario recording and save the new scenario.
+
+        Returns:
+            The newly created Scenario, or None if it could not be identified.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Stopping scenario recording")
+        scenario = await self._api.async_stop_scenario_recording()
+        if scenario is not None:
+            _LOGGER.debug(
+                "Scenario recording saved as '%s' (id=%d)", scenario.name, scenario.id
+            )
+        return scenario
+
+    @_translate_errors
+    async def async_rename_scenario(self, scenario: Scenario, name: str) -> None:
+        """Rename a scenario on the CAME Domotic server.
+
+        Args:
+            scenario: The Scenario object to rename.
+            name: The new name for the scenario (must be non-empty).
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug(
+            "Renaming scenario '%s' (id=%d) to '%s'", scenario.name, scenario.id, name
+        )
+        await scenario.async_rename(name)
+
+    @_translate_errors
+    async def async_delete_scenario(self, scenario: Scenario) -> None:
+        """Delete a scenario from the CAME Domotic server (irreversible).
+
+        Args:
+            scenario: The Scenario object to delete.
+        """
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Deleting scenario '%s' (id=%d)", scenario.name, scenario.id)
+        await scenario.async_delete()
+
+    @_translate_errors
+    async def async_reset_energy_counters(self) -> None:
+        """Reset the stored energy history of all meters (irreversible)."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Resetting energy counters on %s", self._host)
+        await self._api.async_reset_energy_counters()
+
+    @_translate_errors
+    async def async_get_server_datetime(self) -> ServerDateTime:
+        """Get the current date, time, and timezone of the CAME server."""
+        assert self._api is not None  # noqa: S101  # nosec B101
+        _LOGGER.debug("Fetching server datetime from %s", self._host)
+        return await self._api.async_get_server_datetime()
 
     @_translate_errors
     async def async_get_topology(self) -> PlantTopology:

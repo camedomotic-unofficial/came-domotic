@@ -194,6 +194,82 @@
           "description": "Fino a 4 fasce orarie con orario di inizio e di fine opzionale (formato HH:MM o HH:MM:SS). Le fasce oltre quelle indicate vengono azzerate."
         }
       }
+    },
+    "start_scenario_recording": {
+      "name": "Avvia registrazione scenario",
+      "description": "Avvia la registrazione di un nuovo scenario personalizzato sul server CAME Domotic. Le azioni eseguite dopo questa chiamata vengono acquisite finché la registrazione non viene fermata.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic su cui registrare lo scenario."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nome del nuovo scenario."
+        }
+      }
+    },
+    "stop_scenario_recording": {
+      "name": "Ferma registrazione scenario",
+      "description": "Ferma la registrazione dello scenario in corso e salva il nuovo scenario. Restituisce lo scenario appena creato, se identificabile.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic su cui è in corso la registrazione."
+        }
+      }
+    },
+    "rename_scenario": {
+      "name": "Rinomina scenario",
+      "description": "Rinomina uno scenario definito dall'utente sul server CAME Domotic.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic che ospita lo scenario."
+        },
+        "name": {
+          "name": "Nome attuale",
+          "description": "Nome attuale dello scenario da rinominare."
+        },
+        "new_name": {
+          "name": "Nuovo nome",
+          "description": "Nuovo nome per lo scenario."
+        }
+      }
+    },
+    "delete_scenario": {
+      "name": "Elimina scenario",
+      "description": "Elimina definitivamente uno scenario definito dall'utente dal server CAME Domotic. Questa azione è irreversibile.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic che ospita lo scenario."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nome dello scenario da eliminare."
+        }
+      }
+    },
+    "reset_energy_counters": {
+      "name": "Azzera contatori di energia",
+      "description": "Azzera lo storico dei consumi di tutti i misuratori di energia sul server CAME Domotic. Questa azione è irreversibile; le letture istantanee non vengono modificate.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic di cui azzerare i contatori di energia."
+        }
+      }
+    },
+    "get_server_datetime": {
+      "name": "Ottieni data e ora del server",
+      "description": "Ottiene data, ora, fuso orario e stato dell'ora legale correnti del server CAME Domotic.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Voce di configurazione",
+          "description": "Il server CAME Domotic da interrogare."
+        }
+      }
     }
   },
   "exceptions": {
@@ -217,6 +293,15 @@
     },
     "service_auth_error": {
       "message": "Errore di autenticazione con il server CAME: {error}"
+    },
+    "scenario_not_found": {
+      "message": "Scenario {name} non trovato sul server CAME."
+    },
+    "scenario_not_user_defined": {
+      "message": "Lo scenario {name} è definito dal sistema e non può essere rinominato o eliminato."
+    },
+    "invalid_scenario_name": {
+      "message": "Nome scenario {name} non valido: deve essere una stringa non vuota."
     }
   }
 }

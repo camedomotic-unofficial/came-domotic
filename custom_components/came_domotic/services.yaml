@@ -80,6 +80,74 @@ force_refresh:
         config_entry:
           integration: came_domotic
 
+start_scenario_recording:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+    name:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+
+stop_scenario_recording:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+
+rename_scenario:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+    name:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+    new_name:
+      required: true
+      example: "Cinema mode"
+      selector:
+        text:
+
+delete_scenario:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+    name:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+
+reset_energy_counters:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+
+get_server_datetime:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: came_domotic
+
 set_timer_timetable:
   target:
     entity:
