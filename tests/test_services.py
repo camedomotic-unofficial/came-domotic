@@ -1734,7 +1734,7 @@ async def test_get_server_datetime_success(hass, bypass_get_data):
     config_entry = await _setup_entry(hass)
     server_datetime = MagicMock()
     server_datetime.datetime_string = "2026-07-18 12:34:56"
-    server_datetime.epoch = 1784378096
+    server_datetime.epoch = 1784370896
     server_datetime.utc_datetime = datetime(2026, 7, 18, 10, 34, 56, tzinfo=UTC)
     server_datetime.timezone_name = "Europe/Rome"
     server_datetime.daylight_saving_time = True
@@ -1754,7 +1754,7 @@ async def test_get_server_datetime_success(hass, bypass_get_data):
 
     assert response == {
         "datetime": "2026-07-18 12:34:56",
-        "epoch": 1784378096,
+        "epoch": 1784370896,
         "utc_datetime": "2026-07-18T10:34:56+00:00",
         "timezone": "Europe/Rome",
         "daylight_saving_time": True,

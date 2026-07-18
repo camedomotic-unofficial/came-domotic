@@ -198,23 +198,25 @@ async def _get_user_defined_scenario(
             translation_placeholders={"error": str(err)},
         ) from err
 
-    matches = [s for s in scenarios if s.name == name]
-    if not matches:
+    name_matches = [scenario for scenario in scenarios if scenario.name == name]
+    if not name_matches:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="scenario_not_found",
             translation_placeholders={"name": name},
         )
 
-    scenario = max(matches, key=lambda s: s.id)
-    if not scenario.user_defined:
+    user_defined_matches = [
+        scenario for scenario in name_matches if scenario.user_defined
+    ]
+    if not user_defined_matches:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="scenario_not_user_defined",
             translation_placeholders={"name": name},
         )
 
-    return scenario
+    return max(user_defined_matches, key=lambda scenario: scenario.id)
 
 
 async def async_handle_create_user(call: ServiceCall) -> None:
