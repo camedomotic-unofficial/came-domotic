@@ -10,6 +10,9 @@ A [Home Assistant](https://www.home-assistant.io/) custom integration for [CAME]
 
 Built on top of the [aiocamedomotic](https://github.com/camedomotic-unofficial/aiocamedomotic) library.
 
+> [!TIP]
+> 📖 **[Read the full documentation](docs/came_domotic.markdown)** — supported entities, service actions, automation examples, troubleshooting, and debug logging.
+
 ## Supported features
 
 | Platform          | Description                                                                      |
@@ -24,6 +27,8 @@ Built on top of the [aiocamedomotic](https://github.com/camedomotic-unofficial/a
 | **Camera**        | TVCC/IP cameras with RTSP streaming and JPEG snapshots                           |
 | **Image**         | Floor plan map pages                                                             |
 | **Select**        | Plant-level thermoregulation season (Winter/Summer/Off)                          |
+
+Beyond entities, the integration provides **service actions** for recording, renaming, and deleting custom scenarios, managing server users, configuring timer schedules, resetting energy counters, and reading the server's date and time.
 
 The integration automatically discovers which device types are available based on your server's configuration. It uses a push-based update mechanism (long-polling) for near-instant state updates.
 
@@ -68,9 +73,14 @@ After installation and restart:
 
 DHCP discovery is also supported — if a CAME device joins your network, Home Assistant will prompt you to set it up.
 
-## Documentation
+## 📖 Documentation
 
-For full documentation including entity details, service actions, troubleshooting, and debug logging, see the [integration documentation](docs/came_domotic.markdown).
+The complete integration documentation is available at **[docs/came_domotic.markdown](docs/came_domotic.markdown)** and covers:
+
+- Detailed description of every supported entity type (lights, covers, climate, scenes, energy meters, load shedding, and more)
+- All service actions with parameters and YAML examples (scenario recording and management, user management, timer scheduling, energy counter reset, server date/time)
+- Ready-to-use automation examples
+- Known limitations, troubleshooting, and debug logging
 
 ## Contributing
 
