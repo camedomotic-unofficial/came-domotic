@@ -252,7 +252,7 @@ The integration provides the following service actions:
 
 ### Action `came_domotic.force_refresh`
 
-Force a full data refresh from the CAME server. Useful after making configuration changes directly on the server.
+Force a full data refresh from the CAME server. Useful after making configuration changes directly on the server, or when entity states (for example, energy meter readings) appear stuck or out of sync.
 
 | Data attribute    | Required | Description                         |
 | ----------------- | -------- | ----------------------------------- |
@@ -606,7 +606,8 @@ automation:
 ### State changes are not reflected
 
 - State changes from the CAME server are delivered via long-polling and typically appear within less than 1 second, but could take a bit more.
-- If updates seem stuck, try the **Force refresh** action to perform a full data sync.
+- If updates seem stuck (for example, energy meter readings that stop changing), use the **Force refresh** action (`came_domotic.force_refresh`) to perform a full data sync without restarting the integration.
+- If a force refresh does not help, reload the integration: go to {% my integrations title="**Settings** > **Devices & services**" %}, open the CAME Domotic integration and select **Reload** from its three-dot menu. From an automation or script, you can do the same with the `homeassistant.reload_config_entry` action, targeting any entity or device of the integration.
 
 ### Enabling debug logs
 
