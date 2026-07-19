@@ -43,9 +43,9 @@ This integration communicates locally with your CAME ETI/Domo server over your h
 The integration works with CAME Domotic servers (ETI/Domo system). The following device types are supported:
 
 - **Lights** - On/off switches, dimmers, and RGB lights
-- **Covers** - Shutters and other motorized openings with tilt control
+- **Covers** - Shutters, awnings, venetian blinds, and gates, with tilt (slat) control where supported
 - **Climate** - Thermoregulation zones with heating/cooling and fan speed control
-- **Scenes** - Predefined scenarios that can be activated
+- **Scenes** - Predefined and user-recorded scenarios that can be activated, with actions to record, rename, and delete custom scenarios
 - **Switches** - Relays (on/off control), timers (enable/disable with scheduling), and per-load shedding participation
 - **Binary sensors** - Digital inputs, load shedding (detached) state, and server connectivity status
 - **Sensors** - Temperature, humidity, pressure sensors, energy meters, load shedding controllers, and scenario status
@@ -104,10 +104,19 @@ State changes use optimistic updates for a responsive UI: the entity state updat
 
 ### Covers
 
-CAME openings (shutters) are exposed as cover entities. Supported operations:
+CAME openings are exposed as cover entities with the matching device class:
 
-- **Open** / **Close** / **Stop** - Motor control
-- **Open tilt** / **Close tilt** / **Stop tilt** - Slat control
+| CAME opening type | Device class | Tilt (slat) control |
+| ----------------- | ------------ | ------------------- |
+| Shutter           | Shutter      | Yes                 |
+| Awning            | Awning       | No                  |
+| Venetian blind    | Blind        | Yes                 |
+| Gate              | Gate         | No                  |
+
+Supported operations:
+
+- **Open** / **Close** / **Stop** - Motor control (all types)
+- **Open tilt** / **Close tilt** / **Stop tilt** - Slat control (shutters and venetian blinds only)
 
 {% note %}
 Position tracking is not available. The CAME server only reports motor direction (opening, closing, stopped), not a numerical position.
@@ -139,7 +148,9 @@ When you manually adjust the target temperature, the zone automatically switches
 
 ### Scenes
 
-CAME scenarios are exposed as scene entities. Activating a scene triggers the corresponding scenario on the CAME server. A companion sensor entity reports each scenario's status (Off, Triggered, Active) and tracks when it was last triggered.
+CAME scenarios are exposed as scene entities. Activating a scene triggers the corresponding scenario on the CAME server. A companion sensor entity reports each scenario's status (Off, Triggered, Active) and tracks when it was last triggered. A `user_defined` state attribute distinguishes custom (user-recorded) scenarios from the predefined ones.
+
+You can also record new custom scenarios and rename or delete existing ones directly from Home Assistant using the scenario management actions (see [Actions](#actions) below).
 
 ### Switches
 
@@ -178,7 +189,7 @@ The load shedding switch does **not** turn the appliance on or off. It only tell
 
 Each CAME energy meter appears as its own device with a power sensor showing the instantaneous power on the measured line. The CAME server pushes a new reading whenever the measured power changes, so the sensor updates in real time. The raw `meter_type` and `produced` fields reported by the server are available as state attributes.
 
-Two additional diagnostic sensors expose the rolling average energy values (`last 24h` and `last month`) exactly as reported by the server.
+Two additional diagnostic sensors expose the rolling average energy values (`last 24h` and `last month`) exactly as reported by the server. The stored energy history of all meters can be cleared with the `came_domotic.reset_energy_counters` action (see [Actions](#actions) below).
 
 {% note %}
 **Using energy meters with the Home Assistant Energy dashboard**: the Energy dashboard requires a _cumulative_ energy sensor, but CAME servers only report instantaneous power and rolling averages — the integration does not fabricate a counter. To feed the Energy dashboard, create a [Riemann sum integral helper](https://www.home-assistant.io/integrations/integration/) on top of the meter's power sensor (**Settings** > **Devices & services** > **Helpers** > **Create helper** > **Integral sensor**, method _left_), which produces the cumulative kWh sensor the dashboard expects.
@@ -293,6 +304,102 @@ List all users configured on the CAME Domotic server. This action returns a resp
 ### Action `came_domotic.get_terminal_groups`
 
 List available terminal groups on the CAME Domotic server. Call this before creating a user to discover valid group names.
+
+| Data attribute    | Required | Description                       |
+| ----------------- | -------- | --------------------------------- |
+| `config_entry_id` | Yes      | The CAME Domotic server to query. |
+
+### Action `came_domotic.start_scenario_recording`
+
+Start recording a new custom scenario on the CAME Domotic server. All device actions performed after this call (whether from Home Assistant, the CAME app, or physical controls) are captured into the scenario until you stop the recording.
+
+| Data attribute    | Required | Description                           |
+| ----------------- | -------- | ------------------------------------- |
+| `config_entry_id` | Yes      | The CAME Domotic server to record on. |
+| `name`            | Yes      | Name of the new scenario.             |
+
+### Action `came_domotic.stop_scenario_recording`
+
+Stop the ongoing scenario recording and save the new scenario. The action returns the newly created scenario (ID and name), when identifiable. The integration reloads automatically so the new scenario appears as a scene entity right away.
+
+| Data attribute    | Required | Description                                         |
+| ----------------- | -------- | --------------------------------------------------- |
+| `config_entry_id` | Yes      | The CAME Domotic server where recording is ongoing. |
+
+#### Example: Record a "Good night" scenario
+
+```yaml
+# 1. Start recording
+action: came_domotic.start_scenario_recording
+data:
+  config_entry_id: YOUR_CONFIG_ENTRY_ID
+  name: "Good night"
+
+# 2. Perform the actions to capture, e.g.:
+action: light.turn_off
+target:
+  area_id: living_room
+
+action: cover.close_cover
+target:
+  entity_id: cover.living_room_shutter
+
+# 3. Stop recording and save the scenario
+action: came_domotic.stop_scenario_recording
+data:
+  config_entry_id: YOUR_CONFIG_ENTRY_ID
+```
+
+### Action `came_domotic.rename_scenario`
+
+Rename a user-defined scenario on the CAME Domotic server. The integration reloads automatically so the scene entity reflects the new name.
+
+| Data attribute    | Required | Description                   |
+| ----------------- | -------- | ----------------------------- |
+| `config_entry_id` | Yes      | The CAME Domotic server.      |
+| `name`            | Yes      | Current name of the scenario. |
+| `new_name`        | Yes      | New name for the scenario.    |
+
+### Action `came_domotic.delete_scenario`
+
+Permanently delete a user-defined scenario from the CAME Domotic server. The corresponding scene entity is removed automatically.
+
+| Data attribute    | Required | Description                     |
+| ----------------- | -------- | ------------------------------- |
+| `config_entry_id` | Yes      | The CAME Domotic server.        |
+| `name`            | Yes      | Name of the scenario to delete. |
+
+{% important %}
+Deleting a scenario is irreversible.
+{% endimportant %}
+
+{% note %}
+Only user-defined (custom) scenarios can be renamed or deleted — predefined system scenarios are read-only. If multiple user-defined scenarios share the same name, the most recently created one is targeted.
+{% endnote %}
+
+### Action `came_domotic.reset_energy_counters`
+
+Reset the stored energy consumption history of all energy meters on the CAME Domotic server. Instantaneous power readings are not affected.
+
+| Data attribute    | Required | Description                                      |
+| ----------------- | -------- | ------------------------------------------------ |
+| `config_entry_id` | Yes      | The CAME Domotic server whose counters to reset. |
+
+{% important %}
+This action is irreversible and affects **all** energy meters on the server.
+{% endimportant %}
+
+### Action `came_domotic.get_server_datetime`
+
+Get the current date, time, timezone, and daylight saving status of the CAME Domotic server. This action returns a response with the following fields:
+
+| Response field         | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `datetime`             | The server's local date and time, as reported.     |
+| `epoch`                | The server time as a Unix epoch timestamp.         |
+| `utc_datetime`         | The server time in UTC (ISO 8601), when available. |
+| `timezone`             | The server's configured timezone name.             |
+| `daylight_saving_time` | Whether daylight saving time is active.            |
 
 | Data attribute    | Required | Description                       |
 | ----------------- | -------- | --------------------------------- |
