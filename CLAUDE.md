@@ -102,6 +102,10 @@ Pattern for adding new platforms:
 - `asyncio_mode = auto` in `setup.cfg` — all async tests run automatically without `@pytest.mark.asyncio`
 - Config entries in tests are created via `MockConfigEntry` from the HA test helpers
 
+## Documentation
+
+`docs/came_domotic.markdown` is the complete user-facing documentation (written in the Home Assistant integration docs format). **Whenever you add or change a user-facing feature — new entities/platforms, service actions, config flow steps, attributes, or behavior — update this file in the same PR.** Cover the same aspects the existing sections do: what the feature does, its entities/attributes, action parameters (with a YAML example for non-trivial actions), and any limitations or irreversibility warnings. Also check whether the README's feature table or service actions summary needs the same update.
+
 ## Logging
 
 - Every module with meaningful logic has `_LOGGER = logging.getLogger(__name__)` (except `api.py` which uses `__package__` to log under the integration domain)
