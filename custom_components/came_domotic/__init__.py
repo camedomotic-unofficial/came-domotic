@@ -17,6 +17,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.area_registry as ar
 import homeassistant.helpers.config_validation as cv
+import homeassistant.helpers.device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntry
 import homeassistant.helpers.floor_registry as fr
 from homeassistant.helpers.typing import ConfigType
@@ -24,6 +25,7 @@ from homeassistant.helpers.typing import ConfigType
 from .api import CameDomoticApiClient, CameDomoticApiClientCommunicationError
 from .const import CONF_TOPOLOGY_IMPORTED, DOMAIN, PING_UPDATE_INTERVAL_DISCONNECTED
 from .coordinator import CameDomoticDataUpdateCoordinator
+from .entity import gateway_device_info
 from .models import CameDomoticServerData, PingResult
 from .ping_coordinator import CameDomoticPingCoordinator
 from .services import async_setup_services, async_unload_services
@@ -181,6 +183,12 @@ async def async_setup_entry(
     # Ensure services are registered (idempotent — covers edge cases where
     # async_setup was not called, e.g. after a failed first load attempt).
     await async_setup_services(hass)
+
+    # Register the gateway device up front: per-device entities link to it via
+    # `via_device_id`, which needs the gateway already present in the registry.
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id, **gateway_device_info(entry)
+    )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
