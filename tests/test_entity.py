@@ -30,10 +30,32 @@ async def test_gateway_device_uses_translation_key(hass, bypass_get_data):
     await hass.async_block_till_done()
 
     device_reg = dr.async_get(hass)
-    device = device_reg.async_get_device(identifiers={(DOMAIN, config_entry.entry_id)})
+    device = device_reg.async_get_device_by_identifier(
+        (DOMAIN, config_entry.entry_id), config_entry.entry_id
+    )
     assert device is not None
     assert device.name == "CAME server"
     assert device.manufacturer == MANUFACTURER
+
+
+async def test_device_entities_link_to_gateway(hass, bypass_get_data):
+    """Per-device entities are linked to the gateway through via_device_id."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    device_reg = dr.async_get(hass)
+    gateway = device_reg.async_get_device_by_identifier(
+        (DOMAIN, config_entry.entry_id), config_entry.entry_id
+    )
+    assert gateway is not None
+
+    devices = dr.async_entries_for_config_entry(device_reg, config_entry.entry_id)
+    children = [device for device in devices if device.id != gateway.id]
+    assert children, "expected at least one per-device entity device"
+    assert all(device.via_device_id == gateway.id for device in children)
 
 
 def test_translation_key_consistency_across_translations() -> None:
