@@ -46,6 +46,7 @@ ignore_missing_imports = true
 # Home Assistant 2026.10+ aliases `voluptuous` to `probatio` at runtime, but mypy
 # still sees the real voluptuous stubs. Treat it as untyped so the integration
 # keeps importing voluptuous (needed for HA < 2026.10) without type errors.
+# Remove once hacs.json requires HA 2026.10+ (enforced by check-probatio-migration).
 [[tool.mypy.overrides]]
 module = "voluptuous.*"
 follow_imports = "skip"
