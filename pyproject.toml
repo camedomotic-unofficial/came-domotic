@@ -42,3 +42,10 @@ check_untyped_defs = true
 [[tool.mypy.overrides]]
 module = "pytest_homeassistant_custom_component.*"
 ignore_missing_imports = true
+
+# Home Assistant 2026.10+ aliases `voluptuous` to `probatio` at runtime, but mypy
+# still sees the real voluptuous stubs. Treat it as untyped so the integration
+# keeps importing voluptuous (needed for HA < 2026.10) without type errors.
+[[tool.mypy.overrides]]
+module = "voluptuous.*"
+follow_imports = "skip"
