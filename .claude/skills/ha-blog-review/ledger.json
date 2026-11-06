@@ -1,0 +1,2104 @@
+{
+  "feed": "https://contributors.home-assistant.io/blog/rss.xml",
+  "posts": [
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/11/06/apps-fewer-default-capabilities/",
+      "date": "2026-11-06",
+      "title": "Apps will lose four default Linux capabilities",
+      "verdict": "not-relevant",
+      "reason": "Supervisor apps (add-ons) change; not applicable to an integration.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/11/01/undefined-helper/",
+      "date": "2026-11-01",
+      "title": "Undefined sentinel changes",
+      "verdict": "not-relevant",
+      "reason": "Integration does not use UNDEFINED/UndefinedType (grep). Revisit only if DeviceInfo field reads are added, since unset fields read as UNDEFINED.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/28/scanner-entity-devices/",
+      "date": "2026-10-28",
+      "title": "ScannerEntity now handles devices like other entities",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (device_tracker).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/28/issue-registry-refresh/",
+      "date": "2026-10-28",
+      "title": "Repair issues can belong to a config entry, and be refreshed",
+      "verdict": "not-relevant",
+      "reason": "Integration creates no repair issues (no issue_registry usage).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/28/frontend-component-updates-2026.11/",
+      "date": "2026-10-28",
+      "title": "Frontend component updates in 2026.11",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/28/custom-section-strategies-in-the-dashboard-editor/",
+      "date": "2026-10-28",
+      "title": "Custom section strategies in the dashboard editor",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/25/rename-backup-agents/",
+      "date": "2026-10-26",
+      "title": "Backup agents can now be renamed",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (backup agent).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/24/camera-two-way-audio/",
+      "date": "2026-10-24",
+      "title": "Two-way audio for camera entities",
+      "verdict": "not-relevant",
+      "reason": "Camera entities serve CAME TVCC snapshots/streams with no audio channel exposed by aiocamedomotic; nothing to declare.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/23/flow-results-require-step-id/",
+      "date": "2026-10-23",
+      "title": "Always pass a step_id to flow results",
+      "verdict": "done",
+      "reason": "All async_show_form calls in config_flow.py already pass step_id (verified 2026-11-06).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/23/config-entry-methods-return-none/",
+      "date": "2026-10-23",
+      "title": "Config entry functions now return None",
+      "verdict": "watch",
+      "reason": "__init__.py async_setup_entry/async_unload_entry return bool. Still supported for custom integrations, no deprecation. Optional cleanup once min HA >= 2026.11: return None and use async_unload_platforms_or_raise.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/22/child-devices/",
+      "date": "2026-10-22",
+      "title": "Introducing child devices",
+      "verdict": "watch",
+      "reason": "Possible enhancement: model CAME gateway sub-parts as child devices instead of via_device_id. Not required; revisit when min HA >= 2026.11.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/21/form-fields-visible/",
+      "date": "2026-10-21",
+      "title": "Show form fields based on other fields",
+      "verdict": "not-relevant",
+      "reason": "Config flow forms have no conditional fields; nothing to adopt.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/20/integration-categories/",
+      "date": "2026-10-20",
+      "title": "Integrations have categories now",
+      "verdict": "action-needed",
+      "reason": "Add the optional `categories` key to manifest.json (HACS action warns when missing, fails on unknown category). Pick from the core category list.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/19/auth-providers-opt-in-mfa/",
+      "date": "2026-10-19",
+      "title": "Auth providers now opt in to multi-factor authentication",
+      "verdict": "not-relevant",
+      "reason": "Auth providers only; not applicable.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/17/debug-console/",
+      "date": "2026-10-17",
+      "title": "A Python console inside Home Assistant",
+      "verdict": "not-relevant",
+      "reason": "Developer tool announcement; no code impact.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/16/a-new-home-for-every-contributor/",
+      "date": "2026-10-16",
+      "title": "A new home for every contributor",
+      "verdict": "not-relevant",
+      "reason": "Docs site merge; repo docs contain no developers.home-assistant.io links needing update.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/13/device-info-class/",
+      "date": "2026-10-13",
+      "title": "DeviceInfo is now a dataclass",
+      "verdict": "action-needed",
+      "reason": "entity.py sets self._attr_device_info['translation_key'/'translation_placeholders'] via the dict compatibility layer (to be deprecated), and __init__.py unpacks **gateway_device_info(). Pass translation fields to the DeviceInfo constructor now; switch to async_get_or_create_from_info once min HA >= 2026.11.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/12/new-entity-lifecycle-hooks/",
+      "date": "2026-10-12",
+      "title": "New entity lifecycle hooks",
+      "verdict": "not-relevant",
+      "reason": "New optional hooks; no need identified.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/10/update-entity-update-availability/",
+      "date": "2026-10-10",
+      "title": "Update entities can customize update availability",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (update).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/09/uom-selector/",
+      "date": "2026-10-09",
+      "title": "New unit of measurement selector",
+      "verdict": "not-relevant",
+      "reason": "New selector; config flow has no unit choice.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/08/water-heater-native-temperature/",
+      "date": "2026-10-08",
+      "title": "Water heater entities now expose their temperature unit",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (water_heater).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/08/climate-native-temperature/",
+      "date": "2026-10-08",
+      "title": "Climate entities now expose their temperature unit",
+      "verdict": "action-needed",
+      "reason": "climate.py uses _attr_temperature_unit and current_temperature/target_temperature, which log deprecation warnings on HA 2026.11+. Rename to native_* (needs min HA 2026.11 or a version shim).",
+      "deadline": "2027.11",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/10/06/restore-state-last-states-removal/",
+      "date": "2026-10-06",
+      "title": "Removal of RestoreStateData.last_states",
+      "verdict": "not-relevant",
+      "reason": "No RestoreEntity/RestoreStateData usage.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/30/probatio-validation-engine/",
+      "date": "2026-09-30",
+      "title": "Probatio is our validation engine",
+      "verdict": "watch",
+      "reason": "Pre-commit guard scripts/check_probatio_migration.py enforces migration once min HA >= 2026.10.",
+      "ref": "#155",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/28/central-config-flow-abort-reasons/",
+      "date": "2026-09-28",
+      "title": "Shared config flow abort reasons are translated centrally",
+      "verdict": "watch",
+      "reason": "strings.json keeps reauth_successful/reconfigure_successful abort keys; async_update_reload_and_abort uses the central domain on 2026.10+. Remove those keys once min HA >= 2026.10.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/26/llm-tool-result/",
+      "date": "2026-09-26",
+      "title": "LLM tools return a ToolResult and declare their integration",
+      "verdict": "not-relevant",
+      "reason": "No LLM tools.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/17/Use-config-entry-exc-in-migration/",
+      "date": "2026-09-17",
+      "title": "Use Config Entry exceptions in integration migration method",
+      "verdict": "not-relevant",
+      "reason": "No async_migrate_entry implemented.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/15/device-entry-config-entries-deprecation/",
+      "date": "2026-09-15",
+      "title": "`DeviceEntry.config_entries` deprecation is now enforced",
+      "verdict": "not-relevant",
+      "reason": "DeviceEntry.config_entries* not used (grep).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/11/lawn-mower-stop-action-idle-activity/",
+      "date": "2026-09-11",
+      "title": "New stop action and idle activity for lawn mowers",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (lawn_mower).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/07/oauth2-central-error-handling/",
+      "date": "2026-09-07",
+      "title": "OAuth2 error handling moved into the helper",
+      "verdict": "not-relevant",
+      "reason": "No OAuth2.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/04/device-and-state-class-selectors/",
+      "date": "2026-09-04",
+      "title": "New device and state class selectors",
+      "verdict": "not-relevant",
+      "reason": "New selectors; not needed.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/09/02/modbus-get-hub-deprecation/",
+      "date": "2026-09-02",
+      "title": "Deprecating modbus.get_hub in favor of async_get_unit",
+      "verdict": "not-relevant",
+      "reason": "No modbus.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/08/31/deprecate-configurator/",
+      "date": "2026-08-31",
+      "title": "Configurator integration is now deprecated",
+      "verdict": "not-relevant",
+      "reason": "Configurator not used.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/08/24/device-registry-follow-up-changes/",
+      "date": "2026-08-24",
+      "title": "More device registry deprecations, new helpers and validation",
+      "verdict": "action-needed",
+      "reason": "Already migrated to via_device_id + async_get_device_id_by_identifier (#137). But that helper exists only in HA >= 2026.8, while hacs.json still declares homeassistant 2025.6.0: bump the minimum version.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/08/19/device-registry-websocket-api-changes/",
+      "date": "2026-08-19",
+      "title": "Device registry WebSocket API changes",
+      "verdict": "not-relevant",
+      "reason": "WebSocket API consumers only.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/31/frontend-component-updates-2026.8/",
+      "date": "2026-07-31",
+      "title": "Frontend component updates in 2026.8",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/22/button-standard-event-types/",
+      "date": "2026-07-22",
+      "title": "Standard event types for button event entities",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (event).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/21/device-registry-single-config-entry/",
+      "date": "2026-07-21",
+      "title": "Devices are restricted to a single config entry and at most one subentry",
+      "verdict": "done",
+      "reason": "Migrated in #137 (via_device_id, one config entry per device).",
+      "ref": "#137",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/20/ai-policy/",
+      "date": "2026-07-20",
+      "title": "Introducing the Open Home Foundation AI Policy",
+      "verdict": "not-relevant",
+      "reason": "Policy for contributions to OHF repositories; no code impact.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/05/modernizing-modbus/",
+      "date": "2026-07-05",
+      "title": "Modernizing Modbus in Home Assistant",
+      "verdict": "not-relevant",
+      "reason": "No modbus.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/07/03/media-source-search/",
+      "date": "2026-07-03",
+      "title": "Media sources can now be searched",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (media_source).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/06/30/new-unit-enumerators/",
+      "date": "2026-06-30",
+      "title": "Introducing new unit enumerators",
+      "verdict": "watch",
+      "reason": "sensor.py uses PERCENTAGE as a unit (humidity), deprecated in favor of UnitOfRatio.PERCENTAGE (HA 2026.7+). Switch when min HA >= 2026.7, e.g. together with the min-version bump.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/06/30/async-initialize-triggers-home-assistant-start-deprecated/",
+      "date": "2026-06-30",
+      "title": "Deprecation of the home_assistant_start flag of async_initialize_triggers",
+      "verdict": "not-relevant",
+      "reason": "No trigger platforms.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/06/23/frontend-component-updates-2026.7/",
+      "date": "2026-06-23",
+      "title": "Frontend component updates in 2026.7",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/06/15/device-tracker-changes/",
+      "date": "2026-06-15",
+      "title": "Changes to device tracker entity models",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (device_tracker).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/27/frontend-component-updates-2026.6/",
+      "date": "2026-05-27",
+      "title": "Frontend component updates in 2026.6",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/27/custom-card-suggestions/",
+      "date": "2026-05-27",
+      "title": "Custom card suggestions in the card picker",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/26/advanced-mode-config-flow-deprecation/",
+      "date": "2026-05-26",
+      "title": "Deprecation of advanced mode in data entry flow",
+      "verdict": "not-relevant",
+      "reason": "show_advanced_options not used.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/20/browse-media-source-root-class/",
+      "date": "2026-05-20",
+      "title": "BrowseMediaSource: domain is now required",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (media_source).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/13/condition-script-api-changes/",
+      "date": "2026-05-13",
+      "title": "Changes to the condition and script APIs",
+      "verdict": "not-relevant",
+      "reason": "No condition/script platforms.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/11/mqtt-publish-api-message-expiry-interval/",
+      "date": "2026-05-11",
+      "title": "MQTT publish API supports message expiry interval",
+      "verdict": "not-relevant",
+      "reason": "No MQTT.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/11/mqtt-publish-api-changes/",
+      "date": "2026-05-11",
+      "title": "MQTT publish API changes",
+      "verdict": "not-relevant",
+      "reason": "No MQTT.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/11/format-entity-name-helper/",
+      "date": "2026-05-11",
+      "title": "Format entity names in custom cards",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/07/config-entry-listener-together-with-reloading-methods/",
+      "date": "2026-05-07",
+      "title": "Deprecating config entry listener with reloading methods in config flow",
+      "verdict": "not-relevant",
+      "reason": "No add_update_listener; reconfigure/reauth use async_update_reload_and_abort only.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/04/frontend-context-groups-decorators/",
+      "date": "2026-05-04",
+      "title": "Frontend context groups, new context decorators and deprecated contexts",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/05/04/frontend-component-updates-2026.5/",
+      "date": "2026-05-04",
+      "title": "Frontend component updates in 2026.5",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/27/pyserial-to-serialx/",
+      "date": "2026-04-27",
+      "title": "Serious about serial: migrating from pyserial to serialx",
+      "verdict": "not-relevant",
+      "reason": "No serial communication.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/24/radio-frequency-entity-platform/",
+      "date": "2026-04-24",
+      "title": "New radio frequency entity platform for RF device integrations",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (radio_frequency).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/21/registering-custom-dashboard-strategies/",
+      "date": "2026-04-21",
+      "title": "Registering custom dashboard strategies",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/20/legacy-device-tracker-deprecation/",
+      "date": "2026-04-20",
+      "title": "Deprecation of legacy device tracker platform API",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (device_tracker).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/15/doorbell-standard-event-type/",
+      "date": "2026-04-15",
+      "title": "Standard event type for doorbell event entities",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (event).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/07/entity-id-mismatched-domain-deprecated/",
+      "date": "2026-04-07",
+      "title": "Entity IDs with mismatched domains are deprecated",
+      "verdict": "not-relevant",
+      "reason": "Entities never set entity_id directly.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/04/02/builder-migration/",
+      "date": "2026-04-02",
+      "title": "Migrating app builds to Docker BuildKit",
+      "verdict": "not-relevant",
+      "reason": "Supervisor apps (add-ons) change; not applicable to an integration.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/03/30/infrared-entity-platform/",
+      "date": "2026-03-30",
+      "title": "New infrared entity platform for IR device integrations",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (infrared).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/03/25/frontend-lazy-context/",
+      "date": "2026-03-25",
+      "title": "Frontend lazy context",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/03/25/frontend-dialogs/",
+      "date": "2026-03-25",
+      "title": "Frontend new way of dialogs",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/03/25/frontend-component-updates-2026.4/",
+      "date": "2026-03-25",
+      "title": "Frontend component updates 2026.4",
+      "verdict": "not-relevant",
+      "reason": "Frontend development change; this integration ships no frontend code.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/03/11/backup-upload-progress/",
+      "date": "2026-03-11",
+      "title": "Backup agents can now report upload progress",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (backup agent).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/02/24/brands-proxy-api/",
+      "date": "2026-02-24",
+      "title": "Custom integrations can now ship their own brand images",
+      "verdict": "done",
+      "reason": "custom_components/came_domotic/brand/ already ships icon/logo images (light and dark).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/02/23/remove-deprecate-light-features/",
+      "date": "2026-02-23",
+      "title": "Remove deprecated light features",
+      "verdict": "not-relevant",
+      "reason": "Lights are on/off/dimmable; no color temperature or deprecated light features used.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/02/19/oauth-token-request-error-handling/",
+      "date": "2026-02-19",
+      "title": "Changes in OAuth 2.0 helper error handling",
+      "verdict": "not-relevant",
+      "reason": "No OAuth2.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/02/18/reconfiguration-support-for-webhook-helper/",
+      "date": "2026-02-18",
+      "title": "Reconfiguration support for webhook helper",
+      "verdict": "not-relevant",
+      "reason": "No webhook flow.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/02/16/labs-async-listen-deprecation/",
+      "date": "2026-02-16",
+      "title": "async_listen in Labs is deprecated",
+      "verdict": "not-relevant",
+      "reason": "No Labs usage.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/01/13/replace-pre-commit-with-prek/",
+      "date": "2026-01-13",
+      "title": "Replacing pre-commit with prek",
+      "verdict": "not-relevant",
+      "reason": "Core repo tooling; this repo keeps pre-commit (optional to evaluate prek).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2026/01/05/pyserial-asyncio-fast/",
+      "date": "2026-01-05",
+      "title": "Solving pyserial-asyncio blocking the event loop",
+      "verdict": "not-relevant",
+      "reason": "No serial communication.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/27/service-translation-placeholders/",
+      "date": "2025-11-27",
+      "title": "Introducing description placeholders for service action translations",
+      "verdict": "not-relevant",
+      "reason": "Service action strings contain no URLs to move into placeholders.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/25/storage-helper-opt-in-serialize-in-executor/",
+      "date": "2025-11-25",
+      "title": "Serialization of Store data in worker thread is now opt-in",
+      "verdict": "not-relevant",
+      "reason": "No Store usage.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/23/mqtt-subscribe-wait/",
+      "date": "2025-11-23",
+      "title": "Add a status callback for MQTT subscriptions",
+      "verdict": "not-relevant",
+      "reason": "No MQTT.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/21/identify-buttons-diagnostic-category/",
+      "date": "2025-11-21",
+      "title": "Device identification buttons are now classified as diagnostic",
+      "verdict": "not-relevant",
+      "reason": "Applies to a platform/feature this integration does not implement (button).",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/20/labs-preview-features/",
+      "date": "2025-11-20",
+      "title": "Introducing Labs: Preview features before they become standard",
+      "verdict": "not-relevant",
+      "reason": "Labs announcement; no preview feature planned.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/17/retry-after-update-failed/",
+      "date": "2025-11-17",
+      "title": "Data Update Coordinator now supports Retry After",
+      "verdict": "not-relevant",
+      "reason": "Push-based coordinator without update_interval; retry_after does not apply.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/10/calculated-state-capability-attributes-removed/",
+      "date": "2025-11-10",
+      "title": "The capability_attributes field removed from CalculatedState",
+      "verdict": "not-relevant",
+      "reason": "CalculatedState not used.",
+      "reviewed": "2026-11-06"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/05/config-entry-oauth2-error-handling/",
+      "date": "2025-11-05",
+      "title": "Improved error handling for oauth2 configuration without internet",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/11/04/convert-interval-deprecation/",
+      "date": "2025-11-04",
+      "title": "TemperatureConverter.convert_interval deprecation",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/10/24/service-web-api-changes/",
+      "date": "2025-10-24",
+      "title": "Service translations removed from WebSocket get_services and REST /api/services",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/10/16/recorder-statistics-api-changes/",
+      "date": "2025-10-16",
+      "title": "Changes to the recorder statistics API",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/10/14/device-filter-removed-from-target-selector/",
+      "date": "2025-10-14",
+      "title": "Device filter has been removed from target selector",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/10/05/coordinator-retrigger/",
+      "date": "2025-10-05",
+      "title": "Update coordinator now allows retriggering",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/09/25/entity-services-api-changes/",
+      "date": "2025-09-25",
+      "title": "Improved API for registering platform entity services",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/09/22/deprecate-hass-argument-service-helpers/",
+      "date": "2025-09-22",
+      "title": "Deprecate hass argument in service helpers",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/08/20/micro-sign-encoding/",
+      "date": "2025-08-20",
+      "title": "Standardize encoding of μ in units of measurement",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/08/01/suggested-area-removed-from-deviceentry/",
+      "date": "2025-08-01",
+      "title": "The DeviceEntry.suggested_area attribute is deprecated and will be removed",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/07/31/result-removed-from-flowresult/",
+      "date": "2025-07-31",
+      "title": "The result attribute has been removed from the FlowResult typed dict",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/07/18/updated-pattern-for-helpers-linking-to-devices/",
+      "date": "2025-07-18",
+      "title": "Updated guidelines for helper integrations linking to other integration's device",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/07/16/media-player-standby-state-deprecated/",
+      "date": "2025-07-16",
+      "title": "The media player STANDBY state is deprecated",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/07/14/home-assistant-os-16-open-file-limit/",
+      "date": "2025-07-14",
+      "title": "Handling open file limit in add-ons since OS 16",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/07/02/vacuum-battery-properties-deprecated/",
+      "date": "2025-07-02",
+      "title": "Vacuum battery properties are deprecated",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/05/26/sensor-default-display-precision/",
+      "date": "2025-05-26",
+      "title": "Sensor device classes now have default display precision",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/05/22/range-based-icons/",
+      "date": "2025-05-22",
+      "title": "Icon translations now support ranges",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/04/24/device-tracker-accuracy/",
+      "date": "2025-04-24",
+      "title": "Device tracker TrackerEntity location accuracy attribute type change",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/04/17/search-media-play/",
+      "date": "2025-04-17",
+      "title": "Searching in media players",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/03/25/frozen-unit-system/",
+      "date": "2025-03-25",
+      "title": "UnitSystem dataclass is now frozen",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/03/24/config-subentry-flow-changes/",
+      "date": "2025-03-24",
+      "title": "Changes to ConfigSubentryFlow",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/03/14/media-player-toggle-adjusted/",
+      "date": "2025-03-14",
+      "title": "Media player toggle action changed",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/03/04/backup-agent-api-changes/",
+      "date": "2025-03-04",
+      "title": "Changes to the BackupAgent API",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/03/01/config-flow-unique-id/",
+      "date": "2025-03-01",
+      "title": "New checks for config flow unique ID",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/02/19/new-config-entry-states/",
+      "date": "2025-02-19",
+      "title": "Changed config entry state transitions",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/02/17/backup-agents/",
+      "date": "2025-02-17",
+      "title": "Backup agents",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/02/16/config-subentries/",
+      "date": "2025-02-16",
+      "title": "Support for config subentries",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/01/31/energy-distance-units/",
+      "date": "2025-01-31",
+      "title": "Energy by distance units",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2025/01/15/service-info/",
+      "date": "2025-01-15",
+      "title": "Relocate dhcp/ssdp/usb/zeroconf ServiceInfo models",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/26/area-squared-units/",
+      "date": "2024-12-26",
+      "title": "New area device class",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/21/moving-to-pydantic-v2/",
+      "date": "2024-12-21",
+      "title": "Moving to Pydantic v2",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/14/kelvin-preferred-color-temperature-unit/",
+      "date": "2024-12-14",
+      "title": "Use Kelvin as the preferred color temperature unit",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/13/water-heater-entity-description/",
+      "date": "2024-12-13",
+      "title": "Changed name of WaterHeaterEntityDescription",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/08/new-vacuum-state-property/",
+      "date": "2024-12-08",
+      "title": "New vacuum state property",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/12/03/climate-horizontal-swing/",
+      "date": "2024-12-03",
+      "title": "Climate entity now supports independent horizontal swing",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/28/dt-util-utc-to-timestamp-deprecation/",
+      "date": "2024-11-28",
+      "title": "Utility function homeassistant.util.dt.utc_to_timestamp is deprecated",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/26/camera-deprecations/",
+      "date": "2024-11-26",
+      "title": "Camera API changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/21/unit-of-measurement-translations/",
+      "date": "2024-11-21",
+      "title": "Translating units of measurement",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/20/integration-quality-scale/",
+      "date": "2024-11-20",
+      "title": "Integration quality scale",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/12/options-flow/",
+      "date": "2024-11-12",
+      "title": "New options flow properties",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/06/custom-card-sections-support/",
+      "date": "2024-11-06",
+      "title": "Sizing support for custom cards in sections view",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/11/04/reauth-reconfigure-entry-id/",
+      "date": "2024-11-04",
+      "title": "Reauth and reconfigure flows need to be linked to a config entry",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/31/update-entity-changes/",
+      "date": "2024-10-31",
+      "title": "Changes to the update entity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/31/core-config-moved/",
+      "date": "2024-10-31",
+      "title": "The core config class has been moved",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/22/new-alarm-state-property/",
+      "date": "2024-10-22",
+      "title": "New alarm control panel state property and state enum",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/21/reauth-reconfigure-helpers/",
+      "date": "2024-10-21",
+      "title": "New helpers and best practises for reauth and reconfigure flows",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/09/extend-deprecation-hass-helpers/",
+      "date": "2024-10-09",
+      "title": "Extend deprecation period of hass.helpers",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/08/unit-of-conductivity-changes/",
+      "date": "2024-10-08",
+      "title": "Changes to the UnitOfConductivity enum",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/08/state-constants-cover-deprecation/",
+      "date": "2024-10-08",
+      "title": "Deprecating state constants for cover",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/10/01/assist-satellite-entity/",
+      "date": "2024-10-01",
+      "title": "Introducing the Assist satellite entity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/28/update-version-compare/",
+      "date": "2024-09-28",
+      "title": "Version compare for Update platform can now be overwritten",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/24/device-tracker-entity-description/",
+      "date": "2024-09-24",
+      "title": "Enforce SourceType and add shorthand attributes and EntityDescription to device_tracker",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/24/climate-set-temp-validation/",
+      "date": "2024-09-24",
+      "title": "Additional validation in Climate set temperature",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/23/state-constants-lock-deprecation/",
+      "date": "2024-09-23",
+      "title": "Deprecating state constants for lock",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/23/state-constants-camera-deprecation/",
+      "date": "2024-09-23",
+      "title": "Deprecating state constants for camera",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/23/feature-flag-constants-vacuum-deprecation/",
+      "date": "2024-09-23",
+      "title": "Deprecating feature flag constants for Vacuum",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/23/constants-media-player-deprecation/",
+      "date": "2024-09-23",
+      "title": "Deprecating constants for Media Player",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/11/extending-deprecation-hass-components/",
+      "date": "2024-09-11",
+      "title": "Extend deprecation period of @bind_hass and hass.components",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/10/calories-units/",
+      "date": "2024-09-10",
+      "title": "Calories added to energy class sensors",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/09/02/template-hass-required/",
+      "date": "2024-09-02",
+      "title": "Template.hass is no longer automatically set when rendering templates",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/08/27/entity-service-schema-validation/",
+      "date": "2024-08-27",
+      "title": "Validation of entity action schemas",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/08/27/changed-icon-translations-schema/",
+      "date": "2024-08-27",
+      "title": "Changes to the icon translations schema",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/08/23/lawn-mower-activity-returning/",
+      "date": "2024-08-23",
+      "title": "New returning type in LawnMowerActivity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/08/05/coordinator_async_setup/",
+      "date": "2024-08-05",
+      "title": "Set up your DataUpdateCoordinator with a setup method",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/07/24/climate-min-max-temperature-check/",
+      "date": "2024-07-24",
+      "title": "Climate entity now validates temperature provided in action calls",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/07/19/fan-fanentityfeatures-turn-on_off/",
+      "date": "2024-07-19",
+      "title": "New entity feature flags in FanEntity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/07/16/service-actions/",
+      "date": "2024-07-16",
+      "title": "Services are now actions",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/07/16/device-info-model-id/",
+      "date": "2024-07-16",
+      "title": "model_id added to DeviceInfo",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/07/07/climate-hvacaction-defrosting/",
+      "date": "2024-07-07",
+      "title": "New HVACAction DEFROSTING",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/06/22/excluding-state-attributes-from-recording-match-all/",
+      "date": "2024-06-22",
+      "title": "Excluding all state attributes from recording using MATCH_ALL",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/06/18/async_register_static_paths/",
+      "date": "2024-06-18",
+      "title": "Making http path registration async safe with `async_register_static_paths`",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/06/12/async_forward_entry_setups/",
+      "date": "2024-06-12",
+      "title": "Forwarding setup to config entry platforms",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/22/alarm_control_panel_validation/",
+      "date": "2024-05-22",
+      "title": "Alarm Control Panel Entity code validation",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/20/llm-api/",
+      "date": "2024-05-20",
+      "title": "Exposing Home Assistant API to LLMs",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/19/fix_zoneinfo_blocking_io/",
+      "date": "2024-05-19",
+      "title": "Handling time zones without blocking the event loop",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/10/lock-supports-open-state/",
+      "date": "2024-05-10",
+      "title": "LockEntity supports open/opening state",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/10/group-integration/",
+      "date": "2024-05-10",
+      "title": "Changes in setup entity platforms with group integration",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/09/improving-ci-test-execution/",
+      "date": "2024-05-09",
+      "title": "How we managed to speed up our CI to save 168+ days of execution time per month",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/03/notify-title/",
+      "date": "2024-05-03",
+      "title": "Second phase of notify entity platform implementation",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/05/01/improved-hass-data-typing/",
+      "date": "2024-05-01",
+      "title": "Improved typing for hass.data",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/30/store-runtime-data-inside-config-entry/",
+      "date": "2024-04-30",
+      "title": "Store runtime data inside the config entry",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/25/always-reload-after-successful-reauth-flow/",
+      "date": "2024-04-25",
+      "title": "Always reload after a successful re-auth flow",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/13/deprecate_async_track_state_change/",
+      "date": "2024-04-13",
+      "title": "Replacing `async_track_state_change` with `async_track_state_change_event`",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/10/new-notify-entity-platform/",
+      "date": "2024-04-10",
+      "title": "New notify entity platform",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/08/deprecated-backports-and-typing-aliases/",
+      "date": "2024-04-08",
+      "title": "Deprecate old backports and typing alias",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/07/deprecate_add_hass_job/",
+      "date": "2024-04-07",
+      "title": "Deprecating `async_add_hass_job`",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/04/03/build-images-with-uv/",
+      "date": "2024-04-03",
+      "title": "How uv saves Home Assistant 215 compute hours per month",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/30/deprecate-hass-helpers/",
+      "date": "2024-03-30",
+      "title": "Deprecate hass.helpers usage",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/21/config-entry-reconfigure-step/",
+      "date": "2024-03-21",
+      "title": "Config Entries can now provide a reconfigure step",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/20/state_reported_timestamp/",
+      "date": "2024-03-20",
+      "title": "New state timestamp State.last_reported",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/15/exception-translations/",
+      "date": "2024-03-15",
+      "title": "Raising exceptions with translations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/13/deprecate_add_run_job/",
+      "date": "2024-03-13",
+      "title": "Deprecating `async_run_job` and `async_add_job`",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/10/climate-aux-heater-deprecated/",
+      "date": "2024-03-10",
+      "title": "Climate entity auxiliary heater is deprecated",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/09/import_executor_default/",
+      "date": "2024-03-09",
+      "title": "Integrations import in the executor to avoid blocking the event loop",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/03/05/platform_entity_translations_deprecation/",
+      "date": "2024-03-05",
+      "title": "Support for platform translations in separate files will be removed",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/28/device-name-translations/",
+      "date": "2024-02-28",
+      "title": "Introducing device name translations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/27/deprecate-bind-hass-and-hass-components/",
+      "date": "2024-02-27",
+      "title": "Deprecate use of @bind_hass and hass.components",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/26/single-instance-only-manifest-option/",
+      "date": "2024-02-26",
+      "title": "New single instance only manifest option",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/25/Climate-toggle-service/",
+      "date": "2024-02-25",
+      "title": "New Climate entity toggle method",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/12/light-color-mode-mandatory/",
+      "date": "2024-02-12",
+      "title": "It is now required for lights to set color mode",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/02/12/async_update_entry/",
+      "date": "2024-02-12",
+      "title": "Altering config entries",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/30/ha-state-icon-properties-changes/",
+      "date": "2024-01-30",
+      "title": "Properties changes for ha-state-icon",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/24/climate-climateentityfeatures-expanded/",
+      "date": "2024-01-24",
+      "title": "New entity features in Climate entity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/23/light-color-mode-changes/",
+      "date": "2024-01-23",
+      "title": "Changes to light color mode when lights display an effect",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/22/async_services_for_domain/",
+      "date": "2024-01-22",
+      "title": "Enumerating services",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/19/icon-translations/",
+      "date": "2024-01-19",
+      "title": "Icon translations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/19/entity-translations-placeholders/",
+      "date": "2024-01-19",
+      "title": "Introducing entity translation placeholders",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/17/deprecate-invalid-sensor-uom-state-class-use/",
+      "date": "2024-01-17",
+      "title": "Deprecate invalid use of sensor unit of measurement and state class",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2024/01/11/async-show-progress-changes/",
+      "date": "2024-01-11",
+      "title": "Changes to FlowManager.async_show_progress",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/12/28/support-feature-magic-numbers-deprecation/",
+      "date": "2023-12-28",
+      "title": "Deprecating all magic numbers for supported features",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/12/19/constant-deprecation/",
+      "date": "2023-12-19",
+      "title": "Deprecated constants create a log entry",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/12/18/config-entry-minor-version/",
+      "date": "2023-12-18",
+      "title": "Config entry now supports minor versions",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/12/11/entity-description-changes/",
+      "date": "2023-12-11",
+      "title": "Changes to EntityDescription data classes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/12/05/scaling-utils/",
+      "date": "2023-12-05",
+      "title": "New scaling utils and import changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/11/30/service-exceptions-and-translations/",
+      "date": "2023-11-30",
+      "title": "Exception handling during service calls and translation support",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/11/27/config-validation-and-error-handling/",
+      "date": "2023-11-27",
+      "title": "Config processing and error handling",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/11/06/public-addon-config/",
+      "date": "2023-11-06",
+      "title": "Public Addon Config",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/10/12/country_selector/",
+      "date": "2023-10-12",
+      "title": "Country selector",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/10/03/conversion-functions-cleanup/",
+      "date": "2023-10-03",
+      "title": "Removal of deprecated unit conversion utilities",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/10/01/hacktoberfest-2023/",
+      "date": "2023-10-01",
+      "title": "Home Assistant is participating in Hacktoberfest 2023!",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/09/20/excluding-state-attributes-from-recording/",
+      "date": "2023-09-20",
+      "title": "New way of excluding state attributes from recording",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/09/12/ws-entity-source-simplified/",
+      "date": "2023-09-12",
+      "title": "The websocket command entity/source has been modified",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/08/29/homeassistant-changed-signature/",
+      "date": "2023-08-29",
+      "title": "HomeAssistant.__init__ requires passing a string to it",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/08/29/hass-format-state/",
+      "date": "2023-08-29",
+      "title": "Entity state formatting",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/08/23/sensor-updates/",
+      "date": "2023-08-23",
+      "title": "Numerical sensors are no longer allowed to set their state to NaN or inf",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/08/07/weather_entity_forecast_types/",
+      "date": "2023-08-07",
+      "title": "Weather entity forecast types",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/07/27/avoiding-unnecessary-callbacks-with-dataupdatecoordinator/",
+      "date": "2023-07-27",
+      "title": "Avoid unnecessary callbacks with DataUpdateCoordinator",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/07/21/change-naming-mqtt-entities/",
+      "date": "2023-07-21",
+      "title": "The naming of MQTT entities changes to correspond with HA guidelines",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/07/11/translating-services/",
+      "date": "2023-07-11",
+      "title": "Translating services",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/07/10/vacuum-updates/",
+      "date": "2023-07-10",
+      "title": "Updated to the Vacuum entity integration",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/07/07/action-event-custom-cards/",
+      "date": "2023-07-07",
+      "title": "Action event for custom cards",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/06/28/service-description-filters/",
+      "date": "2023-06-28",
+      "title": "Service call description filters",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/06/28/entity-name-changes/",
+      "date": "2023-06-28",
+      "title": "Changes to entity naming",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/06/14/service-calls/",
+      "date": "2023-06-14",
+      "title": "Service Call API changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/05/21/retained-mqtt-messages-filtered/",
+      "date": "2023-05-21",
+      "title": "Recent MQTT changes to improve overall performance",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/05/07/job-home-assistant-core/",
+      "date": "2023-05-07",
+      "title": "Job: Home Assistant Core Developer",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/04/30/statistics_impossible_values/",
+      "date": "2023-04-30",
+      "title": "Statistics WebSocket API changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/04/13/new_limits_for_add_ons/",
+      "date": "2023-04-13",
+      "title": "New limits for Supervisor Add-ons",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/04/04/deprecating_polymer/",
+      "date": "2023-04-04",
+      "title": "Deprecating Polymer",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/03/28/calendar_best_practices/",
+      "date": "2023-03-28",
+      "title": "Calendar best practices",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/03/27/entity_name_translations/",
+      "date": "2023-03-27",
+      "title": "Translating the name and attributes of entities",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/28/custom-tile-features/",
+      "date": "2023-02-28",
+      "title": "Custom tile features",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/21/deprecated-callback-removed/",
+      "date": "2023-02-21",
+      "title": "Deprecated callback signatures for MQTT subscribe removed",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/20/snapshot-testing/",
+      "date": "2023-02-20",
+      "title": "Added support for snapshot testing",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/15/json/",
+      "date": "2023-02-15",
+      "title": "Refactor json helper and utility",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/09/hassgetstate/",
+      "date": "2023-02-09",
+      "title": "The HassGetState intent",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/08/sensor_presentation_rounding/",
+      "date": "2023-02-08",
+      "title": "The number of decimals used when displaying a sensor state is now configurable",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/07/introducing-PR-drafting-in-reviews/",
+      "date": "2023-02-07",
+      "title": "Introducing drafting of PRs in our review process",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/06/translations-files-removed-from-core/",
+      "date": "2023-02-06",
+      "title": "Translation files removed from Core repository",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/02/03/responses/",
+      "date": "2023-02-03",
+      "title": "Intent Responses and Whitespace",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/01/25/sensor_rounding/",
+      "date": "2023-01-25",
+      "title": "Sensor entity can now do rounding of numerical values",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/01/24/conversation-updates/",
+      "date": "2023-01-24",
+      "title": "Future proofing the Conversation integration",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/01/20/cover-intent-deprecated/",
+      "date": "2023-01-20",
+      "title": "Cover intents deprecated",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/01/12/bluetooth-adapters/",
+      "date": "2023-01-12",
+      "title": "Bluetooth updates for 2023.2 and later",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2023/01/02/db-schema-v32/",
+      "date": "2023-01-02",
+      "title": "Database schema v32 updates",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/12/08/multi-pan-rollback/",
+      "date": "2022-12-08",
+      "title": "Multi-pan temporarily disabled",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/12/07/unit_system_changes/",
+      "date": "2022-12-07",
+      "title": "Summary of unit system related changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/12/07/entity-color-changes/",
+      "date": "2022-12-07",
+      "title": "Entity state color changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/12/05/more-unit-enumerators/",
+      "date": "2022-12-05",
+      "title": "Add  more unit enumerators",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/12/01/entity_translations/",
+      "date": "2022-12-01",
+      "title": "Translating the state of entities",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/11/28/more-unit-enumerators/",
+      "date": "2022-11-28",
+      "title": "Add  more unit enumerators",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/11/16/statistics_refactoring/",
+      "date": "2022-11-16",
+      "title": "Changes to long term statistics APIs",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/26/new-unit-enumerators/",
+      "date": "2022-10-26",
+      "title": "Introducing new unit enumerators",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/25/new-precipitation-intensity-units/",
+      "date": "2022-10-25",
+      "title": "Add new precipitation intensity units",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/24/hubs-devices-services-virtual-integrations/",
+      "date": "2022-10-24",
+      "title": "Introducing virtual integrations and differentiating hubs, devices, and services,",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/21/code-owner-commands/",
+      "date": "2022-10-21",
+      "title": "GitHub Commands for Code Owners",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/14/deprecate-unit-system/",
+      "date": "2022-10-14",
+      "title": "Deprecate IMPERIAL_SYSTEM unit system and linked constants and properties",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/10/10/add-options-to-SelectEntityDescription/",
+      "date": "2022-10-10",
+      "title": "Add options to SelectEntityDescription",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/09/29/statistics_refactoring/",
+      "date": "2022-09-29",
+      "title": "Long term statistics now tracks the source entity's unit",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/09/28/new_sensor_device_classes/",
+      "date": "2022-09-28",
+      "title": "New sensor device classes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/09/28/deprecate-conversion-utilities/",
+      "date": "2022-09-28",
+      "title": "Deprecating unit conversion utilities",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/09/16/bluetooth-unavailable-api-changes/",
+      "date": "2022-09-16",
+      "title": "Bluetooth async_track_unavailable API changes for 2022.10",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/09/06/media-player-repeat-mode-deprecation/",
+      "date": "2022-09-06",
+      "title": "Deprecating media player constants",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/08/25/issue_registry_moved_to_helpers/",
+      "date": "2022-08-25",
+      "title": "The issue registry has been moved to homeassistant.helpers",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/08/24/globally_accessible_hass/",
+      "date": "2022-08-24",
+      "title": "Globally available HomeAssistant object (hass)",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/08/18/light_white_value_removed/",
+      "date": "2022-08-18",
+      "title": "LightEntity no longer supports white_value",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/08/15/automation-action-type-deprecation/",
+      "date": "2022-08-15",
+      "title": "AutomationActionType deprecation for 2022.9",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/08/08/bluetooth-api-changes/",
+      "date": "2022-08-08",
+      "title": "Bluetooth passive sensor API changes for 2022.9",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/07/29/device-tracker_source-type-deprecation/",
+      "date": "2022-07-29",
+      "title": "Device tracker deprecations for 2022.9",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/07/10/entity_naming/",
+      "date": "2022-07-10",
+      "title": "Adopting a new way to name entities",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/07/08/generic-store/",
+      "date": "2022-07-08",
+      "title": "Store is now a Generic class",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/07/08/config_entry_forwards/",
+      "date": "2022-07-08",
+      "title": "Waiting for config entry platforms",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/06/27/weather_entity_refactoring/",
+      "date": "2022-06-27",
+      "title": "Weather entity refactoring to support unit conversions",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/06/14/number_entity_refactoring/",
+      "date": "2022-06-14",
+      "title": "Number entity refactoring to support unit conversion",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/06/13/unsafe_reloads_during_entry_setup/",
+      "date": "2022-06-13",
+      "title": "Avoiding reloading config entries while they are setting up",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/06/07/dataflow-constants-deprecation/",
+      "date": "2022-06-07",
+      "title": "Deprecating Data Entry Flow constants",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/06/02/update_coordinator-context/",
+      "date": "2022-06-02",
+      "title": "Support context in update coordinator",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/05/31/media-player-updates/",
+      "date": "2022-05-31",
+      "title": "Media Player updates: enqueue changes, announce added",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/05/24/entity_matches_only_removed_logbook_card/",
+      "date": "2022-05-24",
+      "title": "Logbook API removal of `entity_matches_only` flag",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/05/12/s6-overlay-base-images/",
+      "date": "2022-05-12",
+      "title": "S6-Overlay 3.x update on our docker base images",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/05/03/serviceinfo-model-improvements/",
+      "date": "2022-05-03",
+      "title": "ServiceInfo model improvements and deprecations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/05/03/constants-deprecations/",
+      "date": "2022-05-03",
+      "title": "Constant deprecations for 2022.5",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/04/26/tts-say-media-source/",
+      "date": "2022-04-26",
+      "title": "Text-to-speech say service to use media source IDs",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/04/20/saying-goodbye-to-event_time_changed/",
+      "date": "2022-04-20",
+      "title": "Saying goodbye to the time_changed event",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/04/18/calendar-data-model/",
+      "date": "2022-04-18",
+      "title": "Calendar Data Model improvements and deprecations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/04/16/local-oauth2/",
+      "date": "2022-04-16",
+      "title": "Local OAuth2 Updates",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/04/02/support-constants-deprecation/",
+      "date": "2022-04-02",
+      "title": "Deprecating all SUPPORT_* constants",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/03/30/2022.4-new-dev-features/",
+      "date": "2022-03-30",
+      "title": "New features for developers in 2022.4",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/03/20/update-entity/",
+      "date": "2022-03-20",
+      "title": "Introducing the update entity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/02/28/opt-in-remove-device/",
+      "date": "2022-02-28",
+      "title": "Opt in support to manually remove device",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2022/02/18/paper-elements/",
+      "date": "2022-02-18",
+      "title": "Paper Elements are being removed",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/10/26/config-entity/",
+      "date": "2021-10-26",
+      "title": "Device configuration URL and entity categories",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/09/20/state_class_total/",
+      "date": "2021-09-20",
+      "title": "New sensor state class: total",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/08/24/supervisor_update/",
+      "date": "2021-08-24",
+      "title": "Supervisor update",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/08/16/state_class_total/",
+      "date": "2021-08-16",
+      "title": "New sensor state class: total_increasing",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/08/12/sensor_temperature_conversion/",
+      "date": "2021-08-12",
+      "title": "Temperature conversions moving to SensorEntity",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/05/25/sensor_attributes/",
+      "date": "2021-05-25",
+      "title": "New sensor properties for long-term statistics",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/05/19/lit-2.0/",
+      "date": "2021-05-19",
+      "title": "Upgrade to Lit 2.0",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/05/07/switch-pytz-to-python-dateutil/",
+      "date": "2021-05-07",
+      "title": "Replacing pytz with python-dateutil",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/04/09/astral-2.2/",
+      "date": "2021-04-09",
+      "title": "Astral upgraded to version 2.2",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2021/01/29/custom-integration-changes/",
+      "date": "2021-01-29",
+      "title": "Custom integration changes",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/11/09/system-health-and-templates/",
+      "date": "2020-11-09",
+      "title": "System Health and Templates",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/10/29/supervisor-update/",
+      "date": "2020-10-29",
+      "title": "Upcoming changes to add-ons",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/10/02/lazyMoreInfo/",
+      "date": "2020-10-02",
+      "title": "Lazy-loading more-info controls",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/09/30/customViewChanges/",
+      "date": "2020-09-30",
+      "title": "Lovelace: Custom View Layouts",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/07/13/alpine-python/",
+      "date": "2020-07-13",
+      "title": "Improving Python's speed by 40% when running Home Assistant",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/06/01/getCardSize/",
+      "date": "2020-06-01",
+      "title": "Lovelace: getCardSize can now be async",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/05/14/entity-class-names/",
+      "date": "2020-05-14",
+      "title": "Entity class names",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/05/09/custom-iconsets/",
+      "date": "2020-05-09",
+      "title": "Custom icon sets",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/05/08/logos-custom-integrations/",
+      "date": "2020-05-08",
+      "title": "Logos for custom integrations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/05/08/instance-url-helper/",
+      "date": "2020-05-08",
+      "title": "Instance URL helper",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/04/23/frontend-translations/",
+      "date": "2020-04-23",
+      "title": "Translations for custom Lovelace",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/04/16/hassfest/",
+      "date": "2020-04-16",
+      "title": "Hassfest for custom components",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/04/12/s6-overlay/",
+      "date": "2020-04-12",
+      "title": "S6 Overlay for our Docker containers",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/04/10/translation-handling/",
+      "date": "2020-04-10",
+      "title": "Translations 2.0",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/02/18/106-custom-card-changes/",
+      "date": "2020-02-18",
+      "title": "Changes that can affect custom cards in 0.106",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2020/02/04/new-zwave/",
+      "date": "2020-02-04",
+      "title": "Update on the Z-Wave integration",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/10/05/simple-mode/",
+      "date": "2019-10-05",
+      "title": "Simple Mode in Home Assistant 1.0",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/09/27/hacktoberfest/",
+      "date": "2019-09-27",
+      "title": "Hacktoberfest 2019",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/07/31/black/",
+      "date": "2019-07-31",
+      "title": "Adopting Black",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/07/19/building-all-the-things/",
+      "date": "2019-07-19",
+      "title": "Building All The Things",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/07/03/climate-cleanup/",
+      "date": "2019-07-03",
+      "title": "Climate Cleanup",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/05/22/internet-of-things-and-the-modern-web/",
+      "date": "2019-05-22",
+      "title": "Internet of Things and the Modern Web",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/04/12/new-integration-structure/",
+      "date": "2019-04-12",
+      "title": "Introducing Integrations",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/03/11/user-permissions/",
+      "date": "2019-03-11",
+      "title": "Can I Have User Permissions?",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2019/02/19/the-great-migration/",
+      "date": "2019-02-19",
+      "title": "The Great Migration",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2018/08/13/deprecating-remote-package/",
+      "date": "2018-08-13",
+      "title": "Deprecating homeassistant.remote",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2018/07/02/trying-new-auth/",
+      "date": "2018-07-02",
+      "title": "Trying the new auth system",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2018/06/01/071-custom-panels/",
+      "date": "2018-06-01",
+      "title": "0.71: Improved custom panels and minor changes for custom UI",
+      "verdict": "baseline"
+    },
+    {
+      "url": "https://contributors.home-assistant.io/blog/2018/05/22/custom-ui-panels-api/",
+      "date": "2018-05-22",
+      "title": "Updates for Custom UI and Custom Panels",
+      "verdict": "baseline"
+    }
+  ]
+}

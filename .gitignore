@@ -17,5 +17,6 @@ node_modules/
 examples/
 tmp/
 
-# Claude code custom settings
-.claude/
+# Claude code custom settings (project skills are tracked)
+.claude/*
+!.claude/skills/
