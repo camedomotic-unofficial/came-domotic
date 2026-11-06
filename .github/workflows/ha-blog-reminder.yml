@@ -1,0 +1,47 @@
+name: HA blog reminder
+
+# Monthly check of the Home Assistant contributors blog. If posts are missing
+# from the review ledger, open (or refresh) a single reminder issue. The review
+# itself is done with the /ha-blog-review Claude Code skill.
+
+on:
+  schedule:
+    - cron: "0 8 1 * *" # 08:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  ISSUE_TITLE: Unreviewed Home Assistant contributors blog posts
+
+jobs:
+  remind:
+    name: Check for unreviewed blog posts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Diff the blog feed against the ledger
+        id: diff
+        run: python3 scripts/ha_blog.py issue-body > "$RUNNER_TEMP/body.md"
+
+      - name: Open or update the reminder issue
+        if: steps.diff.outputs.unseen != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" \
+            --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n1)
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/body.md"
+            echo "Updated issue #$number"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file "$RUNNER_TEMP/body.md"
+          fi
+
+      - name: Nothing to review
+        if: steps.diff.outputs.unseen == '0'
+        run: echo "All blog posts are in the ledger."

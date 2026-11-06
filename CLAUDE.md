@@ -106,6 +106,10 @@ Pattern for adding new platforms:
 
 `docs/came_domotic.markdown` is the complete user-facing documentation (written in the Home Assistant integration docs format). **Whenever you add or change a user-facing feature — new entities/platforms, service actions, config flow steps, attributes, or behavior — update this file in the same PR.** Cover the same aspects the existing sections do: what the feature does, its entities/attributes, action parameters (with a YAML example for non-trivial actions), and any limitations or irreversibility warnings. Also check whether the README's feature table or service actions summary needs the same update.
 
+## Home Assistant contributors blog review
+
+Deprecations and breaking changes in HA core are announced on the contributors blog (`https://contributors.home-assistant.io/blog/`). Run `/ha-blog-review` (skill in `.claude/skills/ha-blog-review/`) to review new posts. Each post gets a verdict in `.claude/skills/ha-blog-review/ledger.json`, managed by `scripts/ha_blog.py`. The `ha-blog-reminder` workflow opens a reminder issue monthly when posts are missing from the ledger. When raising the minimum HA version in `hacs.json`, check `python scripts/ha_blog.py open`: several `watch` items are waiting on that bump.
+
 ## Logging
 
 - Every module with meaningful logic has `_LOGGER = logging.getLogger(__name__)` (except `api.py` which uses `__package__` to log under the integration domain)
