@@ -103,6 +103,7 @@
       "title": "Integrations have categories now",
       "verdict": "action-needed",
       "reason": "Add the optional `categories` key to manifest.json (HACS action warns when missing, fails on unknown category). Pick from the core category list.",
+      "ref": "#160",
       "reviewed": "2026-11-06"
     },
     {
@@ -135,6 +136,7 @@
       "title": "DeviceInfo is now a dataclass",
       "verdict": "action-needed",
       "reason": "entity.py sets self._attr_device_info['translation_key'/'translation_placeholders'] via the dict compatibility layer (to be deprecated), and __init__.py unpacks **gateway_device_info(). Pass translation fields to the DeviceInfo constructor now; switch to async_get_or_create_from_info once min HA >= 2026.11.",
+      "ref": "#159",
       "reviewed": "2026-11-06"
     },
     {
@@ -176,6 +178,7 @@
       "verdict": "action-needed",
       "reason": "climate.py uses _attr_temperature_unit and current_temperature/target_temperature, which log deprecation warnings on HA 2026.11+. Rename to native_* (needs min HA 2026.11 or a version shim).",
       "deadline": "2027.11",
+      "ref": "#157",
       "reviewed": "2026-11-06"
     },
     {
@@ -273,6 +276,7 @@
       "title": "More device registry deprecations, new helpers and validation",
       "verdict": "action-needed",
       "reason": "Already migrated to via_device_id + async_get_device_id_by_identifier (#137). But that helper exists only in HA >= 2026.8, while hacs.json still declares homeassistant 2025.6.0: bump the minimum version.",
+      "ref": "#158",
       "reviewed": "2026-11-06"
     },
     {
