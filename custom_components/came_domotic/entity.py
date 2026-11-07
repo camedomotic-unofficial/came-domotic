@@ -130,10 +130,11 @@ class CameDomoticDeviceEntity(CoordinatorEntity[CameDomoticDataUpdateCoordinator
                 coordinator.hass, (DOMAIN, entry_id), config_entry_id=entry_id
             ),
             suggested_area=suggested_area,
+            translation_key=device_translation_key,
+            translation_placeholders=(
+                {"name": device_name} if device_translation_key is not None else None
+            ),
         )
-        if device_translation_key is not None:
-            self._attr_device_info["translation_key"] = device_translation_key
-            self._attr_device_info["translation_placeholders"] = {"name": device_name}
         _LOGGER.debug(
             "Device entity '%s' initialized (suggested_area=%s)",
             device_name,
