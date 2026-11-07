@@ -1,6 +1,11 @@
 {
   "domain": "came_domotic",
   "name": "CAME Domotic",
+  "categories": [
+    "hubs_protocols.building_automation",
+    "lighting.lighting_systems",
+    "climate.thermostats_heating"
+  ],
   "codeowners": ["@camedomotic-unofficial"],
   "config_flow": true,
   "dependencies": ["network"],

@@ -38,6 +38,22 @@ async def test_gateway_device_uses_translation_key(hass, bypass_get_data):
     assert device.manufacturer == MANUFACTURER
 
 
+async def test_device_translation_key_resolves_name_placeholder(hass, bypass_get_data):
+    """A per-device translation_key resolves with the device name as placeholder."""
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    device_reg = dr.async_get(hass)
+    device = device_reg.async_get_device_by_identifier(
+        (DOMAIN, f"{config_entry.entry_id}_loadsctrl_100"), config_entry.entry_id
+    )
+    assert device is not None
+    assert device.name == "Load control - Load Controller"
+
+
 async def test_device_entities_link_to_gateway(hass, bypass_get_data):
     """Per-device entities are linked to the gateway through via_device_id."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
